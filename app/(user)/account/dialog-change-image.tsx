@@ -18,7 +18,7 @@ export default function AvatarWithCloudinaryUploader({
       <AvatarPrimitive.Image
         data-slot="avatar-image"
         src={profileImageUrl || undefined} alt={name || "Something went wrong"}
-        className="aspect-square size-full"
+        className="aspect-square size-full rounded-full"
       />
       <AvatarPrimitive.Fallback
         data-slot="avatar-fallback"

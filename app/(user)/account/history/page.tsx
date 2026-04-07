@@ -1,9 +1,15 @@
+import { notFound } from "next/navigation";
 import BookingsTable from "./bookings-table";
-import { fetchRecentBookings } from "@/lib/actions/user-account";
+import { user_getRecentBookings } from "@/lib/actions/user-account";
 
 
 export default async function AccountHistoryPage() {
-  const bookings = await fetchRecentBookings();
+  const result = await user_getRecentBookings();
+  if (!result.ok) {
+    // TODO: Handle error properly
+    notFound();
+  }
+  const bookings = result.data;
 
   return (
     <div className="max-w-6xl mx-auto py-10 px-4">

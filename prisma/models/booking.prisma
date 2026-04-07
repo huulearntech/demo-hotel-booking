@@ -1,27 +1,51 @@
-model Booking {
+// What if the hotel changes the room price after the user submits the booking information form but before they confirm the booking? We want to keep track of the price at the time of booking for historical price tracking and also for showing the user the price they agreed to when they submitted the form. This is especially important if we allow users to book without confirming immediately (e.g. they can submit the form and then confirm later, or they can save their booking information and come back to it later). So we need to store a snapshot of the room price at the time of booking in the BookingMetadata model.
+model BookingMetadata {
   id                String         @id @default(cuid())
   userId            String         @map("user_id")
   user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   hotelId           String         @map("hotel_id")
   hotel             Hotel          @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  roomType          RoomType       @relation(fields: [roomTypeId], references: [id]) // For finding rooms after user submit the info form.
+  roomTypeId        String         @map("room_type_id") // current room type id (for easier querying)
 
   checkInDate       DateTime       @db.Date @map("check_in_date")
   checkOutDate      DateTime       @db.Date @map("check_out_date")
 
-  rooms             Room[]         
-  snapshotRoomPrice Decimal        @db.Decimal(10, 2) @map("snapshot_room_price") // price per room at the time of booking (for historical price tracking)
+  numRooms          Int            @map("num_rooms")
+  numGuests         Int            @map("num_guests")
+  snapshotRoomPrice Decimal        @db.Decimal(10, 2) @map("snapshot_room_price")
+  snapshotRoomTypeName String      @map("snapshot_room_type_name")
+  snapshotCheckInTime  DateTime    @map("snapshot_check_in_time")
+  snapshotCheckOutTime DateTime    @map("snapshot_check_out_time")
+  
+  booking           Booking?        // optional relation to the booking (only set when the booking is created but not yet confirmed)
+  createdAt         DateTime       @default(now()) @map("created_at")
+}
 
-  status            BookingStatus  @default(DRAFT)
+model Booking {
+  id                String           @id @default(cuid())
+  rooms             Room[]         
+
+  status            BookingStatus    @default(PENDING)
+
+  // All this because we allow user to book with other information than the one in their profile, and we want to keep the booking information even if the user deletes their account or changes their profile information. This also allows us to keep the booking information for guest users who don't have an account.
+  customerName      String           @map("customer_name")
+  customerEmail     String           @map("customer_email")
+  customerPhone     String           @map("customer_phone")
   notes             String?
   
-  review            Review?        // optional review for this booking (one review per booking)
+  review            Review?          // optional review for this booking (one review per booking)
 
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt      @map("updated_at")
+  // metadata is the draft step.
+  metadata          BookingMetadata  @relation(fields: [metadataId], references: [id], onDelete: Cascade)
+  metadataId        String           @unique @map("metadata_id")
 
-  @@index([userId])
-  @@index([hotelId])
-  @@index([checkInDate, checkOutDate])
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt      @map("updated_at")
+
+  @@index([metadataId])
   @@map("bookings")
 }
 
@@ -42,7 +66,6 @@ model Review {
   @@map("reviews")
 }
 enum BookingStatus {
-  DRAFT
   PENDING
   CONFIRMED
   CANCELLED

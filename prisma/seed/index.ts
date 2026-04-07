@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { seedCountryVietnam, seedProvinces, seedDistricts, seedWards } from "./address";
 import { seedAdmin, seedHotelOwners, seedRegularUsers } from "./user";
 import { seedConnectionHotelsOnFacilities, seedConnectionRoomTypesOnFacilities, seedFacilities, seedHotels, seedRooms, seedRoomTypes } from "./hotel";
-import { seedBookings, seedReviews } from "./booking";
+import { seedBookings, seedBookingsMetadata, seedReviews } from "./booking";
 
 import { faker } from "@faker-js/faker";
 
@@ -34,16 +34,10 @@ async function main() {
   const roomTypes = await seedRoomTypes(hotels);
   await seedRooms(roomTypes);
   const users = await seedRegularUsers(10);
-  const bookingData = users.flatMap((user) =>
-    hotels.map((hotel) => ({
-      userId: user.id,
-      hotelId: hotel.id,
-    }))
-  );
-
   await seedConnectionHotelsOnFacilities(hotels);
   await seedConnectionRoomTypesOnFacilities(roomTypes);
-  await seedBookings(bookingData);
+  const bookingsMetadata = await seedBookingsMetadata(users, roomTypes);
+  await seedBookings(bookingsMetadata);
   await seedReviews();
   await seedAdmin();
 

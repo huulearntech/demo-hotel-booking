@@ -1,7 +1,7 @@
 import { UserRole } from "@/lib/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 
-import { faker } from "@faker-js/faker";
+import { fakerVI as faker } from "@faker-js/faker";
 
 async function seedRegularUsers(count = 10) {
   const users = Array.from({ length: count }, () => ({

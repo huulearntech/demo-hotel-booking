@@ -7,7 +7,7 @@ export async function fetchLast90DaysRevenueAndNumberOfBookings() {
   const ninetyDaysAgo = new Date(today);
   ninetyDaysAgo.setDate(today.getDate() - 90);
 
-  const revenueData = await prisma.booking.groupBy({
+  const revenueData = await prisma.bookingMetadata.groupBy({
     by: ["createdAt"],
     where: {
       createdAt: {
@@ -19,7 +19,7 @@ export async function fetchLast90DaysRevenueAndNumberOfBookings() {
       id: true,
     },
     _sum: {
-      totalPrice: true,
+      snapshotRoomPrice: true, // TODO: multiply by numRooms
     },
     orderBy: {
       createdAt: "asc",
@@ -31,7 +31,7 @@ export async function fetchLast90DaysRevenueAndNumberOfBookings() {
       month: "short",
       day: "numeric",
     }).format(entry.createdAt),
-    revenue: entry._sum.totalPrice?.toNumber() || 0,
+    revenue: entry._sum.snapshotRoomPrice?.toNumber() || 0,
     numberOfBookings: entry._count.id,
   }));
 }

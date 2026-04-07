@@ -34,17 +34,24 @@ const columns: ColumnDef<RecentBookingType>[] = [
     id: "hotel",
     header: "Hotel",
     accessorKey: "hotelName",
-    cell: ({ row }) => <div className="font-medium">{row.original.hotel.name}</div>,
+    cell: ({ row }) => <div className="font-medium">{row.original.metadata.hotel.name}</div>,
   },
   {
     id: "dates",
     header: "Dates",
-    accessorFn: (row) => `${row.checkInDate}—${row.checkOutDate}`,
     cell: ({ row }) => (
-      <div className="text-sm">
-        {new Date(row.original.checkInDate).toLocaleDateString()}
-        <ArrowRightIcon />
-        {new Date(row.original.checkOutDate).toLocaleDateString()}
+      <div className="text-sm inline-flex items-center gap-1">
+        {new Intl.DateTimeFormat('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(new Date(row.original.metadata.checkInDate))}
+        <ArrowRightIcon className="size-4" />
+        {new Intl.DateTimeFormat('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(new Date(row.original.metadata.checkOutDate))} 
       </div>
     ),
   },
@@ -62,6 +69,7 @@ const columns: ColumnDef<RecentBookingType>[] = [
     id: "price",
     header: "Price",
     accessorKey: "totalPrice",
+    cell: ({ row }) => <div className="text-sm font-medium">${row.original.totalPrice.toFixed(2)}</div>,
   },
   {
     id: "status",

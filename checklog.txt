@@ -5,11 +5,17 @@ proxy: handle redirecting.
 
 filter: cleanup className
 
-search bar form: consider? merge adult and children capacity into only one capacity
+search bar form: consider? merge adult and children capacity into only one capacity, merge search bar with filter?
 
 search bar schema: validate that from <= to and transform from z.date() to z.iso.date().
 
+search bar submit: different target url on home, search vs map. and handle trolling search params
+
+useTransition: perhaps I'm using it for the wrong purpose.
+
 types: unified them into one place, such as "types" folder.
+
+consider renaming room type to room kind?
 
 // TODO: Flow
 // 1. Basic info (name, email, phone) -> sign up for account

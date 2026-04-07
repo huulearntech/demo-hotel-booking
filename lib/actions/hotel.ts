@@ -32,18 +32,20 @@ export async function fetchHotel(hotelId: string) {
       },
       // TODO: handle pagination or separate the query for fetching reviews
       // This following is for overview section.
-      bookings: {
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        where: { review: { isNot: null } },
+      bookingsMetadata: {
         select: {
-          id: true,
-          review: {
+          booking: {
+            where: { review: { isNot: null } },
             select: {
-              rating: true,
-              comment: true,
-              createdAt: true,
-            }
+              id: true,
+              review: {
+                select: {
+                  rating: true,
+                  comment: true,
+                  createdAt: true,
+                }
+              },
+            },
           },
           user: {
             select: {
@@ -51,7 +53,13 @@ export async function fetchHotel(hotelId: string) {
               profileImageUrl: true,
             }
           }
-        }
+        },
+        take: 5,
+        orderBy: { booking: { createdAt: "desc" } },
+        where: { booking: { isNot: null } 
+        },
+        // order at bookingsMetadata level by the nested booking.createdAt
+        // But should order by direct createdAt.
       },
     },
   });
@@ -65,6 +73,7 @@ export async function getRoomsByHotelIdGroupedByType(
   numAdults: number
 ) {
 
+  // What's the point of Prisma when the query looks like this?
   return prisma.roomType.findMany({
     where: {
       hotelId,
@@ -73,9 +82,17 @@ export async function getRoomsByHotelIdGroupedByType(
           bookings: {
             some: {
               AND: [
-                { checkInDate: { lt: checkOutDate } },
-                { checkOutDate: { gt: checkInDate } },
-                { status: { in: ["CONFIRMED", "PENDING", "CANCELLED"] } }, // The booking may be cancelled, but we still want to block the room for the booked dates to prevent overbooking. The hotel staff can manually unblock the room if needed.
+                {
+                  metadata: {
+                    is: {
+                      AND: [
+                        { checkInDate: { lt: checkOutDate } },
+                        { checkOutDate: { gt: checkInDate } },
+                      ],
+                    }
+                  }
+                },
+                { status: { in: ["CONFIRMED", "PENDING", "CANCELLED"] } },
               ],
             }
           }
@@ -88,8 +105,16 @@ export async function getRoomsByHotelIdGroupedByType(
           bookings: {
             none: {
               AND: [
-                { checkInDate: { lt: checkOutDate } },
-                { checkOutDate: { gt: checkInDate } },
+                {
+                  metadata: {
+                    is: {
+                      AND: [
+                        { checkInDate: { lt: checkOutDate } },
+                        { checkOutDate: { gt: checkInDate } },
+                      ],
+                    }
+                  }
+                },
                 { status: { in: ["CONFIRMED", "PENDING", "CANCELLED"] } },
               ],
             },

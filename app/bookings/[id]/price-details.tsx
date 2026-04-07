@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useInformationForm, InformationFormType } from "./information-form-context";
+import { useInformationForm  } from "./information-form-context";
+import { BookingFormValues } from "@/lib/zod_schemas/booking";
 
 
 export default function PriceDetail() {
-  const onSubmit = (data: InformationFormType) => {
+  const onSubmit = (data: BookingFormValues) => {
     // replace with real submit logic
     console.log("form submit", data);
   }

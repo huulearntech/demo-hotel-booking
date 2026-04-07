@@ -2,6 +2,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
+// ...existing code...
 // Not sure if this should be paginated on server or client.
 export async function hotelowner_getBookings() {
   const session = await auth();
@@ -9,24 +10,45 @@ export async function hotelowner_getBookings() {
   if (session?.user?.role !== "HOTEL_OWNER") {
     throw new Error("Unauthorized");
   }
-	const [bookings, total] = await prisma.$transaction([
+
+  const whereByOwner = { metadata: { hotel: { ownerId: session.user.id } }, };
+
+    const [bookings, total] = await prisma.$transaction([
     prisma.booking.findMany({
-      where: { hotel: { ownerId: session.user.id } },
-      orderBy: { checkInDate: "desc" },
+      where: whereByOwner,
+      orderBy: { metadata: { checkInDate: "desc" } },
       include: {
-        user: { select: { name: true } },
+        metadata: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
       },
     }),
     prisma.booking.count({
-      where: { hotel: { ownerId: session.user.id } },
+      where: whereByOwner,
     }),
   ]);
 
   return {
-    bookings: bookings.map((booking) => ({
-      ...booking,
-      totalPrice: booking.totalPrice.toString()
-    })),
+    bookings: bookings.map((booking) => {
+      const md = booking.metadata;
+      // defensive guards in case metadata is missing
+      const snapshotStr = md?.snapshotRoomPrice?.toString?.() ?? md?.snapshotRoomPrice ?? "0";
+      const snapshotNum = Number(snapshotStr) || 0;
+      const roomsCount = md?.numRooms ?? 1;
+      const totalPrice = (snapshotNum * roomsCount).toFixed(2);
+
+      return {
+        ...booking,
+        // flatten some useful metadata for the caller
+        metadata: md ?? null,
+        customerName: md?.user?.name ?? booking.customerName,
+        checkInDate: md?.checkInDate ?? null,
+        checkOutDate: md?.checkOutDate ?? null,
+        totalPrice, // string
+      };
+    }),
     total,
   };
 };
@@ -43,30 +65,43 @@ export async function hotelowner_getUpcomingBookings() {
   }
 
   const today = new Date();
-  return await prisma.booking.findMany({
+
+  const bookings = await prisma.booking.findMany({
     where: {
-      hotel: { ownerId: session.user.id },
-      checkInDate: {
-        gte: today,
+      metadata: {
+        hotel: { ownerId: session.user.id },
+        checkInDate: { gte: today },
       },
     },
     orderBy: {
-      checkOutDate: "desc",
+      metadata: { checkOutDate: "desc" },
     },
     take: 10, // limit to 10 upcoming bookings
     include: {
-      user: {
-        select: {
-          name: true,
+      metadata: {
+        include: {
+          user: { select: { name: true } },
         },
       },
     },
-  }).then((bookings) =>
-    bookings.map((booking) => ({
+  });
+
+  return bookings.map((booking) => {
+    const md = booking.metadata;
+    const snapshotStr = md?.snapshotRoomPrice?.toString?.() ?? md?.snapshotRoomPrice ?? "0";
+    const snapshotNum = Number(snapshotStr) || 0;
+    const roomsCount = md?.numRooms ?? 1;
+    const totalPrice = (snapshotNum * roomsCount).toFixed(2);
+
+    return {
       ...booking,
-      totalPrice: booking.totalPrice.toString(),
-    }))
-  );
+      metadata: md ?? null,
+      customerName: md?.user?.name ?? booking.customerName,
+      checkInDate: md?.checkInDate ?? null,
+      checkOutDate: md?.checkOutDate ?? null,
+      totalPrice, // string
+    };
+  });
 }
 
 export type UpcomingBooking = Awaited<ReturnType<typeof hotelowner_getUpcomingBookings>>[number];

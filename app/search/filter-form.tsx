@@ -8,11 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionTrigger, AccordionItem } from '@/components/ui/accordion';
 
 import { Controller } from 'react-hook-form';
-import {
-  defaultFilterValues,
-  FILTER_CATEGORIES,
-  useFilterForm
-} from './filter-form-context';
+import { useFilterForm } from './filter-form-context';
+import { defaultFilterValues, FILTER_CATEGORIES } from "@/lib/zod_schemas/filter";
 
 import { FILTER_MAX_PRICE, FILTER_MIN_PRICE, FILTER_PRICE_STEP } from '@/lib/constants';
 
@@ -125,10 +122,7 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
                               }
                             }}
                           />
-                          <Label
-                            htmlFor={`${category}-${option}`}
-                            className="ml-2 text-sm cursor-pointer"
-                          >
+                          <Label htmlFor={`${category}-${option}`} className="ml-2 text-sm cursor-pointer">
                             {option}
                           </Label>
                         </div>

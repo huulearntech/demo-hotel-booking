@@ -1,13 +1,13 @@
 import Link from "next/link";
 
 import RoomTable from "./room-table";
-import { hotelowner_getRooms } from "@/lib/actions/hotel-manager/rooms";
+import { hotelowner_getRoomTypes } from "@/lib/actions/hotel-manager/rooms";
 
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 export default async function RoomsPage() {
-  const rooms = await hotelowner_getRooms();
+  const rooms = await hotelowner_getRoomTypes();
 
   return (
     <div className="space-y-6">

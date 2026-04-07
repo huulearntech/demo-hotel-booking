@@ -15,46 +15,39 @@ import { Button } from "@/components/ui/button";
 import { PencilIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-import { updateUserName } from "@/lib/actions/user-account";
+import { user_updateName } from "@/lib/actions/user-account";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
+import { userUpdateNameSchema } from "@/lib/zod_schemas/auth";
 
 export default function ChangeNameDialog({ originalName }: { originalName: string }) {
-  const [name, setName] = useState(originalName);
+  const [nameOnUi, setNameOnUi] = useState(originalName);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<{ newName: string }>({
-    resolver: zodResolver(z.object({
-      newName: z.string().trim().min(1, "Tên không được để trống").max(50, "Tên quá dài"),
-    })),
-    defaultValues: { newName: originalName },
-  });
+  const { register, handleSubmit, formState: { errors } }
+    = useForm<z.infer<typeof userUpdateNameSchema>>({
+      resolver: zodResolver(userUpdateNameSchema),
+      defaultValues: { name: originalName },
+    });
 
-  const onSubmit = ({ newName }: { newName: string }) => {
-    const previousName = name;
+  const onSubmit = (formValues: z.infer<typeof userUpdateNameSchema>) => {
+    const rollbackName = nameOnUi;
 
     // Optimistically update UI
-    setName(newName);
+    setNameOnUi(formValues.name);
     setOpen(false);
 
     startTransition(async () => {
-      try {
-        const res = await updateUserName(newName);
-        if (!res.success) {
-          // rollback on failure
-          setName(previousName);
-          toast.error(res.error);
-          return;
-        }
-
+      const res = await user_updateName(formValues.name);
+      if (res.ok) {
         toast.success("Cập nhật tên thành công");
-      } catch {
-        // rollback on network/unexpected errors
-        setName(previousName);
-        toast.error("Cập nhật tên thất bại. Vui lòng thử lại.");
+      } else {
+        // rollback on failure
+        setNameOnUi(rollbackName);
+        toast.error(res.error);
       }
     });
   };
@@ -69,7 +62,7 @@ export default function ChangeNameDialog({ originalName }: { originalName: strin
            >
             <div className="flex flex-col">
               <span className="text-sm font-medium">Họ và tên người dùng</span>
-              <span className="text-sm text-muted-foreground">{name}</span>
+              <span className="text-sm text-muted-foreground">{nameOnUi}</span>
             </div>
             <PencilIcon className="h-5 w-5 text-muted-foreground transition-transform group-hover:-translate-y-1" />
           </div>
@@ -84,11 +77,11 @@ export default function ChangeNameDialog({ originalName }: { originalName: strin
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input
-            {...register("newName", { required: true })}
+            {...register("name", { required: true })}
             placeholder="Nhập tên mới"
           />
-          {errors.newName && (
-            <p className="text-sm text-red-500">{errors.newName.message}</p>
+          {errors.name && (
+            <p className="text-sm text-red-500">{errors.name.message}</p>
           )}
 
           <DialogFooter>

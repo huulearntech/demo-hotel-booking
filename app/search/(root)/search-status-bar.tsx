@@ -1,6 +1,4 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
+import { ReadonlyURLSearchParams } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -13,26 +11,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { MapPinnedIcon, ListFilter } from "lucide-react";
-import { useFilterSheetSetOpen } from "../filter-sheet-context";
+import { MapPinnedIcon } from "lucide-react";
 import { PATHS } from "@/lib/constants";
+import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 
-// TODO: pass the search params via props may be better
-export default function SearchStatusBar({ location, total }: { location: string; total: number }) {
-  const searchParams = useSearchParams();
-  const setFilterSheetOpen = useFilterSheetSetOpen();
-
+export default function SearchStatusBar({
+  location,
+  total,
+  searchParams
+}: {
+  location: string;
+  total: number;
+  searchParams: ReadonlyURLSearchParams;
+}) {
   return (
     <div className="flex items-center justify-between sticky top-21.5 lg:top-20.5 border-b p-3 -mt-3 z-10 bg-background shadow-md">
       <div className="flex gap-x-4 items-center">
-        <Button
-          onClick={() => setFilterSheetOpen(true)}
-          variant='outline'
-          className="size-8 flex lg:hidden items-center justify-center"
-          aria-label="Open filter sheet"
-        >
-          <ListFilter className="size-4" />
-        </Button>
+        <ButtonOpenFilterSheet />
         <div className="flex flex-col text-sm">
           <span className="font-bold"> {location} </span>
           <span> {total} nơi lưu trú được tìm thấy </span>

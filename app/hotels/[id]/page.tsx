@@ -10,6 +10,7 @@ import Navbar from "./navbar";
 import { notFound } from "next/navigation";
 import SearchBar from "@/components/search-bar";
 import { SearchParams, SearchParamsCodec } from "@/lib/zod_schemas/search-bar";
+import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 
 
 // TODO: This page is not yet responsive
@@ -39,10 +40,13 @@ export default async function Page(props: {
 
   const {
     name: hotelName,
-    bookings,
+    bookingsMetadata,
     reviewPoints,
     numberOfReviews
   } = hotel;
+
+  // const poiCategoriesWithPlaces = await fetchPoiCategoriesWithPlaces(hotel.longitude, hotel.latitude);
+  const poiCategoriesWithPlaces = [] as Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>; // TODO: fetch real data
 
   return (
     <>
@@ -51,12 +55,12 @@ export default async function Page(props: {
         <Navbar />
       </div>
       <main className="flex flex-col gap-y-4 content my-4 [&>section]:scroll-mt-35">
-        <OverviewSection hotel={hotel} />
+        <OverviewSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <AvailableRoomsSection hotelId={hotel.id} />
-        <LocationSection hotel={hotel} />
+        <LocationSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <FacilitiesSection hotel={hotel} />
         <PolicySection hotelName={hotelName} />
-        <ReviewSection hotelName={hotelName} bookings={bookings} reviewPoints={reviewPoints} numberOfReviews={numberOfReviews} />
+        <ReviewSection hotelName={hotelName} bookingsMetadata={bookingsMetadata} reviewPoints={reviewPoints} numberOfReviews={numberOfReviews} />
       </main>
     </>
   );

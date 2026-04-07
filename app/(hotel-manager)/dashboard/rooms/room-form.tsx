@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 
 // FIXME: Fragmented definitions.
-import { RoomFormSchema, type RoomFormInput, RoomFormOutput } from "@/lib/zod_schemas/create-room";
+import { schema_Room, type RoomFormInput, RoomFormOutput } from "@/lib/zod_schemas/create-room";
 
 
 export default function RoomForm({ onSubmit }: { onSubmit: (data: RoomFormOutput) => Promise<void> }) {

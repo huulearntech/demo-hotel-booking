@@ -33,10 +33,12 @@ JOIN LATERAL (
       SELECT 1
       FROM "_BookingToRoom" b2r
       JOIN bookings b ON b2r."A" = b.id
+      -- booking date range now lives in BookingMetadata; join to metadata
+      JOIN "BookingMetadata" bm ON b.metadata_id = bm.id
       WHERE b2r."B" = r.id
         -- overlap: booking.start < requested_to AND booking.end > requested_from
-        AND b.check_in_date  < $3
-        AND b.check_out_date > $2
+        AND bm.check_in_date  < $3
+        AND bm.check_out_date > $2
         AND b.status IN ('CONFIRMED', 'PENDING') -- be cautious!
     )
 ) AS available ON true

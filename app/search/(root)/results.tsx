@@ -1,4 +1,4 @@
-// TODO: Pagination
+// TODO: Pagination. May move this to server because it doesn't need much interactivity.
 "use client";
 
 import { useLayoutEffect, useState } from "react";
@@ -40,7 +40,11 @@ export default function Results({
   // TODO: location
   return ( hotels.length === 0 ? <NoResult /> :
     <div className="w-full flex flex-col space-y-3">
-      <SearchStatusBar location={searchBarFormValues.location} total={hotels.length ?? 0} />
+      <SearchStatusBar
+        location={searchBarFormValues.location}
+        total={hotels.length ?? 0}
+        searchParams={searchParams}
+      />
 
       <PaginationBar
         currentPage={page}
@@ -73,7 +77,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import noResultImage from "@/public/images/no-result.svg";
 import Image from "next/image";
 import HotelCard from "@/components/hotel-card";
-import { AlertCircle, ListFilter } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { PATHS } from "@/lib/constants";
 
 
@@ -113,7 +117,6 @@ export function ResultsSkeleton() {
 function NoResult() {
   // TODO: This is temporary solution, this affects accessibility.
   // Should make this button at the one place.
-  const setFilterSheetOpen = useFilterSheetSetOpen();
   return (
     <div className="w-full h-[calc(100vh-15rem)] flex flex-col gap-y-2 items-center justify-center overflow-hidden">
       <Image src={noResultImage} alt="No result found" className="w-48 h-48 object-contain" />
@@ -121,15 +124,9 @@ function NoResult() {
       <p className="text-sm text-muted-foreground">
         Bạn có thể điều chỉnh bộ lọc để tìm kiếm kết quả khác.
       </p>
-      <Button
-        onClick={() => setFilterSheetOpen(true)}
-        variant='outline'
-        className="h-8 flex lg:hidden items-center justify-center"
-        aria-label="Open filter sheet"
-      >
-        <ListFilter aria-hidden className="size-4" />
-        Mở bộ lọc
-      </Button>
+      <ButtonOpenFilterSheet>
+        <span className="hidden sm:block">Mở bộ lọc</span>
+      </ButtonOpenFilterSheet>
     </div>
   )
 }
@@ -161,9 +158,9 @@ import {
   PaginationItem,
 } from "@/components/ui/pagination";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { useFilterSheetSetOpen } from "../filter-sheet-context";
 import { SearchBarFormData } from "@/lib/zod_schemas/search-bar";
 import { useSearchParams } from "next/navigation";
+import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 
 function PaginationBar({
   currentPage,

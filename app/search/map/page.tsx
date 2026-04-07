@@ -2,13 +2,12 @@
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 
-import FilterSheetProvider, { useFilterSheetSetOpen } from "../filter-sheet-context";
+import FilterSheetProvider from "../filter-sheet-context";
 import { FilterFormProvider } from "../filter-form-context";
 import { FilterSheet } from "../filter";
 import SearchBar from "@/components/search-bar";
-import { Button } from "@/components/ui/button";
-import { ListFilter } from "lucide-react";
 import { SearchBarFormData, SearchBarFormSchema } from "@/lib/zod_schemas/search-bar";
+import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 
 // Need to dynamically import to turn off ssr and render on client because it relies on Leaflet
 const MapClient = dynamic(() => import("./map-client"), { ssr: false });
@@ -49,18 +48,9 @@ export default function SearchMapPage() {
 }
 
 function SearchBarWithFilterTrigger({ defaultValues }: { defaultValues: SearchBarFormData }) {
-  const setFilterSheetOpen = useFilterSheetSetOpen();
-
   return (
     <div className="sticky top-0 w-full py-3 shadow-lg bg-white z-1000 flex items-end justify-center gap-x-2">
-      <Button
-        onClick={() => setFilterSheetOpen(true)}
-        variant="outline"
-        className="mb-1 md:mb-0"
-        aria-label="Open filter sheet"
-      >
-        <ListFilter className="size-4" />
-      </Button>
+      <ButtonOpenFilterSheet />
       <SearchBar defaultValues={defaultValues} className="content mx-0" />
     </div>
   )

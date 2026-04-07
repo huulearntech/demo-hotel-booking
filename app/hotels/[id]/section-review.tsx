@@ -11,12 +11,12 @@ type Hotel = NonNullable<Awaited<ReturnType<typeof fetchHotel>>>;
 
 export default async function ReviewSection({
   hotelName,
-  bookings,
+  bookingsMetadata,
   reviewPoints,
   numberOfReviews,
 }: {
   hotelName: Hotel["name"],
-  bookings: Hotel["bookings"],
+  bookingsMetadata: Hotel["bookingsMetadata"],
   reviewPoints: Hotel["reviewPoints"],
   numberOfReviews: Hotel["numberOfReviews"],
 }) {
@@ -46,8 +46,8 @@ export default async function ReviewSection({
         </div>
 
         <ul className="flex flex-col gap-y-3">
-          {bookings.map((booking) => (
-            <li key={booking.id}> <ReviewCard booking={booking} /> </li>
+          {bookingsMetadata.map((meta, index) => (
+            <li key={meta.booking!.id || index}> <ReviewCard meta={meta} /> </li>
           ))}
         </ul>
       </div>
@@ -56,13 +56,13 @@ export default async function ReviewSection({
 }
 
 function ReviewCard({
-  booking
+  meta
 }: {
-  booking: Hotel["bookings"][number]
+  meta: Hotel["bookingsMetadata"][number]
 }) {
-  if (!booking.review) return null;
+  if (!meta.booking?.review) return null;
   const today = new Date();
-  const diff = differenceInDays(today, booking.review.createdAt);
+  const diff = differenceInDays(today, meta.booking.review.createdAt);
   let timeAgo = "";
   if (diff < 1) {
     timeAgo = "hôm nay";
@@ -78,13 +78,13 @@ function ReviewCard({
     <div className="px-6 py-4 rounded-xl border flex gap-x-12 h-40">
       <div className="flex flex-col items-center gap-y-2 shrink-0 w-1/6">
         <Image
-          src={booking.user.profileImageUrl ?? tvlk_favicon}
+          src={meta.user.profileImageUrl ?? tvlk_favicon}
           alt=""
           className="rounded-full w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24"
           width={64}
           height={64}
         />
-        <div className="font-bold text-center truncate w-full">{booking.user.name}</div>
+        <div className="font-bold text-center truncate w-full">{meta.user.name}</div>
       </div>
 
       <div className="flex flex-col justify-between">
@@ -93,7 +93,7 @@ function ReviewCard({
             <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">
               <Image src={tvlk_favicon} alt="" aria-hidden className="size-4.5" />
               <div className="flex items-end gap-x-0.5">
-                <div className="text-primary font-bold">{booking.review.rating}</div>
+                <div className="text-primary font-bold">{meta.booking.review.rating}</div>
                 <div className="text-sm font-medium">/</div>
                 <div className="text-sm font-medium">10</div>
               </div>
@@ -102,7 +102,7 @@ function ReviewCard({
             <div className="text-sm font-bold mt-2 sm:mt-0"> Đánh giá {timeAgo} </div>
           </div>
 
-          <p className="text-sm font-medium">{booking.review.comment}</p>
+          <p className="text-sm font-medium">{meta.booking.review.comment}</p>
         </div>
 
         <div className="flex items-center space-x-2">

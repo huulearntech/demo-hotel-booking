@@ -28,7 +28,7 @@ model Hotel {
   facilities            Facility[]
   favoritedBy           Favorite[]
   recentlyViewedBy      RecentlyViewed[]
-  bookings              Booking[]
+  bookingsMetadata      BookingMetadata[]
 
   @@map("hotels")
 
@@ -131,6 +131,7 @@ model RoomType {
 
   rooms            Room[]
   facilities       Facility[]
+  bookingsMetadata BookingMetadata[]
 
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt      @map("updated_at")

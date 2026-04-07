@@ -7,41 +7,28 @@ import { ChevronRight, MapPin } from 'lucide-react';
 import { tvlk_favicon } from "@/public/logos";
 import { MAX_REVIEW_POINTS } from "@/lib/constants";
 import { formatVND } from "@/lib/utils";
-
-const mock_nearby_locations = [
-  {
-    name: "Bãi biển Mỹ Khê",
-    address: "Đường Võ Nguyên Giáp, Phước Mỹ, Sơn Trà, Đà Nẵng",
-    distance: "0.5 km",
-  },
-  {
-    name: "Cầu Rồng",
-    address: "Đường Nguyễn Văn Linh, An Hải Tây, Sơn Trà, Đà Nẵng",
-    distance: "2 km",
-  },
-  {
-    name: "Bảo tàng Chăm",
-    address: "2 Đường 2 Tháng 9, Bình Hiên, Hải Châu, Đà Nẵng",
-    distance: "3 km",
-  },
-];
+import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 
 
 export default async function OverviewSection({
   hotel,
+  poiCategoriesWithPlaces,
 }: {
   hotel: Awaited<ReturnType<typeof fetchHotel>>
+  poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>
 }) {
 
   if (!hotel) return null;
 
   const {
     roomTypes: [{ price: minPrice }],
-    bookings,
+    bookingsMetadata,
     imageUrls,
     facilities,
     ward: { name: wardName, district: { name: districtName, province: { name: provinceName } } },
   } = hotel;
+
+  const places = Object.values(poiCategoriesWithPlaces).flatMap(category => category.places).slice(0, 5); // pick 5
 
   return (
     <section id="overview" className="w-full flex flex-col">
@@ -138,8 +125,8 @@ export default async function OverviewSection({
             </div>
             <h2 className="font-semibold">Khách nói gì về kỳ nghỉ của họ</h2>
             <div className="flex flex-col overflow-y-auto max-h-32 space-y-2">
-              {bookings.map(({ id, user, review }) => review?.comment && (
-                <div key={id} className="flex items-start gap-x-2">
+              {bookingsMetadata.map(({ user, booking }) => booking && booking.review?.comment && (
+                <div key={booking.id} className="flex items-start gap-x-2">
                   <Image
                     src={user.profileImageUrl ?? tvlk_favicon}
                     alt=""
@@ -150,9 +137,9 @@ export default async function OverviewSection({
                   <div>
                     <div className="flex items-center gap-x-2">
                       <div className="font-semibold">{user.name}</div>
-                      <div className="text-gray-500 text-sm">{review.rating}/{MAX_REVIEW_POINTS}</div>
+                      <div className="text-gray-500 text-sm">{booking.review.rating}/{MAX_REVIEW_POINTS}</div>
                     </div>
-                    <p className="text-gray-500 text-sm max-h-12 overflow-hidden overflow-ellipsis">{review.comment}</p>
+                    <p className="text-gray-500 text-sm max-h-12 overflow-hidden overflow-ellipsis">{booking.review.comment}</p>
                   </div>
                 </div>
               ))}
@@ -168,15 +155,15 @@ export default async function OverviewSection({
               </a>
             </div>
             <div className="flex flex-col gap-y-2 text-sm">
-              {mock_nearby_locations.map((loc, index) => (
+              {places.map((place, index) => (
                 <div key={index} className="flex items-start gap-x-2">
                   <MapPin className="size-4 text-gray-500 mt-1" />
                   <div>
                     <div className="flex items-center gap-x-2">
-                      <div className="font-semibold">{loc.name}</div>
-                      <div className="text-gray-500">{loc.distance}</div>
+                      <div className="font-semibold">{place.name}</div>
+                      <div className="text-gray-500">{place.distance}</div>
                     </div>
-                    <div className="text-gray-500">{loc.address}</div>
+                    <div className="text-gray-500">{place.address}</div>
                   </div>
                 </div>
               ))}
@@ -192,10 +179,10 @@ export default async function OverviewSection({
               </a>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {facilities.map((facility, index) => (
+              {facilities.filter(facility => facility.iconUrl).map((facility, index) => (
                 <div key={index} className="flex items-center gap-x-2">
                   <Image
-                    src={facility.iconUrl || ""}
+                    src={facility.iconUrl!}
                     alt=""
                     className="size-4"
                     width={16}

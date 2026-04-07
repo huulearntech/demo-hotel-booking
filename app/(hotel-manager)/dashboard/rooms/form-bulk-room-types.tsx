@@ -1,4 +1,3 @@
-// TODO: Update images instead of just URLs. Use Cloudinary
 "use client";
 
 import { useTransition } from "react";
@@ -85,12 +84,11 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
             onClick={() =>
               appendRoom({
                 name: "",
-                type: "",
                 price: 0,
                 adultCapacity: 0,
                 childrenCapacity: 0,
                 areaM2: 0,
-                bedType: "OTHER",
+                bedType: "SINGLE",
                 imageUrls: [{ url: "" }],
               })
             }
@@ -108,7 +106,10 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
 }
 
 /* RoomFields moved out of RoomForm so it keeps a stable identity across renders
-   which prevents inputs from being remounted and losing focus. */
+  which prevents inputs from being remounted and losing focus. */
+
+import { CldUploadWidget } from "next-cloudinary";
+
 function RoomFields({
   index,
   control,
@@ -121,96 +122,96 @@ function RoomFields({
   control: MultiRoomFormType["control"];
   register: MultiRoomFormType["register"];
   errors: MultiRoomFormType["formState"]["errors"];
-  roomFields: FieldArrayWithId<MultiRoomFormInput, "rooms", "id">[];
+  roomFields: FieldArrayWithId<MultiRoomType_FormInput, "roomTypes", "id">[];
   removeRoom: (i: number) => void;
 }) {
-  // Each room has its own imageUrls field array.
+  const field = roomFields[index];
   const {
     fields: imageFields,
     append: appendImage,
     remove: removeImage,
   } = useFieldArray({
     control,
-    name: `rooms.${index}.imageUrls` as const,
+    name: `roomTypes.${index}.imageUrls` as const,
   });
 
-  const roomErrors = (errors.rooms && errors.rooms[index]) ?? {};
+  const roomErrors = (errors.roomTypes && errors.roomTypes[index]) ?? ({} as any);
+
+  const handleUploadSuccess = (result: any) => {
+    // result.info may be a single object or an array depending on options
+    const infos = Array.isArray(result.info) ? result.info : [result.info];
+    infos.forEach((info: any) => {
+      const url = info.secure_url ?? info.url;
+      if (url) {
+        appendImage({ url });
+      }
+    });
+  };
 
   return (
-    <Card key={roomFields[index].id} className="mb-4">
+    <Card className="mb-4">
       <CardHeader>
         <CardTitle>Room {index + 1}</CardTitle>
         <CardDescription>Fill in the details of this room.</CardDescription>
       </CardHeader>
+
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2 flex flex-col gap-1">
-          <Label htmlFor={`rooms.${index}.name`} className="text-sm font-medium">
+          <Label htmlFor={`roomTypes.${index}.name`} className="text-sm font-medium">
             Name
           </Label>
-          <Input id={`rooms.${index}.name`} className="w-full" {...register(`rooms.${index}.name` as const)} />
+          <Input id={`roomTypes.${index}.name`} className="w-full" {...register(`roomTypes.${index}.name` as const)} />
           {roomErrors?.name && <p className="text-xs text-destructive mt-1">{roomErrors.name.message}</p>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`rooms.${index}.type`} className="text-sm font-medium">
-            Type
-          </Label>
-          <Input id={`rooms.${index}.type`} className="w-full" {...register(`rooms.${index}.type` as const)} />
-          {roomErrors?.type && <p className="text-xs text-destructive mt-1">{roomErrors.type.message}</p>}
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <Label htmlFor={`rooms.${index}.price`} className="text-sm font-medium">
-            Price per night (USD)
+          <Label htmlFor={`roomTypes.${index}.price`} className="text-sm font-medium">
+            Giá mỗi đêm (VND)
           </Label>
           <Input
-            id={`rooms.${index}.price`}
+            id={`roomTypes.${index}.price`}
             type="number"
             step="0.01"
             className="w-full"
-            {...register(`rooms.${index}.price`, { valueAsNumber: true })}
+            {...register(`roomTypes.${index}.price`, { valueAsNumber: true })}
           />
           {roomErrors?.price && <p className="text-xs text-destructive mt-1">{roomErrors.price.message}</p>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`rooms.${index}.adultCapacity`} className="text-sm font-medium">
-            Adult capacity
+          <Label htmlFor={`roomTypes.${index}.adultCapacity`} className="text-sm font-medium">
+            Sức chứa người lớn
           </Label>
-          <Input id={`rooms.${index}.adultCapacity`} type="number" className="w-full" {...register(`rooms.${index}.adultCapacity` as const)} />
+          <Input id={`roomTypes.${index}.adultCapacity`} type="number" className="w-full" {...register(`roomTypes.${index}.adultCapacity` as const)} />
           {roomErrors?.adultCapacity && <p className="text-xs text-destructive mt-1">{roomErrors.adultCapacity.message}</p>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`rooms.${index}.childrenCapacity`} className="text-sm font-medium">
-            Children capacity
+          <Label htmlFor={`roomTypes.${index}.childrenCapacity`} className="text-sm font-medium">
+            Sức chứa trẻ em
           </Label>
-          <Input id={`rooms.${index}.childrenCapacity`} type="number" className="w-full" {...register(`rooms.${index}.childrenCapacity` as const)} />
+          <Input id={`roomTypes.${index}.childrenCapacity`} type="number" className="w-full" {...register(`roomTypes.${index}.childrenCapacity` as const)} />
           {roomErrors?.childrenCapacity && <p className="text-xs text-destructive mt-1">{roomErrors.childrenCapacity.message}</p>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`rooms.${index}.areaM2`} className="text-sm font-medium">
-            Area (m2)
+          <Label htmlFor={`roomTypes.${index}.areaM2`} className="text-sm font-medium">
+            Diện tích (m²)
           </Label>
-          <Input id={`rooms.${index}.areaM2`} type="number" className="w-full" {...register(`rooms.${index}.areaM2` as const)} />
+          <Input id={`roomTypes.${index}.areaM2`} type="number" className="w-full" {...register(`roomTypes.${index}.areaM2` as const)} />
           {roomErrors?.areaM2 && <p className="text-xs text-destructive mt-1">{roomErrors.areaM2.message}</p>}
         </div>
 
-        {/** Addtional information for choice "OTHER"? */}
         <FormField
           control={control}
-          name={`rooms.${index}.bedType` as const}
+          name={`roomTypes.${index}.bedType` as const}
           render={({ field }) => (
             <FormItem className="flex flex-col gap-1">
-              <FormLabel className="text-sm font-medium">Bed Type</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
+              <FormLabel className="text-sm font-medium">Loại giường</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select bed type"/>
+                    <SelectValue placeholder="Select bed type" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -227,34 +228,57 @@ function RoomFields({
         />
 
         <div className="md:col-span-2 flex flex-col gap-2">
-          <Label className="text-sm font-medium">Image URLs</Label>
+          <Label className="text-sm font-medium">Hình ảnh</Label>
 
           <div className="flex flex-col space-y-2">
-            {imageFields.map((field, imgIndex) => (
-              <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <Input
-                  placeholder="https://placehold.co/400x300.png?text=Room+Image"
-                  className="flex-1"
-                  {...register(`rooms.${index}.imageUrls.${imgIndex}.url` as const)}
+            {imageFields.length === 0 && <p className="text-sm text-muted-foreground">Chưa tải ảnh nào lên.</p>}
+
+            {imageFields.map((imgField, imgIndex) => (
+              <div key={imgField.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="w-full sm:w-48">
+                  <img src={imgField.url} alt={`Room ${index + 1} image ${imgIndex + 1}`} className="w-full h-auto rounded-md object-cover" />
+                </div>
+
+                <input
+                  type="hidden"
+                  {...register(`roomTypes.${index}.imageUrls.${imgIndex}.url` as const)}
+                  defaultValue={imgField.url}
                 />
-                <Button type="button" variant="ghost" className="h-9" onClick={() => removeImage(imgIndex)}>
-                  Remove
-                </Button>
+
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" className="h-9" onClick={() => removeImage(imgIndex)}>
+                    Remove
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
 
           <div>
-            <Button type="button" onClick={() => appendImage({ url: "" })}>
-              Add image URL
-            </Button>
+            <CldUploadWidget
+              signatureEndpoint="/api/cloudinary/sign"
+              onSuccess={handleUploadSuccess}
+              options={{
+                maxFiles: 10,
+                multiple: true,
+                resourceType: "image",
+                maxFileSize: 1 * 1024 * 1024,
+              }}
+            >
+              {({ open }) => (
+                <Button type="button" variant="outline" onClick={() => open?.()}>
+                  Upload images
+                </Button>
+              )}
+            </CldUploadWidget>
           </div>
 
-          {roomErrors?.imageUrls && <p className="text-xs text-destructive mt-1">{roomErrors.imageUrls?.message ?? "Invalid image URLs"}</p>}
+          {roomErrors?.imageUrls && <p className="text-xs text-destructive mt-1">{(roomErrors.imageUrls as any)?.message ?? "Invalid image URLs"}</p>}
         </div>
       </CardContent>
+
       <CardFooter className="flex justify-between items-center gap-4">
-        <div className="text-sm text-destructive">{errors.rooms?.[index]?.message}</div>
+        <div className="text-sm text-destructive">{errors.roomTypes?.[index]?.message}</div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="destructive" onClick={() => removeRoom(index)}>
             Remove room

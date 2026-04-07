@@ -1,5 +1,3 @@
-// FIXME: There is a bug where sometime the active section is set to "overview",
-// seems to be related to window.
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,11 +35,10 @@ export default function Navbar() {
           .map((el) => ({ el, top: el.getBoundingClientRect().top }))
           .filter((c) => c.top <= window.innerHeight / 2);
 
-        if (candidates.length > 0) {
-          candidates.sort((a, b) => b.top - a.top);
-          setActive(candidates[0].el.id as Section);
-        } else {
+        if (candidates.length == 0) {
           setActive("overview");
+        } else {
+          setActive(candidates[candidates.length-1].el.id as Section);
         }
       },
       {

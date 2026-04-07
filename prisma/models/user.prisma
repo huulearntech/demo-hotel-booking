@@ -5,20 +5,20 @@ enum UserRole {
 }
 
 model User {
-  id              String            @id @default(cuid())
-  email           String            @unique
-  password        String
-  name            String
-  role            UserRole          @default(USER)
-  profileImageUrl String?           @map("profile_image_url")
-  hotel           Hotel?
+  id               String            @id @default(cuid())
+  email            String            @unique
+  password         String
+  name             String
+  role             UserRole          @default(USER)
+  profileImageUrl  String?           @map("profile_image_url")
+  hotel            Hotel?
+                   
+  favorites        Favorite[]
+  recentlyViewed   RecentlyViewed[]
+  bookingsMetadata BookingMetadata[] // bookings made by this user
 
-  favorites       Favorite[]
-  recentlyViewed  RecentlyViewed[]
-  bookings        Booking[]         // bookings made by this user
-
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt      @map("updated_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt      @map("updated_at")
 
   @@map("users")
 }

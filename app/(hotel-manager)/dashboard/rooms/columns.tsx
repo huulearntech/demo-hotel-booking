@@ -13,56 +13,70 @@ import {
 
 import { Copy, Edit, Ellipsis, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Prisma } from "@/lib/generated/prisma/client";
 
-import type { RoomSerialized } from "@/lib/actions/hotel-manager/rooms";
-
-export function createColumns(handleDelete: (id: string) => void): ColumnDef<RoomSerialized>[] {
+export function createColumns(handleDelete: (id: string) => void):
+ ColumnDef<Prisma.RoomGetPayload<{
+    include: {
+      type: {
+        select: {
+          hotel: { select: { name: true } },
+          name: true,
+          adultCapacity: true,
+          childrenCapacity: true,
+          imageUrls: true,
+          bedType: true,
+          price: true,
+        },
+      },
+    },
+  }>>[] {
   return [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Tên phòng",
       cell: ({ row }) => row.original.name,
     },
     {
       accessorKey: "type",
-      header: "Type",
+      header: "Loại phòng",
       cell: ({ row }) => row.original.type ?? "—",
     },
     {
       accessorKey: "price",
-      header: "Price",
-      cell: ({ row }) => row.original.price?.toString() ?? "—",
+      header: "Giá",
+      cell: ({ row }) => row.original.type.price.toString() ?? "—",
     },
     {
       accessorKey: "adultCapacity",
-      header: "Adults",
-      cell: ({ row }) => row.original.adultCapacity ?? "—",
+      header: "Sức chứa người lớn",
+      cell: ({ row }) => row.original.type.adultCapacity ?? "—",
     },
     {
       accessorKey: "childrenCapacity",
-      header: "Children",
-      cell: ({ row }) => row.original.childrenCapacity ?? "—",
+      header: "Sức chứa trẻ em",
+      cell: ({ row }) => row.original.type.childrenCapacity ?? "—",
     },
     {
       accessorKey: "createdAt",
-      header: "Created",
+      header: "Được tạo vào",
       cell: ({ row }) =>
-        Intl.DateTimeFormat("en-US", {
-          month: "short",
+        Intl.DateTimeFormat("vi-VN", {
           day: "numeric",
+          month: "numeric",
           year: "numeric",
         }).format(row.original.createdAt),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Hành động",
       cell: ({ row }) => {
         const r = row.original;
         return (
           <div className="flex items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost" aria-label="Open actions">
+                <Button size="sm" variant="ghost" aria-label="Mở hành động">
                   <Ellipsis className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -74,12 +88,12 @@ export function createColumns(handleDelete: (id: string) => void): ColumnDef<Roo
                     toast("Copied room ID to clipboard", { description: r.id });
                   }}
                 >
-                  <Copy className="mr-2 h-4 w-4" /> Copy ID
+                  <Copy className="mr-2 h-4 w-4" /> Chép ID
                 </DropdownMenuItem>
 
                 <DropdownMenuItem asChild>
                   <Link href={`/dashboard/rooms/${r.id}/edit`} className="flex items-center gap-2">
-                    <Edit className="h-4 w-4" /> Edit
+                    <Edit className="h-4 w-4" /> Sửa
                   </Link>
                 </DropdownMenuItem>
 
@@ -87,7 +101,7 @@ export function createColumns(handleDelete: (id: string) => void): ColumnDef<Roo
                   onClick={() => handleDelete(r.id)}
                   className="text-destructive"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  <Trash2 className="mr-2 h-4 w-4" /> Xoá
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

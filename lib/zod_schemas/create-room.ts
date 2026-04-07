@@ -34,5 +34,5 @@ export const schema_MultiRoomType = z.object({
   roomTypes: schema_RoomType.array().min(1, "Phải có ít nhất một phòng"),
 }).transform((data) => data.roomTypes);
 
-export type MultiRoomFormInput = z.input<typeof schema_MultiRoomType>;
-export type MultiRoomFormOutput = z.output<typeof schema_MultiRoomType>;
+export type MultiRoomType_FormInput = z.input<typeof schema_MultiRoomType>;
+export type MultiRoomType_FormOutput = z.output<typeof schema_MultiRoomType>;

@@ -7,7 +7,7 @@ import { CameraIcon } from "lucide-react";
 export function AvatarUploader({ onUploadSuccess }: { onUploadSuccess: (url: string) => void }) {
   return (
     <CldUploadWidget
-      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+      uploadPreset={process.env.CLOUDINARY_UPLOAD_PRESET}
       signatureEndpoint="/api/sign-cloudinary-params"
       onSuccess={(result) => {
         if (typeof result.info === "object" && "secure_url" in result.info) {
@@ -16,6 +16,9 @@ export function AvatarUploader({ onUploadSuccess }: { onUploadSuccess: (url: str
       }}
       options={{
         singleUploadAutoClose: true,
+        clientAllowedFormats: ["jpg", "jpeg", "png"],
+        resourceType: "image",
+        maxFileSize: 1 * 1024 * 1024, // 1MB
       }}
     >
       {({ open }) => (

@@ -174,26 +174,26 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           <dl className="grid grid-cols-1 gap-y-2 text-sm">
             <div>
               <dt className="text-xs text-muted-foreground">Price per night</dt>
-              <dd className="font-medium">${room.price.toString()}</dd>
+              <dd className="font-medium">${room.type.price.toNumber()}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Adult capacity</dt>
-              <dd className="font-medium">{room.adultCapacity}</dd>
+              <dd className="font-medium">{room.type.adultCapacity}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Children capacity</dt>
-              <dd className="font-medium">{room.childrenCapacity}</dd>
+              <dd className="font-medium">{room.type.childrenCapacity}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Beds</dt>
-              <dd className="font-medium">{room.bedType}</dd>
+              <dd className="font-medium">{room.type.bedType}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Images</dt>
               <dd className="mt-2">
-                {room.imageUrls && room.imageUrls.length > 0 ? (
+                {room.type.imageUrls && room.type.imageUrls.length > 0 ? (
                   <ul className="flex gap-2 flex-wrap">
-                    {room.imageUrls.map((src, i) => (
+                    {room.type.imageUrls.map((src, i) => (
                       <li key={i} className="w-28 h-20 bg-muted rounded overflow-hidden">
                         {/* TODO next/Image */}
                         <img src={src} alt={`room-${i}`} className="object-cover w-full h-full" />
