@@ -1,8 +1,7 @@
-import RoomForm from "../room-form-bulk";
-import { hotelowner_createManyRoomTypes } from "@/lib/actions/hotel-manager/rooms";
+import RoomForm from "../form-bulk-room-types";
 
 export default function AddRoomPage() {
   return (
-    <RoomForm onSubmit={hotelowner_createManyRoomTypes} />
+    <RoomForm />
   );
 }

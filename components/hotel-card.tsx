@@ -85,23 +85,13 @@ export default function HotelCard({
             </span>
           </div>
 
-          <FacilityBadges facilities={facilities.map(f => f.name)} />
+          <Tooltip>
+            <FacilityBadges facilities={facilities.map(f => f.name)} />
+          </Tooltip>
         </div>
 
         <div className="flex justify-between items-end">
-          <div className="flex flex-col w-full gap-y-1">
-            <div className="text-sm line-through">{formatVND(price)}</div>
-            <div className="font-bold text-orange-600">{formatVND(price)}</div>
-
-            <div className="h-8 relative overflow-hidden">
-                <div className="h-8 absolute top-0 animate-slide-updown flex flex-col text-xs text-orange-600 font-medium">
-                  Chỉ còn 1 phòng với mức giá này!
-                </div>
-              <div className="h-8 absolute top-full animate-slide-updown flex flex-col text-xs font-medium">
-                  Total {formatVND(price)} VND for 1 room <br/> Exclude taxes and fees
-              </div>
-            </div>
-          </div>
+          <div className="font-bold text-orange-600">{formatVND(price)}</div>
           <button className="font-bold bg-orange-600 text-primary-foreground px-3 py-2 rounded-[0.375rem] text-sm">
             Xem
           </button>
@@ -118,59 +108,59 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 
-// Resizing window will definitely break this, but it's too overheaded
-// for an event listener, because most of the users aren't tester.
+// Use a simple estimation based on character count instead of measuring each DOM node.
+// This avoids expensive layout reads and should be much faster.
 function FacilityBadges({ facilities }: { facilities: string[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const measureRef = useRef<HTMLDivElement | null>(null);
-
   const [visibleCount, setVisibleCount] = useState(facilities.length);
 
   useEffect(() => {
     const container = containerRef.current;
-    const measure = measureRef.current;
-
-    if (!container || !measure) return;
+    if (!container) {
+      setVisibleCount(facilities.length);
+      return;
+    }
 
     const containerWidth = container.clientWidth;
-    const children = Array.from(measure.children) as HTMLElement[];
 
-    let usedWidth = 0;
+    // Estimation parameters (tweak if needed)
+    const charWidth = 7; // average width per character in px for the small font
+    const horizontalPadding = 8; // px for left+right padding (approx)
+    const badgeExtra = 4; // extra space for rounding/border etc.
+    const gap = 6; // gap between badges in px (matches tailwind spacing used)
+    const moreBadgePadding = 12; // px for "+X" badge padding (a bit larger)
+
+    // precompute widths
+    const widths = facilities.map((f) => horizontalPadding + badgeExtra + f.length * charWidth);
+
+    // width of a potential "+N" badge (digits depend on how many remain)
+    const moreBaseWidth = (n: number) =>
+      moreBadgePadding + String(n).length * charWidth + badgeExtra;
+
+    let used = 0;
     let count = 0;
 
-    // Measure "+X"
-    const more = document.createElement("span");
-    more.className = "px-1 text-10 font-semibold";
-    more.textContent = "+0";
-    measure.appendChild(more);
+    for (let i = 0; i < widths.length; i++) {
+      const w = widths[i];
+      const gapBefore = i > 0 ? gap : 0;
+      const remaining = facilities.length - (i + 1);
 
-    const moreWidth = more.getBoundingClientRect().width;
-    measure.removeChild(more);
+      const moreW = remaining > 0 ? moreBaseWidth(remaining) + gap : 0;
 
-    for (let i = 0; i < children.length; i++) {
-      const el = children[i];
-      const width = el.getBoundingClientRect().width;
-      const gap = i > 0 ? 6 : 0;
-
-      const remaining = children.length - (i + 1);
-
-      const totalNeeded =
-        remaining > 0
-          ? usedWidth + width + gap + moreWidth + 6
-          : usedWidth + width + gap;
+      const totalNeeded = used + gapBefore + w + moreW;
 
       if (totalNeeded > containerWidth) break;
 
-      usedWidth += width + gap;
+      used += gapBefore + w;
       count++;
     }
 
-    setVisibleCount(count);
+    // Ensure at least 0 and at most facilities.length
+    setVisibleCount(Math.max(0, Math.min(facilities.length, count)));
   }, [facilities.length]);
 
   return (
-    <Tooltip>
-      {/** Hiển thị */}
+    <>
       <div ref={containerRef} aria-hidden className="flex items-center space-x-2 overflow-clip">
         {facilities.slice(0, visibleCount).map((facility) => (
           <span key={facility} className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-gray-50">
@@ -179,7 +169,7 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
         ))}
 
         {visibleCount < facilities.length && (
-          <TooltipTrigger className="shrink-0">
+          <TooltipTrigger aria-hidden className="shrink-0">
             <span className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-gray-50">
               +{facilities.length - visibleCount}
             </span>
@@ -187,25 +177,16 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
         )}
       </div>
 
-      {/** Ẩn, tận dụng cho screen reader luôn */}
-      <div ref={measureRef} className="absolute invisible sr-only h-0 overflow-hidden whitespace-nowrap">
-        {facilities.map((facility, i) => (
-          <span key={i} className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-gray-50">
-            {facility}
-          </span>
-        ))}
-      </div>
-
       <TooltipContent aria-hidden className="flex flex-col gap-y-2">
         <span className="text-sm font-semibold mb-1 block">Cơ sở lưu trú này có các tiện ích:</span>
         <ul className="flex flex-col space-y-1">
-          {facilities.map(facility => ( // Should have indexed by id
+          {facilities.map(facility => (
             <li key={facility} className="text-sm font-medium">
               <span> {facility} </span>
             </li>
           ))}
         </ul>
       </TooltipContent>
-    </Tooltip>
+    </>
   );
 }

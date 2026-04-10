@@ -36,3 +36,4 @@ export const schema_MultiRoomType = z.object({
 
 export type MultiRoomType_FormInput = z.input<typeof schema_MultiRoomType>;
 export type MultiRoomType_FormOutput = z.output<typeof schema_MultiRoomType>;
+export type MultiRoomType_FormValues = z.infer<typeof schema_MultiRoomType>;

@@ -27,7 +27,7 @@ export default function SearchStatusBar({
   return (
     <div className="flex items-center justify-between sticky top-21.5 lg:top-20.5 border-b p-3 -mt-3 z-10 bg-background shadow-md">
       <div className="flex gap-x-4 items-center">
-        <ButtonOpenFilterSheet />
+        <ButtonOpenFilterSheet className="lg:hidden" />
         <div className="flex flex-col text-sm">
           <span className="font-bold"> {location} </span>
           <span> {total} nơi lưu trú được tìm thấy </span>

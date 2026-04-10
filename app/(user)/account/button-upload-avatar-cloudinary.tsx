@@ -18,7 +18,7 @@ export function AvatarUploader({ onUploadSuccess }: { onUploadSuccess: (url: str
         singleUploadAutoClose: true,
         clientAllowedFormats: ["jpg", "jpeg", "png"],
         resourceType: "image",
-        maxFileSize: 1 * 1024 * 1024, // 1MB
+        maxFileSize: 128 * 1024, // 128KB
       }}
     >
       {({ open }) => (

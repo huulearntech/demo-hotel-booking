@@ -45,7 +45,7 @@ async function seedHotels(data: { wardId: string, ownerId: string }[]) {
       numberOfReviews: 0,
       checkInTime,
       checkOutTime,
-      breakfastAvailability: faker.datatype.boolean(),
+      breakfastAvailability: faker.datatype.boolean(), // TODO: Remove.
       imageUrls: faker.helpers.uniqueArray(() => faker.image.url({ width: 400, height: 300 }), 8),
     };
   }) ;

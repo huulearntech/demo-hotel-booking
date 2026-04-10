@@ -24,7 +24,7 @@ export async function getHotelsByBoundingBox(bbox: BBox) {
         };
 
   const hotels = await prisma.hotel.findMany({
-    take: 50,
+    take: 20,
     where,
     select: {
       id: true,

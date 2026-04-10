@@ -1,4 +1,4 @@
-// TODO: Fix AI generated slops in the chart component.
+// TODO: Fix AI generated slops in the chart tooltip component.
 
 "use client"
 
@@ -33,8 +33,6 @@ import {
 } from "@/components/ui/toggle-group"
 import { fetchLast90DaysRevenueAndNumberOfBookings } from "@/lib/actions/hotel-manager/analytics"
 
-export const description = "An interactive area chart"
-
 type TimeRangeOptions = "90d" | "30d" | "7d";
 const timeRangeValues: Record<TimeRangeOptions, number> = {
   "90d": 90,
@@ -53,21 +51,28 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+type ChartDataItem = Awaited<ReturnType<typeof fetchLast90DaysRevenueAndNumberOfBookings>>[number];
+
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = useState<TimeRangeOptions>("90d")
-  const [chartData, setChartData] = useState<Awaited<ReturnType<typeof fetchLast90DaysRevenueAndNumberOfBookings>>>([])
-
-  const [filteredData, setFilteredData] = useState(chartData)
+  const [chartData, setChartData] = useState<ChartDataItem[]>([])
 
   useEffect(() => {
+    let mounted = true
     async function fetchData() {
-      const data = await fetchLast90DaysRevenueAndNumberOfBookings();
-      console.log("Fetched chart data:", data);
-      setChartData(data)
-      setFilteredData(data)
+      try {
+        const data = await fetchLast90DaysRevenueAndNumberOfBookings();
+        if (mounted) setChartData(data)
+      } catch (e) {
+        // swallow or log as needed
+        // console.error(e)
+      }
     }
     fetchData()
+    return () => {
+      mounted = false
+    }
   }, []);
 
   useEffect(() => {
@@ -76,17 +81,55 @@ export function ChartAreaInteractive() {
     }
   }, [isMobile])
 
-  // TODO: filter data.
+  const sliceStart = Math.max(0, chartData.length - timeRangeValues[timeRange])
+  const dataInTimeRange = chartData.slice(sliceStart)
+
+
+  // Vietnamese formatters
+  const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
+    month: "short",
+    day: "numeric",
+  })
+
+  const bookingsCompactFormatter = new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 1,
+    notation: "compact",
+    compactDisplay: "short",
+  })
+  const bookingsFullFormatter = new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 0,
+  })
+
+  const currencyCompactFormatter = new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 1,
+    notation: "compact",
+    compactDisplay: "short",
+  })
+  const currencyFullFormatter = new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  })
 
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Total Visitors</CardTitle>
+        <CardTitle>Doanh thu và lượt đặt phòng</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            Total for the last 3 months
+            Tổng doanh thu và lượt đặt phòng trong {
+              timeRange === "90d" ? "3 tháng qua"
+                : timeRange === "30d" ? "30 ngày qua"
+                  : "7 ngày qua"
+            }
           </span>
-          <span className="@[540px]/card:hidden">Last 3 months</span>
+          <span className="@[540px]/card:hidden">{
+              timeRange === "90d" ? "3 tháng qua"
+                : timeRange === "30d" ? "30 ngày qua"
+                  : "7 ngày qua"
+          }</span>
         </CardDescription>
         <CardAction>
           <ToggleGroup
@@ -96,27 +139,27 @@ export function ChartAreaInteractive() {
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
+            <ToggleGroupItem value="90d">3 tháng qua</ToggleGroupItem>
+            <ToggleGroupItem value="30d">30 ngày qua</ToggleGroupItem>
+            <ToggleGroupItem value="7d">7 ngày qua</ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRangeOptions)}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label="Select a value"
+              aria-label="Lựa chọn khoảng thời gian"
             >
-              <SelectValue placeholder="Last 3 months" />
+              <SelectValue placeholder="3 tháng qua" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
+                3 tháng qua
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
+                30 ngày qua
               </SelectItem>
               <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
+                7 ngày qua
               </SelectItem>
             </SelectContent>
           </Select>
@@ -127,7 +170,7 @@ export function ChartAreaInteractive() {
           config={chartConfig}
           className="aspect-auto h-64 w-full"
         >
-          <LineChart data={filteredData}>
+          <LineChart data={dataInTimeRange}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="date"
@@ -135,28 +178,22 @@ export function ChartAreaInteractive() {
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
+              tickFormatter={(value) => dateFormatter.format(value)}
             />
             <YAxis
               yAxisId="left"
               orientation="left"
+              allowDecimals={false}
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               tickFormatter={(value) => {
                 const n = Number(value)
                 if (Number.isNaN(n)) return String(value)
-                // Show thousands for bookings, e.g. 1.2k
-                if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`
-                return n.toString()
+                if (n >= 1000) return bookingsCompactFormatter.format(n)
+                return bookingsFullFormatter.format(n)
               }}
-              label={{ value: "Bookings", angle: -90, position: "insideLeft", offset: 10 }}
+              label={{ value: "Lượt đặt phòng", angle: -90, position: "insideLeft", offset: 10 }}
             />
             <YAxis
               yAxisId="right"
@@ -168,23 +205,33 @@ export function ChartAreaInteractive() {
               tickFormatter={(value) => {
                 const n = Number(value)
                 if (Number.isNaN(n)) return String(value)
-                // Currency formatting for revenue
-                if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-                if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`
-                return `$${n}`
+                // if (n >= 1_000_000) return currencyCompactFormatter.format(n)
+                return currencyCompactFormatter.format(n)
               }}
-              label={{ value: "Revenue (USD)", angle: 90, position: "insideRight", offset: 10 }}
+              label={{ value: "Doanh thu", angle: 90, position: "insideRight", offset: 10 }}
             />
             <ChartTooltip
               cursor={false}
               defaultIndex={isMobile ? -1 : 10}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value, name) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
+                  labelFormatter={(value: any) => {
+                    const safeParseDate = (v: any): Date | null => {
+                      if (v instanceof Date && !Number.isNaN(v.getTime())) return v
+                      // If it's a numeric timestamp or numeric string
+                      const asNumber = typeof v === "number" ? v : Number(v)
+                      if (!Number.isNaN(asNumber)) {
+                        const d = new Date(asNumber)
+                        if (!Number.isNaN(d.getTime())) return d
+                      }
+                      // Try Date.parse on string
+                      const parsed = Date.parse(String(v))
+                      if (!Number.isNaN(parsed)) return new Date(parsed)
+                      return null
+                    }
+
+                    const d = safeParseDate(value)
+                    return d ? dateFormatter.format(d) : String(value ?? "")
                   }}
                   formatter={(value, name) => {
                     const key = String(name) as keyof typeof chartConfig
@@ -192,17 +239,15 @@ export function ChartAreaInteractive() {
 
                     if (key === "numberOfBookings") {
                       const n = Number(value) || 0
-                      return [n.toLocaleString(), label]
+                      const formatted = n >= 1000 ? bookingsCompactFormatter.format(n) : bookingsFullFormatter.format(n)
+                      return [formatted, label]
                     }
 
                     if (key === "revenue") {
                       const n = Number(value) || 0
-                      const formatted =
-                        n >= 1_000_000
-                          ? `$${(n / 1_000_000).toFixed(1)}M`
-                          : n >= 1000
-                            ? `$${(n / 1000).toFixed(1)}k`
-                            : `$${n.toFixed(2)}`
+                      const formatted = n >= 1_000_000
+                        ? currencyCompactFormatter.format(n)
+                        : currencyFullFormatter.format(n)
                       return [formatted, label]
                     }
 
@@ -219,8 +264,8 @@ export function ChartAreaInteractive() {
               type="monotone"
               stroke="var(--color-red-500)"
               strokeWidth={2}
-              dot={{ r: 2 }}
-              activeDot={{ r: 4 }}
+              dot={{ r: 1 }}
+              activeDot={{ r: 2 }}
               isAnimationActive={false}
             />
             <Line
@@ -229,7 +274,7 @@ export function ChartAreaInteractive() {
               type="monotone"
               stroke="var(--color-blue-500)"
               strokeWidth={2}
-              dot={{ r: 2 }}
+              dot={{ r: 1 }}
               isAnimationActive={false}
             />
           </LineChart>

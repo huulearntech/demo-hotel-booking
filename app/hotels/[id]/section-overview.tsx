@@ -179,7 +179,7 @@ export default async function OverviewSection({
               </a>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {facilities.filter(facility => facility.iconUrl).map((facility, index) => (
+              {facilities.filter(facility => !!facility.iconUrl).slice(0,10).map((facility, index) => (
                 <div key={index} className="flex items-center gap-x-2">
                   <Image
                     src={facility.iconUrl!}

@@ -26,6 +26,7 @@ export async function fetchHotel(hotelId: string) {
       },
       facilities: {
         select: {
+          type: true,
           name: true,
           iconUrl: true,
         },

@@ -3,15 +3,22 @@
 import { ListFilter } from "lucide-react";
 import { useFilterSheetSetOpen } from "./filter-sheet-context";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export default function ButtonOpenFilterSheet({ children }: { children?: React.ReactNode }) {
+export default function ButtonOpenFilterSheet({
+  children,
+  className,
+}: {
+  children?: React.ReactNode,
+  className?: string
+}) {
   const setFilterSheetOpen = useFilterSheetSetOpen();
 
   return (
     <Button
       onClick={() => setFilterSheetOpen(true)}
       variant='outline'
-      className="size-8 flex lg:hidden items-center justify-center"
+      className={cn("size-8 flex items-center justify-center", className)}
       aria-label="Open filter sheet"
     >
       <ListFilter className="size-4" />

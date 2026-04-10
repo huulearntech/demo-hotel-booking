@@ -50,7 +50,7 @@ export default function SearchMapPage() {
 function SearchBarWithFilterTrigger({ defaultValues }: { defaultValues: SearchBarFormData }) {
   return (
     <div className="sticky top-0 w-full py-3 shadow-lg bg-white z-1000 flex items-end justify-center gap-x-2">
-      <ButtonOpenFilterSheet />
+      <ButtonOpenFilterSheet className="mb-0.5" />
       <SearchBar defaultValues={defaultValues} className="content mx-0" />
     </div>
   )

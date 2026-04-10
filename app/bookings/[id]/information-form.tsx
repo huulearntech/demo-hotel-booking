@@ -34,7 +34,7 @@ export default function InformationForm () {
             className={buttonVariants({ variant: "outline", size: "default", className: "h-10" })}
             placeholder="Nhập họ và tên"
           />
-          {errors.name && <div className="text-xs text-red-600 ml-1">{errors.name.message}</div>}
+          {errors.name && <div className="text-sm text-destructive ml-1">{errors.name.message}</div>}
           <div className="text-xs font-semibold text-gray-500 ml-1">như trên CMND (không dấu)</div>
         </div>
         <div className="w-full flex gap-x-6">
@@ -49,7 +49,7 @@ export default function InformationForm () {
                 placeholder="Nhập số điện thoại"
               />
             </div>
-            {errors.phone && <div className="text-xs text-red-600 ml-1">{errors.phone.message}</div>}
+            {errors.phone && <div className="text-sm text-destructive ml-1">{errors.phone.message}</div>}
             <div className="text-xs font-semibold text-gray-500 ml-1">VD: 0987654321</div>
           </div>
           <div className="w-full flex flex-col gap-y-1">
@@ -61,7 +61,7 @@ export default function InformationForm () {
               className={buttonVariants({ variant: "outline", size: "default", className: "flex-1 h-10" })}
               placeholder="Nhập địa chỉ email"
             />
-            {errors.email && <div className="text-xs text-red-600 ml-1">{errors.email.message}</div>}
+            {errors.email && <div className="text-sm text-destructive ml-1">{errors.email.message}</div>}
             <div className="text-xs font-semibold text-gray-500 ml-1">VD: example@example.com</div>
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function InformationForm () {
           placeholder="Nhập lưu ý cho khách sạn (nếu có)"
           rows={4}
         />
-        {errors.note && <div className="text-xs text-red-600 ml-1">{errors.note.message}</div>}
+        {errors.note && <div className="text-sm text-destructive ml-1">{errors.note.message}</div>}
         <div className="text-xs text-gray-500 ml-1">
           Lưu ý: Đây chỉ là yêu cầu — khách sạn sẽ cố gắng đáp ứng nhưng không đảm bảo. Có thể phát sinh phí phụ thu hoặc cần xác nhận thêm từ khách sạn.
         </div>

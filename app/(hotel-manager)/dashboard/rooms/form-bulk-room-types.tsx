@@ -2,13 +2,14 @@
 
 import { useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, FormProvider, FieldArrayWithId } from "react-hook-form";
+import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -20,9 +21,11 @@ import { schema_MultiRoomType, type MultiRoomType_FormInput, MultiRoomType_FormO
 import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import { hotelowner_createManyRoomTypes } from "@/lib/actions/hotel-manager/rooms";
+
 type MultiRoomFormType = ReturnType<typeof useForm<MultiRoomType_FormInput, unknown, MultiRoomType_FormOutput>>;
 
-export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_FormOutput) => Promise<void> }) {
+export default function RoomForm() {
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<MultiRoomType_FormInput, unknown, MultiRoomType_FormOutput>({
@@ -35,8 +38,8 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
           adultCapacity: 0,
           childrenCapacity: 0,
           areaM2: 0,
-          bedType: "SINGLE", // FIXME: careful with default value for enum, it must be one of the options
-          imageUrls: [{ url: "" }],
+          bedType: "SINGLE",
+          imageUrls: [],
         },
       ],
     },
@@ -58,8 +61,13 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
   // This is ugly. I wonder if isSubmitting from react hook form is good.
   async function onSubmitLocal(data: MultiRoomType_FormOutput) {
     startTransition(async () => {
-      await onSubmit(data);
-      // TODO: handle success or error (feedback, resetting form, etc.)
+      const result = await hotelowner_createManyRoomTypes(data);
+      if (result.ok) {
+        console.log("Created room types:", result.data);
+        form.reset();
+      } else {
+        setError("root", { message: result.error });
+      }
     });
   }
 
@@ -73,14 +81,16 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
             control={control}
             register={register}
             errors={errors}
-            roomFields={roomFields}
+            // roomFields={roomFields}
             removeRoom={removeRoom}
           />
         ))}
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             type="button"
+            variant="outline"
+            className="flex items-center gap-2"
             onClick={() =>
               appendRoom({
                 name: "",
@@ -89,15 +99,16 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
                 childrenCapacity: 0,
                 areaM2: 0,
                 bedType: "SINGLE",
-                imageUrls: [{ url: "" }],
+                imageUrls: [],
               })
             }
           >
-            Add room
+            <PlusIcon className="size-4" />
+            Thêm loại phòng
           </Button>
 
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : "Save all rooms"}
+            {isPending ? "Đang lưu..." : "Lưu toàn bộ loại phòng"}
           </Button>
         </div>
       </form>
@@ -109,23 +120,27 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: MultiRoomType_
   which prevents inputs from being remounted and losing focus. */
 
 import { CldUploadWidget } from "next-cloudinary";
+import { PlusIcon, XIcon } from "lucide-react";
+import Image from "next/image";
 
+// Should rename to RoomCard or something. It's not just fields.
 function RoomFields({
   index,
   control,
   register,
   errors,
-  roomFields,
+  // roomFields,
   removeRoom,
 }: {
   index: number;
   control: MultiRoomFormType["control"];
   register: MultiRoomFormType["register"];
   errors: MultiRoomFormType["formState"]["errors"];
-  roomFields: FieldArrayWithId<MultiRoomType_FormInput, "roomTypes", "id">[];
+  // roomFields: FieldArrayWithId<MultiRoomType_FormInput, "roomTypes", "id">[];
   removeRoom: (i: number) => void;
 }) {
-  const field = roomFields[index];
+  // const field = roomFields[index]; // Not used but maybe useful in the future?
+
   const {
     fields: imageFields,
     append: appendImage,
@@ -151,14 +166,20 @@ function RoomFields({
   return (
     <Card className="mb-4">
       <CardHeader>
-        <CardTitle>Room {index + 1}</CardTitle>
-        <CardDescription>Fill in the details of this room.</CardDescription>
+        <CardTitle>Loại phòng {index + 1}</CardTitle>
+        <CardDescription> Điền thông tin chi tiết cho loại phòng này. </CardDescription>
+        <CardAction>
+          <Button type="button" variant="ghost" size="sm" onClick={() => removeRoom(index)}>
+            <XIcon className="size-4" />
+            <span className="sr-only">Bỏ loại phòng này</span>
+          </Button>
+        </CardAction>
       </CardHeader>
 
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2 flex flex-col gap-1">
           <Label htmlFor={`roomTypes.${index}.name`} className="text-sm font-medium">
-            Name
+            Tên loại phòng
           </Label>
           <Input id={`roomTypes.${index}.name`} className="w-full" {...register(`roomTypes.${index}.name` as const)} />
           {roomErrors?.name && <p className="text-xs text-destructive mt-1">{roomErrors.name.message}</p>}
@@ -230,44 +251,51 @@ function RoomFields({
         <div className="md:col-span-2 flex flex-col gap-2">
           <Label className="text-sm font-medium">Hình ảnh</Label>
 
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-wrap gap-2">
             {imageFields.length === 0 && <p className="text-sm text-muted-foreground">Chưa tải ảnh nào lên.</p>}
 
             {imageFields.map((imgField, imgIndex) => (
-              <div key={imgField.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div className="w-full sm:w-48">
-                  <img src={imgField.url} alt={`Room ${index + 1} image ${imgIndex + 1}`} className="w-full h-auto rounded-md object-cover" />
-                </div>
+              <div key={imgField.id} className="group relative w-48 h-36 rounded-md overflow-hidden">
+                <Image
+                  src={imgField.url}
+                  alt={`Room ${index + 1} image ${imgIndex + 1}`}
+                  fill
+                  className="absolute inset-0 object-contain"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="size-6 absolute top-1 right-1 bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeImage(imgIndex)}
+                >
+                  <XIcon className="size-4" />
+                </Button>
 
                 <input
                   type="hidden"
                   {...register(`roomTypes.${index}.imageUrls.${imgIndex}.url` as const)}
                   defaultValue={imgField.url}
                 />
-
-                <div className="flex gap-2">
-                  <Button type="button" variant="ghost" className="h-9" onClick={() => removeImage(imgIndex)}>
-                    Remove
-                  </Button>
-                </div>
               </div>
             ))}
           </div>
 
           <div>
             <CldUploadWidget
-              signatureEndpoint="/api/cloudinary/sign"
+              uploadPreset={process.env.CLOUDINARY_UPLOAD_PRESET}
+              signatureEndpoint="/api/sign-cloudinary-params"
               onSuccess={handleUploadSuccess}
               options={{
                 maxFiles: 10,
                 multiple: true,
+                clientAllowedFormats: ["jpg", "jpeg", "png"],
                 resourceType: "image",
-                maxFileSize: 1 * 1024 * 1024,
+                maxFileSize: 128 * 1024, // 128KB
               }}
             >
               {({ open }) => (
                 <Button type="button" variant="outline" onClick={() => open?.()}>
-                  Upload images
+                  Tải ảnh lên
                 </Button>
               )}
             </CldUploadWidget>
@@ -279,11 +307,11 @@ function RoomFields({
 
       <CardFooter className="flex justify-between items-center gap-4">
         <div className="text-sm text-destructive">{errors.roomTypes?.[index]?.message}</div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <Button type="button" variant="destructive" onClick={() => removeRoom(index)}>
             Remove room
           </Button>
-        </div>
+        </div> */}
       </CardFooter>
     </Card>
   );

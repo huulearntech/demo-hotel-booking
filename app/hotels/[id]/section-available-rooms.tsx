@@ -6,8 +6,6 @@ import {
   BedDoubleIcon,
   DoorOpenIcon,
   UserIcon,
-  MilkOffIcon,
-  Milk
 } from "lucide-react";
 
 import { PATHS } from "@/lib/constants";
@@ -35,13 +33,7 @@ export default async function AvailableRoomsSection({
             <span className="text-sm text-muted-foreground">Không có phòng nào còn trống cho khoảng thời gian này</span>
           </div>
         )}
-        {roomsByType.map((type) => (
-          <RoomTypeCard
-            key={type.id}
-            roomType={type}
-            breakfastAvailability={false}
-          />
-        ))}
+        {roomsByType.map((type) => <RoomTypeCard key={type.id} roomType={type} />)}
       </div>
     </section>
   )
@@ -49,13 +41,7 @@ export default async function AvailableRoomsSection({
 
 // There should be more arguments to this.
 // E.g.: number of rooms,...
-function RoomTypeCard({
-  roomType,
-  breakfastAvailability
-}: {
-  roomType: FetchAvailableRoomsResult[number];
-  breakfastAvailability: boolean
-}) {
+function RoomTypeCard({ roomType }: { roomType: FetchAvailableRoomsResult[number] }) {
   const { imageUrls } = roomType;
   return (
     <div
@@ -124,21 +110,6 @@ function RoomTypeCard({
               <span>{roomType.childrenCapacity} trẻ em</span>
             </div>
           )}
-
-          <div className="flex items-center gap-x-2 text-sm">
-            {breakfastAvailability ? (
-              <>
-                <Milk className="size-4 shrink-0" />
-                <span>Bao gồm bữa sáng</span>
-              </>
-            ) : (
-              <>
-                <MilkOffIcon className="size-4 shrink-0" />
-                <span>Không bao gồm bữa sáng</span>
-              </>
-            )}
-          </div>
-
         </section>
 
         <section className="mt-3">

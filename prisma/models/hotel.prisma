@@ -16,7 +16,7 @@ model Hotel {
 
   checkInTime           DateTime    @db.Time  @map("check_in_time")
   checkOutTime          DateTime    @db.Time  @map("check_out_time")
-  breakfastAvailability Boolean     @map("breakfast_availability")
+  // breakfastAvailability Boolean     @map("breakfast_availability") // TODO: remove to simplify the pet project.
   
   imageUrls             String[]    @map("image_urls")   // TODO: should have videos
 
@@ -31,9 +31,6 @@ model Hotel {
   bookingsMetadata      BookingMetadata[]
 
   @@map("hotels")
-
-  // TODO: add indexes for search optimization (e.g., by name, location, type)
-  // @@index([])
 }
 
 enum HotelType {
@@ -123,7 +120,7 @@ model RoomType {
 
   adultCapacity    Int      @map("adult_capacity")
   childrenCapacity Int      @map("children_capacity")
-  price            Decimal
+  price            Decimal  @db.Decimal(19, 4) // VND
   areaM2           Float    @map("area_m2")
   bedType          BedType  @map("bed_type")
 
@@ -136,6 +133,7 @@ model RoomType {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt      @map("updated_at")
 
+  @@unique([hotelId, name])
   @@map("room_types")
   @@index([hotelId])
 }

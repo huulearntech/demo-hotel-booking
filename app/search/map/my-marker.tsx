@@ -9,7 +9,7 @@ import { formatVND } from "@/lib/utils";
 function createPriceIcon(price: number) {
   const PriceIcon = () => {
     return (
-      <div className="w-20 h-7.5 inline-flex items-center justify-center bg-white text-xs font-semibold text-primary border border-gray-accent rounded-full px-3 py-1 shadow-sm">
+      <div className="w-20 h-7.5 inline-flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold rounded-full px-3 py-1 shadow-sm">
         {formatVND(price)}
       </div>
     );

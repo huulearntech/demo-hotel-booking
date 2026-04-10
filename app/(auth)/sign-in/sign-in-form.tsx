@@ -39,56 +39,56 @@ export default function SignInForm () {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col space-y-4"
-      >
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input {...field} disabled={isPending} autoFocus className="md:text-base"/>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mật khẩu</FormLabel>
-              <FormControl>
-                <PasswordInput {...field} disabled={isPending} className="md:text-base" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <p className="text-sm text-red-500">
-          {form.formState.errors.root?.message}
-        </p>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="w-full">
+        <fieldset disabled={isPending} className="flex flex-col space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input {...field} autoFocus className="md:text-base" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mật khẩu</FormLabel>
+                <FormControl>
+                  <PasswordInput {...field} className="md:text-base" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <p className="text-sm text-destructive">
+            {form.formState.errors.root?.message}
+          </p>
 
-        <Button type="submit" className="mt-2 md:text-base" disabled={isPending}>
-          {isPending ?
-            <div className="flex items-center gap-2">
-              Đang đăng nhập...
-              <Loader2Icon className="animate-spin" />
-            </div>
-            :
-            <div className="flex items-center gap-2">
-              Đăng nhập
-              <ArrowRight />
-            </div>
-          }
-        </Button>
-        <div className="flex flex-col gap-4 mt-4 text-sm">
-          <Link href={PATHS.signUp} replace> Bạn chưa có tài khoản? Đăng ký ở đây. </Link>
-          <Link href={PATHS.forgotPassword}> Bạn quên mật khẩu? </Link>
-        </div>
+          <Button type="submit" className="mt-2 md:text-base">
+            {form.formState.isSubmitting ?
+              <div className="flex items-center gap-2">
+                Đang đăng nhập...
+                <Loader2Icon className="animate-spin" />
+              </div>
+              :
+              <div className="flex items-center gap-2">
+                Đăng nhập
+                <ArrowRight />
+              </div>
+            }
+          </Button>
+          <div className="flex flex-col gap-4 mt-4 text-sm">
+            <Link href={PATHS.signUp} replace> Bạn chưa có tài khoản? Đăng ký ở đây. </Link>
+            <Link href={PATHS.forgotPassword}> Bạn quên mật khẩu? </Link>
+          </div>
+        </fieldset>
       </form>
     </Form>
   )

@@ -7,19 +7,23 @@ filter: cleanup className
 
 search bar form: consider? merge adult and children capacity into only one capacity, merge search bar with filter?
 
-search bar schema: validate that from <= to and transform from z.date() to z.iso.date().
+search bar schema: transform from Date in react-day-picker to YYYY-MM-DD in searchParams
 
 search bar submit: different target url on home, search vs map. and handle trolling search params
 
-useTransition: perhaps I'm using it for the wrong purpose.
+useTransition: it is not neccessary, but it does enhance UX by not blinking at the last second of submitting the form.
 
 types: unified them into one place, such as "types" folder.
 
-consider renaming room type to room kind?
+search result: fix infinite scroll
+
+consider make a form + search bar provider that wrap the whole app.
+
+consider make buckets for materialized view in search query: bucket for (province or district) & (3d | 7d | 15d | 30d) & (2guest | ... commonly search number of guests)
 
 // TODO: Flow
 // 1. Basic info (name, email, phone) -> sign up for account
-// 1.1. verify email/phone with OTP -> after verification, we can create the account and sign in the user immediately
+// 1.1. verify email with OTP -> after verification, we can create the account and sign in the user immediately
 // 2. auto sign in -> server sends jwt, create a session id, redirect to that id (timed session).
 // 3. After sign in, show partnership application form (business details, tax info, etc) -> submit to server
 // 3.1. if user exit without submitting, they can come back to the form and continue where they left off (fetch saved data from server)

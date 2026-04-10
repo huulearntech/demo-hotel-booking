@@ -15,7 +15,7 @@ import { haversineMeters } from "@/lib/utils";
 function MapController({
   onUpdateBBox,
   debounceMs = 2000,
-  minMoveMeters = 1000,
+  minMoveMeters = 500,
   setDataState,
 }: {
   onUpdateBBox?: (b: BBox) => void;
@@ -36,7 +36,7 @@ function MapController({
         window.clearTimeout(timerRef.current);
       }
 
-      // avoid fetching if center didn't move enough
+      // avoid fetching if center didn't move enough or change zoom enough
       if (bboxRef.current) {
         const prevCenter: [number, number] = [
           (bboxRef.current.north + bboxRef.current.south) / 2,
@@ -122,7 +122,7 @@ export default function MapClient({
   initialCenter = [21.0278, 105.8342],
   zoom = 13,
   debounceMs = 800,
-  minMoveMeters = 1000,
+  minMoveMeters = 500,
 }: MapClientProps) {
   const [dataState, setDataState] = useState<{ hotels: Map_HotelCardProps[]; loading: boolean }>({
     hotels: [],

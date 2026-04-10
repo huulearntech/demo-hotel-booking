@@ -8,7 +8,6 @@ const sections = {
   available_rooms: "Phòng",
   location: "Vị trí",
   facilities: "Tiện ích",
-  policy: "Chính sách",
   review: "Đánh giá",
 };
 

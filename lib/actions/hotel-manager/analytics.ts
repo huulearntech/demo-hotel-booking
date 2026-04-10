@@ -1,37 +1,34 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { auth } from "@/auth";
+import { hotelowner_getLast90DaysRevenueAndBookings } from "@/lib/generated/prisma/sql";
 
 export async function fetchLast90DaysRevenueAndNumberOfBookings() {
-  const today = new Date();
-  const ninetyDaysAgo = new Date(today);
-  ninetyDaysAgo.setDate(today.getDate() - 90);
+  const session = await auth();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
 
-  const revenueData = await prisma.bookingMetadata.groupBy({
-    by: ["createdAt"],
+  if (session.user.role !== "HOTEL_OWNER") {
+    throw new Error("Forbidden");
+  }
+
+  const hotel = await prisma.hotel.findFirst({
     where: {
-      createdAt: {
-        gte: ninetyDaysAgo,
-        lte: today,
-      },
-    },
-    _count: {
-      id: true,
-    },
-    _sum: {
-      snapshotRoomPrice: true, // TODO: multiply by numRooms
-    },
-    orderBy: {
-      createdAt: "asc",
+      ownerId: session.user.id,
     },
   });
 
-  return revenueData.map((entry) => ({
-    date: Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-    }).format(entry.createdAt),
-    revenue: entry._sum.snapshotRoomPrice?.toNumber() || 0,
-    numberOfBookings: entry._count.id,
-  }));
+  if (!hotel) {
+    throw new Error("Hotel not found");
+  }
+
+  const result = await prisma.$queryRawTyped(hotelowner_getLast90DaysRevenueAndBookings(hotel.id));
+  // return result.map((entry) => ({
+  //   date: entry.day,
+  //   revenue: entry.total_revenue?.toNumber() || 0,
+  //   numberOfBookings: entry.bookings || 0,
+  // }));
+  return result;
 }

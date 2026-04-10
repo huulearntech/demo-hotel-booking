@@ -2,7 +2,6 @@ import AvailableRoomsSection from "./section-available-rooms";
 import FacilitiesSection from "./section-facilities";
 import LocationSection from "./section-location";
 import OverviewSection from "./section-overview";
-import PolicySection from "./section-policy";
 import ReviewSection from "./section-review";
 
 import { fetchHotel } from "@/lib/actions/hotel";
@@ -59,7 +58,6 @@ export default async function Page(props: {
         <AvailableRoomsSection hotelId={hotel.id} />
         <LocationSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <FacilitiesSection hotel={hotel} />
-        <PolicySection hotelName={hotelName} />
         <ReviewSection hotelName={hotelName} bookingsMetadata={bookingsMetadata} reviewPoints={reviewPoints} numberOfReviews={numberOfReviews} />
       </main>
     </>

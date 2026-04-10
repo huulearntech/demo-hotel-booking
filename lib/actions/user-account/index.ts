@@ -6,7 +6,10 @@ import { type OperationResult } from "@/lib/types/operation-result";
 import { differenceInDays } from "date-fns";
 
 // This is paid bookings, not count the draft ones.
-export async function user_getRecentBookings(): Promise<OperationResult<RecentBookingType[]>> {
+export async function user_getRecentBookings(
+  lastCursor: string | null = null,
+  limit = 10
+): Promise<OperationResult<RecentBookingType[]>> {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthenticated", status: 401 };
@@ -15,10 +18,23 @@ export async function user_getRecentBookings(): Promise<OperationResult<RecentBo
     return { ok: false, error: "Unauthorized", status: 403 };
   }
 
-  // Why the fuck does this show a random day for both dates on all bookings?
+  // Build pagination args for Prisma
+  const pagination: {
+    take: number;
+    cursor?: { id: string };
+    skip?: number;
+  } = { take: limit };
+
+  if (lastCursor) {
+    pagination.cursor = { id: lastCursor };
+    // skip the cursor row itself
+    pagination.skip = 1;
+  }
+
   const bookings = await prisma.booking.findMany({
     where: { metadata: { userId: session.user.id } },
     orderBy: { createdAt: "desc" },
+    ...pagination,
     include: {
       metadata: {
         select: {
@@ -26,17 +42,15 @@ export async function user_getRecentBookings(): Promise<OperationResult<RecentBo
           snapshotRoomPrice: true,
           checkInDate: true,
           checkOutDate: true,
-        }
-      }
+        },
+      },
     },
   });
-  console.log('Fetched bookings:', bookings);
 
-  const result = bookings.map(booking => {
-    const days = differenceInDays(booking.metadata.checkOutDate, booking.metadata.checkInDate);
-    console.log('checkInDate:', booking.metadata.checkInDate);
-    console.log('checkOutDate:', booking.metadata.checkOutDate);
-    console.log('days:', days);
+  const result = bookings.map((booking) => {
+    const checkIn = booking.metadata.checkInDate;
+    const checkOut = booking.metadata.checkOutDate;
+    const days = differenceInDays(checkOut, checkIn);
     const totalPrice = booking.metadata.snapshotRoomPrice.mul(days).toNumber();
 
     // remove the non-serializable snapshotRoomPrice before returning
@@ -47,8 +61,6 @@ export async function user_getRecentBookings(): Promise<OperationResult<RecentBo
       totalPrice,
     };
   });
-
-  result.forEach(b => console.log(b.totalPrice));
 
   return { ok: true, data: result };
 }
@@ -61,9 +73,9 @@ type BookingWithMeta = Prisma.BookingGetPayload<{
         snapshotRoomPrice: true;
         checkInDate: true;
         checkOutDate: true;
-      }
-    }
-  }
+      };
+    };
+  };
 }>;
 
 export type RecentBookingType = Omit<BookingWithMeta, "metadata"> & {

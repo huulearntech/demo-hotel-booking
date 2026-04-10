@@ -26,7 +26,6 @@ export const PATHS = {
   account: '/account',
   accountHistory: '/account/history',
   accountRecentlyViewed: '/account/recently-viewed',
-  adminDashboard: '/dashboard-admin',
   bookings: '/bookings',
   hotels: '/hotels',
   search: '/search',
@@ -39,7 +38,10 @@ export const PATHS = {
   hotelBookings: '/dashboard/bookings',
   hotelReviews: '/dashboard/reviews',
 
-  signUpHotel: '/sign-up/hotel',
+  signUpHotel: '/sign-up-hotel',
+
+  adminDashboard: '/dashboard-admin',
+
   unauthorized: '/unauthorized',
   notFound: '/notfound'
 };

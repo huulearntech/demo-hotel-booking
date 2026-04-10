@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import BookingsTable from "./bookings-table";
+import BookingsInfiniteScrollList from "./bookings-infinite-list";
 import { user_getRecentBookings } from "@/lib/actions/user-account";
 
 
@@ -19,7 +19,7 @@ export default async function AccountHistoryPage() {
           All your past and upcoming bookings. Use the search to filter by hotel or booking id.
         </p>
       </div>
-      <BookingsTable bookings={bookings}/>
+      <BookingsInfiniteScrollList/>
     </div>
   );
 }

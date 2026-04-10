@@ -1,76 +1,18 @@
-// TODO: Pagination. May move this to server because it doesn't need much interactivity.
+// FIXME: Virtual list not work yet.
+
 "use client";
 
-import { useLayoutEffect, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { SearchBarFormData } from "@/lib/zod_schemas/search-bar";
+import { useSearchParams } from "next/navigation";
+
+import ButtonOpenFilterSheet from "../button-open-filter-sheet";
+import { useEffect, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useInView } from "react-intersection-observer";
 
 import { fetchSearchResult } from "@/lib/actions/search";
 import SearchStatusBar, { SearchStatusBarSkeleton } from "./search-status-bar";
-
-export default function Results({
-  searchBarFormValues
-}: {
-  searchBarFormValues: SearchBarFormData;
-}) {
-  const searchParams = useSearchParams();
-  const [page, setPage] = useState(1);
-  const pageSize = 6;
-
-  useLayoutEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page]);
-
-
-  const { data: hotels = [], isLoading, isError } = useQuery({
-    queryKey: ["hotels", page],
-    queryFn: async () => {
-      return fetchSearchResult(searchBarFormValues);
-    },
-    placeholderData: keepPreviousData
-  });
-
-  if (isLoading) return <ResultsSkeleton />;
-  // TODO: proper onRetry
-  if (isError) return <ResultsError onRetry={() => setPage(1)} />;
-
-  // const totalPages = Math.ceil((data?.total ?? 0) / pageSize);
-
-  const totalPages = 1;
-
-  // TODO: location
-  return ( hotels.length === 0 ? <NoResult /> :
-    <div className="w-full flex flex-col space-y-3">
-      <SearchStatusBar
-        location={searchBarFormValues.location}
-        total={hotels.length ?? 0}
-        searchParams={searchParams}
-      />
-
-      <PaginationBar
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={(p: number) => { setPage(p); }}
-      />
-
-      <ul className="w-full grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 gap-4">
-        {hotels.map((hotel) => (
-          <li key={hotel.id}>
-            <HotelCard
-              hotel={hotel}
-              href={`${PATHS.hotels}/${hotel.id}?${searchParams.toString()}`}
-              showWardAtTopLeft={false}
-            />
-          </li>
-        ))}
-      </ul>
-      <PaginationBar
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={(p: number) => { setPage(p); }}
-      />
-    </div>
-  );
-}
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,6 +22,151 @@ import HotelCard from "@/components/hotel-card";
 import { AlertCircle } from "lucide-react";
 import { PATHS } from "@/lib/constants";
 
+
+// temporary. TODO: move to types
+type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
+import type { CursorType } from "@/lib/actions/search";
+
+export default function Results({
+  searchBarFormValues,
+}: {
+  searchBarFormValues: SearchBarFormData;
+}) {
+  const searchParams = useSearchParams();
+  // TODO: remove
+  const pageSize = 2;
+
+  const sort: SortType = "price_asc";
+  const [totalCount, setTotalCount] = useState(0);
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ["hotels", searchBarFormValues],
+    queryFn: async ({ pageParam }: { pageParam: CursorType | null }) => {
+      const page = await fetchSearchResult(
+        searchBarFormValues,
+        pageSize,
+        sort,
+        pageParam
+      );
+      setTotalCount(page.totalCount);
+      return page;
+    },
+    initialPageParam: null,
+    getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,
+  });
+
+  // flatten pages into a single array of hotels
+  const hotels = data?.pages ? data.pages.flatMap((p: any) => p.items) : [];
+  useEffect(() => {
+    const total = data?.pages?.[0]?.totalCount ?? 0;
+    setTotalCount(total);
+  }, [data]);
+
+  // For virtualizer count include an extra slot for the loading sentinel when there's more to fetch
+  // TODO: Clarify this, I not quite understand it yet. // @Important.
+  const itemCount = hotels.length + (hasNextPage ? 1 : 0);
+
+  const rowVirtualizer = useVirtualizer({
+    count: itemCount,
+    estimateSize: () => 430, // approximate card height (adjust as needed)
+    // use the scrollable container by id to avoid needing useRef import
+    getScrollElement: () =>
+      document.getElementById("results-scroll-container") ?? document.scrollingElement,
+    overscan: 0,
+  });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+
+  // Only trigger loading when the sentinel is actually at the viewport bottom.
+  // Use threshold: 1 so the callback fires when the sentinel is fully visible.
+  const { ref: sentinelRef, inView } = useInView({
+    root: null,
+    rootMargin: "0px",
+    threshold: 1,
+  });
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  if (isLoading) return <ResultsSkeleton />;
+  if (isError) return <ResultsError onRetry={() => refetch()} />;
+
+  if (hotels.length === 0) return <NoResult />;
+
+  return (
+    <div className="w-full flex flex-col space-y-3">
+      <SearchStatusBar
+        location={searchBarFormValues.location}
+        total={totalCount}
+        searchParams={searchParams}
+      />
+
+      {/* Virtualized list */}
+      <div
+        id="results-scroll-container"
+        className="w-full"
+        style={{ position: "relative", overflowY: "auto", height: "auto" }}
+      >
+        <ul style={{ height: totalSize, position: "relative" }}>
+          {virtualItems.map((virtualRow) => {
+            const index = virtualRow.index;
+            const isSentinel = index === hotels.length && hasNextPage;
+
+            const style: React.CSSProperties = {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${virtualRow.start}px)`,
+              padding: 8,
+            };
+
+            if (isSentinel) {
+              // sentinel slot used to trigger loading of next page
+              return (
+                <li key="loading" style={style}>
+                  <div ref={sentinelRef} aria-hidden className="w-full h-6" />
+                </li>
+              );
+            }
+
+            const hotel = hotels[index];
+            if (!hotel) return null;
+
+            return (
+              <li key={hotel.id} style={style}>
+                <HotelCard
+                  hotel={hotel}
+                  href={`${PATHS.hotels}/${hotel.id}?${searchParams.toString()}`}
+                  showWardAtTopLeft={false}
+                />
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Loading indicator for next page (renders below virtualized list) */}
+        {isFetchingNextPage && (
+          <div className="w-full flex items-center justify-center py-4">
+            <Skeleton className="w-40 h-10 rounded-sm" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function ResultsSkeleton() {
   return (
@@ -111,12 +198,10 @@ export function ResultsSkeleton() {
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
 function NoResult() {
-  // TODO: This is temporary solution, this affects accessibility.
-  // Should make this button at the one place.
   return (
     <div className="w-full h-[calc(100vh-15rem)] flex flex-col gap-y-2 items-center justify-center overflow-hidden">
       <Image src={noResultImage} alt="No result found" className="w-48 h-48 object-contain" />
@@ -124,126 +209,24 @@ function NoResult() {
       <p className="text-sm text-muted-foreground">
         Bạn có thể điều chỉnh bộ lọc để tìm kiếm kết quả khác.
       </p>
-      <ButtonOpenFilterSheet>
+      <ButtonOpenFilterSheet className="lg:hidden">
         <span className="hidden sm:block">Mở bộ lọc</span>
       </ButtonOpenFilterSheet>
     </div>
-  )
+  );
 }
 
-
-// TODO: cleanup
 function ResultsError({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="w-full items-center flex flex-col gap-y-4 mt-20">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 text-destructive">
         <AlertCircle className="w-8 h-8" />
       </div>
-      <h2 className="text-2xl font-semibold">
-        Có lỗi xảy ra khi tải kết quả tìm kiếm
-      </h2>
+      <h2 className="text-2xl font-semibold">Có lỗi xảy ra khi tải kết quả tìm kiếm</h2>
       <p className="text-sm text-muted-foreground text-center">
         Vui lòng thử lại hoặc tải lại trang.
       </p>
       <Button onClick={onRetry}> Thử lại </Button>
     </div>
-  );
-}
-
-
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-} from "@/components/ui/pagination";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { SearchBarFormData } from "@/lib/zod_schemas/search-bar";
-import { useSearchParams } from "next/navigation";
-import ButtonOpenFilterSheet from "../button-open-filter-sheet";
-
-function PaginationBar({
-  currentPage,
-  totalPages,
-  onPageChange
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  return (
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <Button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            variant="ghost"
-            aria-label="Previous page"
-          >
-            <ChevronLeftIcon />
-            <span className="hidden sm:block">Previous</span>
-          </Button>
-        </PaginationItem>
-        {totalPages <= 5 ?
-          Array.from({ length: totalPages }).map((_, index) => 
-            <PaginationItem key={index}>
-              <Button
-                variant={index + 1 == currentPage ? "outline" : "ghost"}
-                onClick={() => onPageChange(index + 1)}
-                aria-current={index + 1 == currentPage ? "page" : undefined}
-              >
-                {index + 1}
-              </Button>
-            </PaginationItem>
-          ) : (
-            <>
-              {currentPage > 1 &&
-                <PaginationItem>
-                  <Button variant="ghost" onClick={() => onPageChange(1)}> 1 </Button>
-                </PaginationItem>
-              }
-
-              {currentPage >= 3 &&
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              }
-
-              <PaginationItem>
-                <Button variant="outline">
-                  {currentPage}
-                </Button>
-              </PaginationItem>
-
-              {currentPage <= totalPages - 2 &&
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              }
-              {
-                currentPage < totalPages &&
-                <PaginationItem>
-                  <Button variant="ghost" onClick={() => onPageChange(totalPages)}>
-                    {totalPages}
-                  </Button>
-                </PaginationItem>
-              }
-            </>
-          )
-        }
-        <PaginationItem>
-          <Button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            variant="ghost"
-            aria-label="Next page"
-          >
-            <span className="hidden sm:block">Next</span>
-            <ChevronRightIcon />
-          </Button>
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
   );
 }

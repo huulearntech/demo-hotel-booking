@@ -1,4 +1,3 @@
-// What if the hotel changes the room price after the user submits the booking information form but before they confirm the booking? We want to keep track of the price at the time of booking for historical price tracking and also for showing the user the price they agreed to when they submitted the form. This is especially important if we allow users to book without confirming immediately (e.g. they can submit the form and then confirm later, or they can save their booking information and come back to it later). So we need to store a snapshot of the room price at the time of booking in the BookingMetadata model.
 model BookingMetadata {
   id                String         @id @default(cuid())
   userId            String         @map("user_id")
@@ -15,13 +14,16 @@ model BookingMetadata {
 
   numRooms          Int            @map("num_rooms")
   numGuests         Int            @map("num_guests")
-  snapshotRoomPrice Decimal        @db.Decimal(10, 2) @map("snapshot_room_price")
+  snapshotRoomPrice Decimal        @db.Decimal(19, 4) @map("snapshot_room_price") // VND
   snapshotRoomTypeName String      @map("snapshot_room_type_name")
   snapshotCheckInTime  DateTime    @map("snapshot_check_in_time")
   snapshotCheckOutTime DateTime    @map("snapshot_check_out_time")
   
   booking           Booking?        // optional relation to the booking (only set when the booking is created but not yet confirmed)
   createdAt         DateTime       @default(now()) @map("created_at")
+  // @@index([userId])
+  // @@index([hotelId])
+  // @@index([createdAt])
 }
 
 model Booking {

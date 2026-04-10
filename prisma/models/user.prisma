@@ -17,10 +17,19 @@ model User {
   recentlyViewed   RecentlyViewed[]
   bookingsMetadata BookingMetadata[] // bookings made by this user
 
+  status           UserStatus        @default(PENDING)
+
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt      @map("updated_at")
 
   @@map("users")
+}
+
+enum UserStatus {
+  PENDING      // just registered, email not verified yet
+  ACTIVE
+  SUSPENDED
+  DELETED
 }
 
 model Favorite {

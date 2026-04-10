@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-import { MultiRoomFormOutput, RoomFormValues } from "@/lib/zod_schemas/create-room";
+import { MultiRoomType_FormValues, RoomFormValues } from "@/lib/zod_schemas/create-room";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { OperationResult } from "@/lib/types/operation-result";
 
@@ -27,7 +27,7 @@ export async function hotelowner_updateRoomById(id: string, data: RoomFormValues
   }
 }
 
-export async function hotelowner_createManyRoomTypes(formData: MultiRoomFormOutput): Promise<OperationResult> {
+export async function hotelowner_createManyRoomTypes(formData: MultiRoomType_FormValues): Promise<OperationResult> {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthorized", status: 401 };
@@ -46,9 +46,12 @@ export async function hotelowner_createManyRoomTypes(formData: MultiRoomFormOutp
   }
 
   // TODO: Handle errors + Revalidate rooms page after creation.
-  const result =  prisma.roomType.createMany({ // TODO: This is a huge load of data, consider not return.
+  const result =  prisma.roomType.createMany({ // only need to return the batch count
     data: formData.map(roomType => ({ ...roomType, hotelId: hotel.id })),
   });
+  if (!result) {
+    return { ok: false, error: "Failed to create room types" };
+  }
   return { ok: true, data: result };
 }
 
