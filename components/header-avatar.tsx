@@ -44,7 +44,7 @@ export default async function HeaderAvatar({
             <AvatarFallback>{name}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-50">
+        <DropdownMenuContent align="end" className="w-fit max-w-100">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="flex flex-col gap-1">
               <p className="font-semibold"> Xin chào, {name} </p>

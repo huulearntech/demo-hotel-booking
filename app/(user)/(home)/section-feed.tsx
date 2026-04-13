@@ -15,7 +15,7 @@ import {
 import HotelCard from "@/components/hotel-card";
 import { fetchFeed } from "@/lib/actions/home";
 
-// This can be named as Promotion, because admin can "promote" things
+// Simplify things, maybe just need to be polised on user role for now.
 export default async function Feed () {
   const title = "Khám phá điểm đến";
   const locations = await fetchFeed();

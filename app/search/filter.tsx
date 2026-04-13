@@ -1,4 +1,3 @@
-import { FilterFormProvider } from "./filter-form-context";
 import { FilterForm, FilterForm__Reset_and_Apply_Buttons } from "./filter-form";
 import {
   SheetDescription,
@@ -10,26 +9,22 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { Content as SheetContent } from '@radix-ui/react-dialog';
-
 import { ListFilter, XIcon } from 'lucide-react';
-
 import { cn } from '@/lib/utils';
 
-// Maybe accept a prop to decide whether to render the desktop or mobile version, or responsive.
-// But that requires to move filter form provider to a higher level.
 
 export default function Filter() {
   return (
-    <FilterFormProvider>
+    <>
       <Filter__Desktop />
       <Filter__Mobile showCloseButton/>
-    </FilterFormProvider>
+    </>
   );
 };
 
 function Filter__Desktop() {
   return (
-    <aside className="hidden lg:flex w-full max-w-62.5 flex-col gap-y-3">
+    <aside className="hidden sticky top-20.5 lg:flex w-full max-w-62.5 flex-col gap-y-3 z-10">
       <FilterForm__Reset_and_Apply_Buttons />
       <FilterForm />
     </aside>

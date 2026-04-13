@@ -1,4 +1,3 @@
-// TODO: disclaimer chưa được hay lắm, cần chỉnh sửa lại sau
 "use client";
 import { createContext, useContext, useLayoutEffect, useState } from "react";
 import {

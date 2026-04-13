@@ -46,7 +46,7 @@ export default async function ReviewSection({
         </div>
 
         <ul className="flex flex-col gap-y-3">
-          {bookingsMetadata.map((meta, index) => (
+          {bookingsMetadata.filter(meta => meta.booking).map((meta, index) => (
             <li key={meta.booking!.id || index}> <ReviewCard meta={meta} /> </li>
           ))}
         </ul>

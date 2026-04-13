@@ -3,36 +3,35 @@ import { auth } from '@/auth';
 import { PATHS } from './lib/constants';
 import { UserRole } from './lib/generated/prisma/enums';
 
-// Role-based access control
-// Allowed roles are strings like: 'USER', 'HOTEL_OWNER', 'ADMIN', 'UNAUTH'
 const pathsRequiringRole: Record<string, (UserRole | "UNAUTH")[]> = {
+  // unauthenticated routes
   [PATHS.signIn]: ['UNAUTH'],
   [PATHS.signUp]: ['UNAUTH'],
+  [PATHS.forgotPassword]: ['UNAUTH'],
+  [PATHS.signUpHotel]: ['UNAUTH'],
 
+  // user and part of hotel owner 
   [PATHS.home]: ['USER', 'UNAUTH'],
-
-  [PATHS.adminDashboard]: ['ADMIN'],
-  [PATHS.hotelDashboard]: ['HOTEL_OWNER'],
-
   [PATHS.account]: ['USER', 'HOTEL_OWNER', 'ADMIN'],
   [PATHS.accountHistory]: ['USER'],
   [PATHS.accountRecentlyViewed]: ['USER'],
   [PATHS.favorites]: ['USER'],
-
   [PATHS.bookings]: ['USER', 'UNAUTH'],
   [PATHS.hotels]: ['USER', 'UNAUTH'],
   [PATHS.search]: ['USER', 'UNAUTH'],
   [PATHS.searchMap]: ['USER', 'UNAUTH'],
-  [PATHS.forgotPassword]: ['UNAUTH'],
-  [PATHS.signUpHotel]: ['UNAUTH'],
   [PATHS.unauthorized]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN'],
   [PATHS.notFound]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN'],
 
   // Hotel dashboard sub-routes
+  [PATHS.hotelDashboard]: ['HOTEL_OWNER'],
   [PATHS.hotelRooms]: ['HOTEL_OWNER'],
   [PATHS.hotelStatistics]: ['HOTEL_OWNER'],
   [PATHS.hotelBookings]: ['HOTEL_OWNER'],
   [PATHS.hotelReviews]: ['HOTEL_OWNER'],
+  
+  // Admin
+  [PATHS.adminDashboard]: ['ADMIN'],
 };
 
 export const proxy = auth(async function handleProxy(request) {

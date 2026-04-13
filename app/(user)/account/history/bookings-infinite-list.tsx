@@ -1,13 +1,13 @@
+// TODO: the card component is AI-generated and ugly as fuck. Have to fix it.
 "use client";
-// May consider use tanstack useInfiniteQuery in the future.
-// But the chance of user have too many bookings is quite low.
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRightIcon } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
-import { type RecentBookingType, user_getRecentBookings } from "@/lib/actions/user-account";
+import { type RecentBookingType, user_getRecentBookingsPaginated } from "@/lib/actions/user-account";
 import { BookingStatus } from "@/lib/generated/prisma/enums";
 
 const map: Record<BookingStatus, { text: string; variant: string }> = {
@@ -21,47 +21,64 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   const s = map[status] ?? { text: status, variant: "bg-gray-100 text-gray-800" };
   return <span className={`px-2 py-1 rounded-md text-xs font-medium ${s.variant}`}>{s.text}</span>;
 }
-
-// cleanup
+// cleanup - compact card variants
 const fmtCurrency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format;
-const fmtDate = (d: Date) =>
-  new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+const fmtDate = (d?: string | Date | null) => {
+  if (!d) return "—";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(dt);
+};
+const fmtDateTime = (d?: string | Date | null) => {
+  if (!d) return "—";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(dt);
+};
 
 function BookingCard({ booking }: { booking: RecentBookingType }) {
-  const hotelName = booking.metadata?.hotel?.name ?? "Unknown hotel";
-  const checkInDate = booking.metadata?.checkInDate;
-  const checkOutDate = booking.metadata?.checkOutDate;
+  const {
+    hotel: { name: hotelName },
+    checkInDate,
+    checkOutDate,
+    numRooms,
+    numGuests,
+  } = booking.metadata;
   const totalPrice = booking.totalPrice;
-
-  const fmtCreatedAt = booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "—";
+  const createdAt = booking.createdAt;
 
   return (
-    <Card className="mb-1">
-      <CardHeader className="py-1.5 px-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="truncate font-medium">{hotelName}</div>
-            <div className="text-sm text-muted-foreground truncate">ID: {booking.id}</div>
-          </div>
+    <Card className="rounded-lg border bg-card/50">
+      <CardHeader className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="truncate font-semibold leading-5">{hotelName}</div>
+          <div className="mt-1 text-sm text-muted-foreground truncate">Mã: {booking.id}</div>
+        </div>
 
-          <div className="text-right shrink-0">
-            <div className="font-semibold">{fmtCurrency(totalPrice)}</div>
-            <div className="text-sm text-muted-foreground">{fmtCreatedAt}</div>
-          </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="font-semibold">{fmtCurrency(totalPrice)}</div>
+          <div className="text-sm text-muted-foreground">Đặt lúc {fmtDateTime(createdAt)}</div>
         </div>
       </CardHeader>
 
-      <CardContent className="py-1.5 px-2">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <CardContent className="flex items-center justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="text-sm text-muted-foreground truncate">{fmtDate(checkInDate)}</div>
+            <div className="text-muted-foreground truncate">{fmtDate(checkInDate)}</div>
             <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
-            <div className="text-sm text-muted-foreground truncate">{fmtDate(checkOutDate)}</div>
+            <div className="text-muted-foreground truncate">{fmtDate(checkOutDate)}</div>
           </div>
+          <div className="hidden md:block h-5 w-px bg-muted/40" />
+          <div className="hidden md:block text-muted-foreground">{numRooms} phòng</div>
+          <div className="hidden md:block text-muted-foreground">{numGuests} khách</div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <StatusBadge status={booking.status} />
-          </div>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={booking.status} />
         </div>
       </CardContent>
     </Card>
@@ -70,28 +87,26 @@ function BookingCard({ booking }: { booking: RecentBookingType }) {
 
 function SkeletonCard() {
   return (
-    <Card className="mb-1 animate-pulse">
-      <CardHeader className="py-1.5 px-2">
-        <div className="flex items-center justify-between w-full">
-          <div className="space-y-2 w-40">
-            <div className="h-3 bg-slate-200 rounded" />
-            <div className="h-3 bg-slate-200 rounded w-32" />
-          </div>
-          <div className="space-y-2 text-right">
-            <div className="h-3 bg-slate-200 rounded w-24 mx-auto" />
-            <div className="h-3 bg-slate-200 rounded w-20 mx-auto" />
-          </div>
+    <Card className="mb-2 animate-pulse rounded-lg border bg-card/50">
+      <CardHeader className="flex items-start justify-between gap-4 py-3 px-4">
+        <div className="min-w-0 space-y-2 w-48">
+          <div className="h-4 w-full rounded bg-slate-200" />
+          <div className="h-3 w-32 rounded bg-slate-200" />
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className="h-4 w-24 rounded bg-slate-200" />
+          <div className="h-3 w-36 rounded bg-slate-200" />
         </div>
       </CardHeader>
-      <CardContent className="py-1.5 px-2">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-3 bg-slate-200 rounded w-20" />
-            <div className="h-3 bg-slate-200 rounded w-4" />
-            <div className="h-3 bg-slate-200 rounded w-20" />
-          </div>
-          <div className="h-6 w-20 bg-slate-200 rounded" />
+
+      <CardContent className="flex items-center justify-between gap-4 py-3 px-4">
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-20 rounded bg-slate-200" />
+          <div className="h-3 w-4 rounded bg-slate-200" />
+          <div className="h-3 w-20 rounded bg-slate-200" />
         </div>
+        <div className="h-6 w-20 rounded bg-slate-200" />
       </CardContent>
     </Card>
   );
@@ -101,59 +116,42 @@ function SkeletonCard() {
 const PAGE_SIZE = 8;
 
 export default function BookingsInfiniteScrollList() {
-  const [bookings, setBookings] = useState<RecentBookingType[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-
   const { ref: sentinelRef, inView } = useInView({
     root: null,
     rootMargin: "200px",
     threshold: 0.1,
   });
 
-  // helper that talks to server action user_getRecentBookings
-  async function fetchPage(nextCursor: string | null) {
-    setLoading(true);
-    try {
-      const res = await user_getRecentBookings(nextCursor, PAGE_SIZE);
-      if (!res.ok) {
-        console.error("Server action error:", res.error);
-        setHasMore(false);
-        return;
-      }
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ["user_recent_bookings"],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) => {
+      // pageParam is the lastCursor string or null
+      const res = await user_getRecentBookingsPaginated(pageParam, PAGE_SIZE);
+      return res;
+    },
+    initialPageParam: null,
+    getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,
+    refetchOnWindowFocus: false,
+  });
 
-      const items = res.data ?? [];
-
-      // Determine next cursor: if we received a full page, use last item's id
-      const next = items.length === PAGE_SIZE ? items[items.length - 1].id : null;
-
-      setBookings((prev) => [...prev, ...items]);
-      setCursor(next);
-      setHasMore(!!next);
-    } catch (err) {
-      console.error("Error loading bookings via server action:", err);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // initial load
-  useEffect(() => {
-    if (bookings.length === 0 && !loading) {
-      fetchPage(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // ?????
+  // flatten pages
+  const bookings = data?.pages?.flatMap((p) => p.items) ?? [];
+  const loading = isLoading || isFetchingNextPage;
 
   // trigger loading next page when sentinel comes into view
   useEffect(() => {
-    if (inView && !loading && hasMore) {
-      fetchPage(cursor);
+    if (inView && hasNextPage && !loading) {
+      fetchNextPage();
     }
-  }, [inView, loading, hasMore, cursor]);
+  }, [inView, hasNextPage, loading, fetchNextPage]);
 
   return (
     <div>
@@ -174,9 +172,9 @@ export default function BookingsInfiniteScrollList() {
           <div ref={sentinelRef} aria-hidden className="h-8" />
 
           <div className="flex items-center justify-center gap-3 mt-4">
-            {loading ? ( // May consider show spinner instead of text
+            {loading ? (
               <div className="text-sm text-muted-foreground">Đang tải...</div>
-            ) : !hasMore ? (
+            ) : !hasNextPage ? (
               <div className="text-sm text-muted-foreground">Đã tải toàn bộ kết quả</div>
             ) : null}
           </div>

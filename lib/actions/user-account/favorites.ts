@@ -4,19 +4,13 @@ import { HotelCardProps } from "@/lib/types/hotel-card";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 
+// TODO: Handle auth
 export async function user_fetchFavoriteHotels() {
   const session = await auth();
 
-  // Temporarily disable
-  // if (session?.user.role !== "USER") {
-  //   // TODO: could show a "not authorized" message
-  //   return [];
-  // }
-  if (!session) {
+  if (session?.user.role !== "USER") {
     return [];
   }
-  /////////////////////////////////
-
 
   const where = { userId: session.user.id };
 

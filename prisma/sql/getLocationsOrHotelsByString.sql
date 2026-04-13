@@ -1,22 +1,28 @@
+-- @param {String} $1:searchString - The string to search for in location names.
+-- @param {Float}  $2:similarityThreshold
 WITH locations AS (
-  SELECT id, name,
-    similarity(unaccent(lower(coalesce(name, ''))), unaccent(lower($1))) AS sim
+  SELECT id, name, 'hotel' AS type,
+    similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM hotels
+  WHERE id IS NOT NULL AND name IS NOT NULL
   UNION ALL
-  SELECT id, name,
-    similarity(unaccent(lower(coalesce(name, ''))), unaccent(lower($1))) AS sim
+  SELECT id, name, 'province' AS type,
+    similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM provinces
+  WHERE id IS NOT NULL AND name IS NOT NULL
   UNION ALL
-  SELECT id, name,
-    similarity(unaccent(lower(coalesce(name, ''))), unaccent(lower($1))) AS sim
+  SELECT id, name, 'district' AS type,
+    similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM districts
+  WHERE id IS NOT NULL AND name IS NOT NULL
   UNION ALL
-  SELECT id, name,
-    similarity(unaccent(lower(coalesce(name, ''))), unaccent(lower($1))) AS sim
+  SELECT id, name, 'ward' AS type,
+    similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM wards
+  WHERE id IS NOT NULL AND name IS NOT NULL
 )
-SELECT id, name
+SELECT id, name, type
 FROM locations
-WHERE sim >= COALESCE($2::double precision, 0.2)  -- pass threshold as second param (0..1)
+WHERE sim >= COALESCE($2::double precision, 0.2)
 ORDER BY sim DESC, name
 LIMIT 10;

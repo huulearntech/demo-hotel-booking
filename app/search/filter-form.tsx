@@ -123,7 +123,7 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
                             }}
                           />
                           <Label htmlFor={`${category}-${option}`} className="ml-2 text-sm cursor-pointer">
-                            {option}
+                            {option} {/** TODO: separate label from value */}
                           </Label>
                         </div>
                       ))}

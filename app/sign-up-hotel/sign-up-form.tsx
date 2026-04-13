@@ -59,7 +59,7 @@ export default function HotelSignUpForm({
       checkOutTime: "12:00",
       imageUrls: [],
     },
-    mode: "onTouched",
+    mode: "onSubmit",
   });
 
   async function handleSubmit(values: FormSchemaOutput) {
@@ -94,7 +94,7 @@ export default function HotelSignUpForm({
       </div>
 
       <div className="grid gap-2">
-        <Label>Loại hình cơ sở lưu trú</Label>
+        <Label>Loại hình lưu trú</Label>
         <Controller
           control={form.control}
           name="type"

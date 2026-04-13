@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 export default async function RoomsPage() {
-  const rooms = await hotelowner_getRoomTypes();
+  const result = await hotelowner_getRoomTypes();
+  if (!result.ok) {
+    return null;
+  }
+  const rooms = result.data;
 
   return (
     <div className="space-y-6">

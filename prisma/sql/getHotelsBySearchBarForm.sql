@@ -3,7 +3,7 @@
 -- @param {DateTime} $3:checkOutDate
 -- @param {Int}      $4:numAdults
 -- @param {Int}      $5:numRooms
--- @param {Int}      $6:limit
+-- @param {Int}      $6:pageSize
 -- @param {String}   $7:orderBy (e.g. "price_asc", "price_desc", "review_points_desc")
 -- @param {Decimal}  $8:lastPrice? (for price_* orderings; pass NULL for first page)
 -- @param {Float}    $9:lastReviewPoints? (for review_points_desc ordering; pass NULL for first page)
@@ -12,7 +12,7 @@ WITH base AS (
   SELECT
     h.id,
     h.name,
-    h.image_urls AS "imageUrls",
+    h.image_urls AS "imageUrls", -- consider selecting only the first image for performance
     h.review_points AS "reviewPoints",
     h.number_of_reviews AS "numberOfReviews",
     h.type,
@@ -20,17 +20,18 @@ WITH base AS (
     p.name AS "provinceName",
     available.min_price AS "minPrice",
     available.max_price AS "maxPrice",
-    available.available_count AS "availableCount",
+    available.available_count AS "availableCount", -- This is not used.
     facility_list.facility_names AS "facilityNames"
   FROM hotels h
-  LEFT JOIN wards     w ON w.id = h."ward_id"
-  LEFT JOIN districts d ON d.id = w."district_id"
-  LEFT JOIN provinces p ON p.id = d."province_id"
+  JOIN wards     w ON w.id = h."ward_id"
+  JOIN districts d ON d.id = w."district_id"
+  JOIN provinces p ON p.id = d."province_id"
   JOIN LATERAL (
     SELECT
       COUNT(r.id) AS available_count,
       MIN(rt.price) AS min_price,
       MAX(rt.price) AS max_price
+      -- TODO: Price filter
     FROM rooms r
     JOIN room_types rt ON rt.id = r.type_id
     WHERE rt.hotel_id = h.id
@@ -39,7 +40,7 @@ WITH base AS (
         SELECT 1
         FROM "_BookingToRoom" b2r
         JOIN bookings b ON b2r."A" = b.id
-        JOIN "BookingMetadata" bm ON b.metadata_id = bm.id
+        LEFT JOIN "BookingMetadata" bm ON b.metadata_id = bm.id -- left join because bookingmetadata may not have booking.
         WHERE b2r."B" = r.id
           AND bm.check_in_date  < $3
           AND bm.check_out_date > $2
@@ -51,6 +52,7 @@ WITH base AS (
     FROM "_FacilityToHotel" f2h
     JOIN facilities fac ON fac.id = f2h."A"
     WHERE f2h."B" = h.id
+    -- TODO: Facilities filter
   ) AS facility_list ON true
   WHERE available.available_count >= $5
   AND (
@@ -74,6 +76,9 @@ WHERE (
   OR ($7 = 'price_asc'          AND (b."minPrice", b.id) > ($8::numeric, $10::text))
   OR ($7 = 'price_desc'         AND (b."maxPrice", b.id) < ($8::numeric, $10::text))
   OR ($7 = 'review_points_desc' AND (b."reviewPoints", b.id) < ($9::double precision, $10::text))
+
+  -- TODO: filter type of hotel (e.g. resort, apartment, etc.)
+  -- TODO: filter by rating (e.g. 4 stars and up
 )
 ORDER BY
   (CASE WHEN $7 = 'price_desc'         THEN b."maxPrice" END) DESC,
@@ -83,3 +88,5 @@ ORDER BY
 LIMIT $6
 ;
 -- TODO: replace location with type_id + type: hotel id + type hotel, district id + type district, etc. to allow more flexible search (e.g. search for hotels in a specific district but not caring about the province)
+-- INMAKING: add filter to where clause.
+-- start filter being slider will be more reasonable.

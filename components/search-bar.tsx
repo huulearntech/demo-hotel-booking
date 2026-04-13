@@ -1,20 +1,3 @@
-// if user click on "Near me", we ask for location permission.
-  // useEffect(() => {
-  //   // Ask for user's location permission and set default center to their location if granted
-  //   if (navigator.geolocation) {
-  //     navigator.geolocation.getCurrentPosition(
-  //       (position) => {
-  //         setDefaultCenter([position.coords.latitude, position.coords.longitude]);
-  //         setUserLocated(true);
-  //       },
-  //       (error) => {
-  //         console.warn("Geolocation permission denied or unavailable, using default center.", error);
-  //       }
-  //     );
-  //   }
-  // }, []);
-
-// TODO: Add a hidden field for "is hotel" -> if true -> redirect to hotel, else redirect to search result page with the location as keyword and hotel filter on. This is for the case when user select a hotel from the autocomplete suggestions, instead of a location.
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -36,12 +19,12 @@ import {
   AutocompleteEmpty,
   AutocompleteInput,
   AutocompleteItem,
-  AutocompleteList
+  AutocompleteList,
 } from "@/components/autocomplete";
 
 import { ArrowRight, ChevronDown, Minus, Plus, Search, RotateCwIcon, LoaderCircleIcon } from "lucide-react";
 
-import { SearchBarFormSchema, SearchParamsCodec, type SearchBarFormData } from "@/lib/zod_schemas/search-bar";
+import { schema_searchBar, type SearchBar_FormInput, type SearchBar_FormOutput, SearchBar_LocationType, SearchParamsCodec } from "@/lib/zod_schemas/search-bar.draft";
 import {
   MAX_ADULTS,
   MAX_CHILDREN,
@@ -59,16 +42,22 @@ import { user_getLocationOrHotelByQueryString } from "@/lib/actions/search-bar";
 
 export default function SearchBar({
   defaultValues,
-  className
+  className,
+  collapsible = true,
 }: {
-  defaultValues?: SearchBarFormData;
+  defaultValues?: SearchBar_FormInput;
   className?: string
+  collapsible: boolean
 }) {
   const [isOpenOnMobile, setIsOpenOnMobile] = useState(false);
-  const form = useForm<SearchBarFormData>({
-    resolver: zodResolver(SearchBarFormSchema),
+  const form = useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>({
+    resolver: zodResolver(schema_searchBar),
     defaultValues: defaultValues ?? {
-      location: "",
+      location: {
+        id: "",
+        name: "",
+        type: "none",
+      },
       inOutDates: {
         from: new Date(),
         to: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -90,13 +79,20 @@ export default function SearchBar({
       )}>
         <SearchBarForm
           data-open={isOpenOnMobile}
+          data-collapsible={collapsible}
           handleSubmit={handleSubmit}
           control={control}
+          className={cn(
+            "w-full px-1.5 md:px-0 flex flex-col md:flex-row md:items-end gap-y-2 md:gap-y-0 md:gap-x-2 transition-all duration-300",
+            "h-15.5 data-[collapsible=true]:data-[open=true]:h-59.5 data-[collapsible=true]:data-[open=true]:md:h-15.5 data-[collapsible=true]:max-md:overflow-hidden",
+            "data-[collapsible=false]:h-auto data-[collapsible=false]:p-0"
+          )}
         />
         <Button
+          data-collapsible={collapsible}
           type="button"
-          variant="ghost"
-          className="md:hidden mx-auto mb-1"
+          variant="outline"
+          className="data-[collapsible=false]:hidden md:hidden mx-auto mb-1"
           onClick={() => setIsOpenOnMobile(prev => !prev)}
         >
           <ChevronDown className={cn("size-5 transition-transform duration-200", isOpenOnMobile && "rotate-180")} />
@@ -106,76 +102,44 @@ export default function SearchBar({
   );
 }
 
-
-// TODO: clean up the code duplication between SearchBar and SearchBar__NonCollapsible
-export function SearchBar__NonCollapsible({
-  defaultValues,
-  className
-}: {
-  defaultValues?: SearchBarFormData;
-  className?: string
-}) {
-  const form = useForm<SearchBarFormData>({
-    resolver: zodResolver(SearchBarFormSchema),
-    defaultValues: defaultValues ?? {
-      location: "",
-      inOutDates: {
-        from: new Date(),
-        to: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-      guestsAndRooms: {
-        numAdults: 2,
-        numChildren: 0,
-        numRooms: 1,
-      }
-    }
-  });
-
-  const { handleSubmit, control } = form;
-  return (
-    <Form {...form}>
-      <SearchBarForm
-        className={cn(
-          "h-fit md:h-fit md:px-5",
-          className
-        )}
-        data-open={false}
-        handleSubmit={handleSubmit}
-        control={control}
-      />
-    </Form>
-  );
-}
-
 export function SearchBarForm({
-  className,
   isOpenOnMobile,
   handleSubmit,
   control,
   ...props
 }: ComponentProps<"form"> & {
-  className?: string
   isOpenOnMobile?: boolean
-  handleSubmit: ReturnType<typeof useForm<SearchBarFormData>>["handleSubmit"]
-  control: ReturnType<typeof useForm<SearchBarFormData>>["control"]
+  handleSubmit: ReturnType<typeof useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>>["handleSubmit"]
+  control: ReturnType<typeof useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>>["control"]
 }) {
   const router = useRouter();
 
-  // TODO: Tooltip for error when location is empty / number of guests is less than number of rooms
-  // TODO: Different behaviors when on map page vs other pages. 
-  const onSubmit = (values: SearchBarFormData) => {
-    const searchParams = new URLSearchParams(SearchParamsCodec.encode(values)).toString();
-    router.push(`${PATHS.search}?${searchParams}`);
+  const onSubmit = (values: SearchBar_FormOutput) => {
+    if (values.location.type === "none" || !values.location.id) {
+      console.warn("TODO: Invalid location, not searching");
+      return;
+    }
+
+    // TODO: may change search page search params into spec only, let id and type be params.
+
+    // TODO: this puts too much junk in the url
+    // TODO: stay on the map path when on map path.
+    let dest = "";
+    const encodedParams = SearchParamsCodec.encode(values);
+    if (values.location.type === "hotel") {
+      dest = PATHS.hotels + "/" + values.location.id;
+    } else {
+      dest = PATHS.search;
+    }
+
+    const searchParams = new URLSearchParams(encodedParams).toString();
+    router.push(`${dest}?${searchParams}`);
   };
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       data-open={isOpenOnMobile}
-      className={cn(
-        "flex flex-col overflow-hidden gap-y-2 w-full h-15.5 data-[open=true]:h-65 transition-all duration-300 md:flex-row md:gap-y-0 md:gap-x-2 data-[open=true]:md:h-fit md:h-fit px-1 md:px-0 md:overflow-visible",
-        className
-      )}
       {...props}
     >
       <FormField
@@ -183,7 +147,7 @@ export function SearchBarForm({
         name="location"
         render={({ field }) => (
           <FormItem className="w-full">
-            <FormLabel htmlFor="location-input">Khách sạn hoặc điểm đến</FormLabel>
+            <FormLabel htmlFor="location-input" className="font-semibold">Khách sạn hoặc điểm đến</FormLabel>
             <LocationAutocomplete
               value={field.value}
               onValueChange={field.onChange}
@@ -197,10 +161,10 @@ export function SearchBarForm({
         name="inOutDates"
         render={({ field }) => (
           <FormItem className="w-full">
-            <FormLabel htmlFor="date-range-picker">Ngày nhận / trả phòng</FormLabel>
+            <FormLabel htmlFor="date-range-picker" className="font-semibold">Ngày nhận / trả phòng</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" id="date-range-picker" className="text-sm lg:text-base overflow-hidden items-start">
+                <Button variant="outline" id="date-range-picker" className="text-sm lg:text-base overflow-hidden">
                   {new Intl.DateTimeFormat("vi-VN", { month: "numeric", day: "numeric", year: "numeric" }).format(field.value.from) || "Nhận phòng"}
                   <ArrowRight />
                   {new Intl.DateTimeFormat("vi-VN", { month: "numeric", day: "numeric", year: "numeric" }).format(field.value.to) || "Trả phòng"}
@@ -236,10 +200,10 @@ export function SearchBarForm({
 
           return (
             <FormItem className="w-full">
-              <FormLabel htmlFor="guests-and-rooms">Khách và phòng </FormLabel>
+              <FormLabel htmlFor="guests-and-rooms" className="font-semibold">Khách và phòng </FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button id="guests-and-rooms" variant="outline" className="text-sm lg:text-base overflow-hidden items-start">
+                  <Button id="guests-and-rooms" variant="outline" className="text-sm lg:text-base overflow-hidden">
                     {field.value.numAdults + " người lớn, "}
                     {field.value.numChildren + " trẻ em, "}
                     {field.value.numRooms + " phòng"}
@@ -322,7 +286,7 @@ export function SearchBarForm({
         }}
       />
 
-      <Button type="submit" className="w-full mt-5.5 md:w-fit flex items-center text-sm lg:text-base">
+      <Button type="submit" className="w-full md:w-fit flex items-center text-sm lg:text-base">
         <Search />
         <span className="md:max-lg:hidden">Tìm kiếm</span>
       </Button>
@@ -350,35 +314,78 @@ function useDebounced<T>(value: T, delay: number) {
   return debounced;
 }
 
+// TODO: Default suggestions on empty string.
+// TODO: value vs display value -> keep showing the name in the input, but store id+type in the form state.
+// FIXME: re-render too much + allow free text input that doesn't match any location (currently it does not allow to arrow navigate to the option)
+type Location = {
+  id: string;
+  name: string;
+  type: SearchBar_LocationType;
+}
 function LocationAutocomplete({
   value,
   onValueChange,
 }: {
-  value: string;
-  onValueChange: (value: string) => void;
+  value: Location;
+  onValueChange: (value: Location) => void;
 }) {
-  const debouncedValue = useDebounced(value, 500);
+  // display string shown in the input
+  const [display, setDisplay] = useState<string>(value.name); // careful with form initial value to avoid undefined.
+
+  // keep display in sync when parent value changes (e.g. form reset)
+  useEffect(() => {
+    setDisplay(value?.name ?? "");
+  }, [value?.id, value?.type, value?.name]);
+
+  const debouncedDisplay = useDebounced(display, 500);
 
   const { data = [], isLoading, error } = useSWR(
-    debouncedValue && debouncedValue.trim() !== "" ? ["locations", debouncedValue] : null,
+    debouncedDisplay && debouncedDisplay.trim() !== "" ? ["locations", debouncedDisplay] : null,
     async ([, q]) => user_getLocationOrHotelByQueryString(q),
     { dedupingInterval: 10_000 }
   );
 
-  const isTypingOrLoading = (value.trim() !== "" && value !== debouncedValue) || isLoading;
+  const isTypingOrLoading = (display.trim() !== "" && display !== debouncedDisplay) || isLoading;
 
-  const items = data.slice(0, MAX_LOCATION_AUTOCOMPLETE_RESULTS);
+  const items = (data ?? []).slice(0, MAX_LOCATION_AUTOCOMPLETE_RESULTS).filter((it: any) => it && it.id && it.name && it.type);
 
   const handleRetry = () => {
-    mutate(["locations", value]);
+    mutate(["locations", debouncedDisplay]);
+  };
+
+  // The Autocomplete primitive uses string values only. We encode selection as `${type}::${id}`.
+  const handleValueChange = (val: string) => {
+    if (!val) {
+      // cleared
+      setDisplay("");
+      onValueChange({ id: "", type: "none", name: "" });
+      return;
+    }
+
+    // If the value looks like our encoded selection, try to resolve it
+    if (val.includes("::")) {
+      const [type, ...rest] = val.split("::");
+      const id = rest.join("::");
+      const found = items.find((it: any) => String(it.id) === id && it.type === type);
+      if (found) {
+        setDisplay(found.name || "");
+        onValueChange({ id: String(found.id), type: found.type as SearchBar_LocationType, name: found.name || "" });
+        return;
+      }
+    }
+
+    // Otherwise treat as free text typing: update display and clear structured id/type
+    setDisplay(val);
+    onValueChange({ id: "", type: "none", name: val });
   };
 
   return (
     <Autocomplete
       modal={false}
       items={items}
-      value={value}
-      onValueChange={onValueChange}
+      value={display}
+      onValueChange={handleValueChange}
+      // itemToStringValue={item => `${item.type}::${item.id}`}
     >
       <AutocompleteInput
         id="location-input"
@@ -419,9 +426,16 @@ function LocationAutocomplete({
 
         {!isTypingOrLoading && !error && items.length > 0 && (
           <AutocompleteList>
-            {items.filter(item => item.id).map(item => (
-              <AutocompleteItem key={item.id} value={item.name}>
+            {items.map((item: any) => (
+              <AutocompleteItem
+                key={`${item.type}::${item.id}`}
+                value={`${item.type}::${item.id}`}
+                className="h-9"
+              >
                 {item.name}
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-accent text-primary py-0.5 px-2 rounded-full">
+                  {item.type === "hotel" ? "Khách sạn" : item.type === "province" ? "Tỉnh/Thành phố" : item.type === "district" ? "Quận/Huyện" : item.type === "ward" ? "Phường/Xã" : ""}
+                </span>
               </AutocompleteItem>
             ))}
           </AutocompleteList>

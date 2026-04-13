@@ -25,10 +25,9 @@ export async function fetchLast90DaysRevenueAndNumberOfBookings() {
   }
 
   const result = await prisma.$queryRawTyped(hotelowner_getLast90DaysRevenueAndBookings(hotel.id));
-  // return result.map((entry) => ({
-  //   date: entry.day,
-  //   revenue: entry.total_revenue?.toNumber() || 0,
-  //   numberOfBookings: entry.bookings || 0,
-  // }));
-  return result;
+  return result.map((entry) => ({
+    date: entry.day,
+    revenue: entry.total_revenue?.toNumber() || 0,
+    numberOfBookings: entry.bookings || 0,
+  }));
 }

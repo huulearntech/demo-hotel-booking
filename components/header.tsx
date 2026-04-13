@@ -1,16 +1,15 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-import { Button } from '@/components/ui/button';
-
-import { PATHS } from '@/lib/constants'
-import { tvlk_logo_text_dark } from "@/public/logos"
-import { HeartIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { auth } from "@/auth";
 import { user_getInfoById } from "@/lib/actions/user-account";
+import { PATHS } from '@/lib/constants'
+import { cn } from '@/lib/utils';
 
 import HeaderAvatar from './header-avatar';
-import { auth } from '@/auth';
+import { Button } from '@/components/ui/button';
+import { HeartIcon } from 'lucide-react';
+import { tvlk_logo_text_dark } from "@/public/logos"
 
 
 export default async function Header({ className }: { className?: string }) {
@@ -24,7 +23,7 @@ export default async function Header({ className }: { className?: string }) {
           <Image
             src={tvlk_logo_text_dark}
             alt="Traveloka Header Logo"
-            className="h-10 object-contain"
+            className="h-10 w-auto object-contain"
           />
         </Link>
         {user ? (

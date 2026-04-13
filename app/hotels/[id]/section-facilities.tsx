@@ -1,12 +1,8 @@
 import {
   Accessibility,
-  AirVent,
   Bed,
   Building2,
-  CarTaxiFront,
   ForkKnifeCrossed,
-  Store,
-  Wifi,
   type LucideIcon,
 } from "lucide-react";
 

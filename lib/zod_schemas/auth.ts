@@ -1,4 +1,3 @@
-// TODO: Reuse schemas
 import { z } from "zod";
 
 export const schemaSignIn = z.object({

@@ -9,39 +9,47 @@ import {
 } from "lucide-react";
 
 import { PATHS } from "@/lib/constants";
-import { getRoomsByHotelIdGroupedByType, type FetchAvailableRoomsResult } from "@/lib/actions/hotel";
 import { formatVND } from "@/lib/utils";
 
+import { user_getAvailableRoomTypeOfHotel, type UserGetAvailableRoomTypeOfHotelResult } from "@/lib/actions/hotel";
+import { SearchBar_FormInput } from "@/lib/zod_schemas/search-bar.draft";
+
 export default async function AvailableRoomsSection({
-  hotelId
+  hotelId,
+  hotelName,
+  searchBarFormData,
 }: {
-  hotelId: string
+  hotelId: string;
+  hotelName: string;
+  searchBarFormData: SearchBar_FormInput
 }) {
-  const roomsByType = await getRoomsByHotelIdGroupedByType(
+  const { inOutDates: { from: checkInDate, to: checkOutDate }, guestsAndRooms: { numAdults, numChildren, numRooms } } = searchBarFormData;
+
+  const roomTypes = await user_getAvailableRoomTypeOfHotel(
     hotelId,
-    new Date(), // TODO: get from search params
-    new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // TODO: get from search params
-    1, // TODO: get from search params
-    2, // TODO: get from search params
+    checkInDate,
+    checkOutDate,
+    numAdults,
+    numChildren,
+    numRooms
   );
+
   return (
     <section id="available_rooms" className="w-full flex flex-col">
       <div className="rounded-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
-        <h2 className="font-bold text-[1.25rem]">Những phòng còn trống tại {hotelId}</h2>
-        {roomsByType.length === 0 && (
+        <h2 className="font-bold text-[1.25rem]">Những phòng còn trống tại {hotelName}</h2>
+        {roomTypes.length === 0 && (
           <div className="w-full h-48 flex items-center justify-center bg-muted rounded-lg">
             <span className="text-sm text-muted-foreground">Không có phòng nào còn trống cho khoảng thời gian này</span>
           </div>
         )}
-        {roomsByType.map((type) => <RoomTypeCard key={type.id} roomType={type} />)}
+        {roomTypes.map((type) => <RoomTypeCard key={type.id} roomType={type} />)}
       </div>
     </section>
   )
 };
 
-// There should be more arguments to this.
-// E.g.: number of rooms,...
-function RoomTypeCard({ roomType }: { roomType: FetchAvailableRoomsResult[number] }) {
+function RoomTypeCard({ roomType }: { roomType: UserGetAvailableRoomTypeOfHotelResult[number] }) {
   const { imageUrls } = roomType;
   return (
     <div
@@ -55,21 +63,18 @@ function RoomTypeCard({ roomType }: { roomType: FetchAvailableRoomsResult[number
     >
       {/* Image column */}
       <div className="w-full md:w-2/5 lg:w-1/3 shrink-0">
-        {imageUrls.length > 0
-          ? (
-            <Image
-              src={imageUrls[0]}
-              alt={roomType.name}
-              width={400}
-              height={300}
-              className="w-full h-64 lg:h-full rounded-lg object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-64 lg:h-full bg-muted rounded-lg flex items-center justify-center">
-              <span className="text-sm text-muted-foreground">Không có hình ảnh cho phòng này</span>
-            </div>
-          )
+        {imageUrls && imageUrls.length > 0
+          ? <Image
+            src={imageUrls[0]}
+            alt={roomType.name}
+            width={400}
+            height={300}
+            className="w-full h-64 lg:h-full rounded-lg object-cover"
+            loading="lazy"
+          />
+          : <div className="w-full h-64 lg:h-full bg-muted rounded-lg flex items-center justify-center">
+            <span className="text-sm text-muted-foreground">Không có hình ảnh cho phòng này</span>
+          </div>
         }
       </div>
 
@@ -119,7 +124,8 @@ function RoomTypeCard({ roomType }: { roomType: FetchAvailableRoomsResult[number
               <BedDoubleIcon className="size-4" />
               <span className="lowercase first-letter:capitalize">Giường {roomType.bedType}</span>
             </li>
-            {roomType.facilities.map((facility) => (
+            {Array.isArray(roomType.facilities) ? (
+              (roomType.facilities as { id: string; iconUrl?: string; name: string }[]).map((facility) => (
               <li
                 key={facility.id}
                 className="flex items-center gap-x-2 text-sm"
@@ -135,7 +141,8 @@ function RoomTypeCard({ roomType }: { roomType: FetchAvailableRoomsResult[number
                 ) : null}
                 <span>{facility.name}</span>
               </li>
-            ))}
+              ))
+            ) : null}
           </ul>
         </section>
 
@@ -146,7 +153,7 @@ function RoomTypeCard({ roomType }: { roomType: FetchAvailableRoomsResult[number
 
           <div>
             <a
-            // TODO: link to booking page (onclick must handle something)
+            // TODO: link to booking page (onclick must handle create booking metadata)
               href={PATHS.bookings + "/1"}
               target="_blank"
               rel="noreferrer"

@@ -5,21 +5,19 @@ proxy: handle redirecting.
 
 filter: cleanup className
 
-search bar form: consider? merge adult and children capacity into only one capacity, merge search bar with filter?
-
 search bar schema: transform from Date in react-day-picker to YYYY-MM-DD in searchParams
 
 search bar submit: different target url on home, search vs map. and handle trolling search params
 
-useTransition: it is not neccessary, but it does enhance UX by not blinking at the last second of submitting the form.
-
 types: unified them into one place, such as "types" folder.
 
-search result: fix infinite scroll
-
-consider make a form + search bar provider that wrap the whole app.
+consider make a form + search bar provider that wrap the whole app, or somehow merge these two.
 
 consider make buckets for materialized view in search query: bucket for (province or district) & (3d | 7d | 15d | 30d) & (2guest | ... commonly search number of guests)
+
+filter: make it sticky.
+
+homepage: favorite destination -> real link
 
 // TODO: Flow
 // 1. Basic info (name, email, phone) -> sign up for account

@@ -8,12 +8,10 @@ import { fetchHotel } from "@/lib/actions/hotel";
 import Navbar from "./navbar";
 import { notFound } from "next/navigation";
 import SearchBar from "@/components/search-bar";
-import { SearchParams, SearchParamsCodec } from "@/lib/zod_schemas/search-bar";
+import { SearchParams, SearchParamsCodec } from "@/lib/zod_schemas/search-bar.draft";
 import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 
 
-// TODO: This page is not yet responsive
-// TODO: add default value for searchbar: location = hotel name, other specs stay the same as the search result page.
 export default async function Page(props: {
   params: Promise<{ id: string }>
   searchParams: Promise<SearchParams>;
@@ -25,7 +23,7 @@ export default async function Page(props: {
 
   const safeDecodedParams = SearchParamsCodec.safeDecode(searchParams);
   if (!safeDecodedParams.success) {
-    // TODO: change search params to default values instead of showing 404 page
+    // TODO: Handle trolling parameter or show the 404 page.
     notFound();
   }
 
@@ -35,7 +33,11 @@ export default async function Page(props: {
     notFound();
   }
 
-  safeDecodedParams.data.location = hotel.name; // override the location in search params with hotel name
+  safeDecodedParams.data.location = {
+    id: hotel.id,
+    type: "hotel",
+    name: hotel.name,
+  }; // override the location in search params with hotel name
 
   const {
     name: hotelName,
@@ -50,12 +52,12 @@ export default async function Page(props: {
   return (
     <>
       <div className="flex flex-col py-3 sticky top-0 shadow-lg bg-white z-20 gap-y-4">
-        <SearchBar defaultValues={safeDecodedParams.data} />
+        <SearchBar defaultValues={safeDecodedParams.data} collapsible/>
         <Navbar />
       </div>
       <main className="flex flex-col gap-y-4 content my-4 [&>section]:scroll-mt-35">
         <OverviewSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
-        <AvailableRoomsSection hotelId={hotel.id} />
+        <AvailableRoomsSection hotelId={hotel.id} hotelName={hotelName} searchBarFormData={safeDecodedParams.data}/>
         <LocationSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <FacilitiesSection hotel={hotel} />
         <ReviewSection hotelName={hotelName} bookingsMetadata={bookingsMetadata} reviewPoints={reviewPoints} numberOfReviews={numberOfReviews} />

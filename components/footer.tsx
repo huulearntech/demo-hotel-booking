@@ -61,9 +61,9 @@ export default function Footer() {
           <div>
             <Image src={tvlk_logo_text_light} alt="Traveloka Logo" />
             <div className="inline-flex space-x-4">
-              <Image src={iata} alt="IATA Logo" />
-              <Image src={bst} alt="BST Logo" />
-              <Image src={bct} alt="BCT Logo" />
+              <Image src={iata} alt="IATA Logo" className="h-auto"/>
+              <Image src={bst} alt="BST Logo" className="h-auto"/>
+              <Image src={bct} alt="BCT Logo" className="h-auto"/>
             </div>
           </div>
 

@@ -6,19 +6,18 @@ import { type OperationResult } from "@/lib/types/operation-result";
 import { differenceInDays } from "date-fns";
 
 // This is paid bookings, not count the draft ones.
-export async function user_getRecentBookings(
+export async function user_getRecentBookingsPaginated(
   lastCursor: string | null = null,
   limit = 10
-): Promise<OperationResult<RecentBookingType[]>> {
+) {
   const session = await auth();
   if (!session) {
-    return { ok: false, error: "Unauthenticated", status: 401 };
+    throw new Error("Unauthenticated");
   }
   if (session.user.role !== "USER") {
-    return { ok: false, error: "Unauthorized", status: 403 };
+    throw new Error("Unauthorized");
   }
 
-  // Build pagination args for Prisma
   const pagination: {
     take: number;
     cursor?: { id: string };
@@ -27,7 +26,6 @@ export async function user_getRecentBookings(
 
   if (lastCursor) {
     pagination.cursor = { id: lastCursor };
-    // skip the cursor row itself
     pagination.skip = 1;
   }
 
@@ -42,27 +40,30 @@ export async function user_getRecentBookings(
           snapshotRoomPrice: true,
           checkInDate: true,
           checkOutDate: true,
+          numRooms: true,
+          numGuests: true,
         },
       },
     },
   });
 
-  const result = bookings.map((booking) => {
+  const items = bookings.map((booking) => {
     const checkIn = booking.metadata.checkInDate;
     const checkOut = booking.metadata.checkOutDate;
     const days = differenceInDays(checkOut, checkIn);
     const totalPrice = booking.metadata.snapshotRoomPrice.mul(days).toNumber();
 
-    // remove the non-serializable snapshotRoomPrice before returning
     const { snapshotRoomPrice, ...metadataWithoutPrice } = booking.metadata;
     return {
       ...booking,
       metadata: metadataWithoutPrice,
       totalPrice,
-    };
+    } as RecentBookingType;
   });
 
-  return { ok: true, data: result };
+  const nextCursor = bookings.length === limit ? bookings[bookings.length - 1].id : null;
+
+  return { items, nextCursor };
 }
 
 type BookingWithMeta = Prisma.BookingGetPayload<{
@@ -73,6 +74,8 @@ type BookingWithMeta = Prisma.BookingGetPayload<{
         snapshotRoomPrice: true;
         checkInDate: true;
         checkOutDate: true;
+        numRooms: true;
+        numGuests: true;
       };
     };
   };
@@ -120,10 +123,9 @@ import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { CACHE_TAGS, PATHS } from "@/lib/constants";
 import { Prisma } from "@/lib/generated/prisma/client";
 
+// Can't use session = auth() in here.
 export const user_getInfoById = unstable_cache(
-  async (userId: string | null) => {
-    if (!userId) { return null; }
-
+  async (userId: string) => {
     return prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, profileImageUrl: true, email: true },

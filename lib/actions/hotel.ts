@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getRoomTypesOfHotel } from "../generated/prisma/sql";
 
 export async function fetchHotel(hotelId: string) {
   return prisma.hotel.findUnique({
@@ -66,79 +67,9 @@ export async function fetchHotel(hotelId: string) {
   });
 }
 
-export async function getRoomsByHotelIdGroupedByType(
-  hotelId: string,
-  checkInDate: Date,
-  checkOutDate: Date,
-  numRooms: number,
-  numAdults: number
-) {
-
-  // What's the point of Prisma when the query looks like this?
-  return prisma.roomType.findMany({
-    where: {
-      hotelId,
-      rooms: {
-        none: {
-          bookings: {
-            some: {
-              AND: [
-                {
-                  metadata: {
-                    is: {
-                      AND: [
-                        { checkInDate: { lt: checkOutDate } },
-                        { checkOutDate: { gt: checkInDate } },
-                      ],
-                    }
-                  }
-                },
-                { status: { in: ["CONFIRMED", "PENDING", "CANCELLED"] } },
-              ],
-            }
-          }
-        }
-      },
-    },
-    include: {
-      rooms: {
-        where: {
-          bookings: {
-            none: {
-              AND: [
-                {
-                  metadata: {
-                    is: {
-                      AND: [
-                        { checkInDate: { lt: checkOutDate } },
-                        { checkOutDate: { gt: checkInDate } },
-                      ],
-                    }
-                  }
-                },
-                { status: { in: ["CONFIRMED", "PENDING", "CANCELLED"] } },
-              ],
-            },
-          },
-        },
-        select: {
-          _count: {
-            select: { bookings: true },
-          },
-        },
-      },
-      facilities: {
-        select: {
-          id: true,
-          name: true,
-          iconUrl: true,
-        },
-      },
-    },
-    orderBy: { price: "asc" }, // optional: sort cheapest first within each type
-  });
+export async function user_getAvailableRoomTypeOfHotel(hotelId: string, checkInDate: Date, checkOutDate: Date, numAdults: number, numChildren: number, numRooms: number) {
+  return prisma.$queryRawTyped(getRoomTypesOfHotel(hotelId, checkInDate, checkOutDate, numAdults, numChildren, numRooms));
+  // return result;
 }
 
-export type FetchHotelResult = Awaited<ReturnType<typeof fetchHotel>>;
-
-export type FetchAvailableRoomsResult = Awaited<ReturnType<typeof getRoomsByHotelIdGroupedByType>>;
+export type UserGetAvailableRoomTypeOfHotelResult = Awaited<ReturnType<typeof user_getAvailableRoomTypeOfHotel>>;

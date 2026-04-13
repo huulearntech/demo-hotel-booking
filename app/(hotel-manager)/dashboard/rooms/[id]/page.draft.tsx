@@ -194,9 +194,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 {room.type.imageUrls && room.type.imageUrls.length > 0 ? (
                   <ul className="flex gap-2 flex-wrap">
                     {room.type.imageUrls.map((src, i) => (
-                      <li key={i} className="w-28 h-20 bg-muted rounded overflow-hidden">
-                        {/* TODO next/Image */}
-                        <img src={src} alt={`room-${i}`} className="object-cover w-full h-full" />
+                      <li key={i} className="relative w-28 h-20 bg-muted rounded overflow-hidden">
+                        <Image src={src} alt={`room-${i}`} fill className="object-cover absolute inset-0" />
                       </li>
                     ))}
                   </ul>
@@ -226,6 +225,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import Image from "next/image";
 export async function generateMetadata({
   params,
 }: {

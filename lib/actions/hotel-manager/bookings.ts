@@ -2,11 +2,9 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-// ...existing code...
-// Not sure if this should be paginated on server or client.
+// TODO: Handle error and consider using sql.
 export async function hotelowner_getBookings() {
   const session = await auth();
-  // TODO: Clarify this
   if (session?.user?.role !== "HOTEL_OWNER") {
     throw new Error("Unauthorized");
   }

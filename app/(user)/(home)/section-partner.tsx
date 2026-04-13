@@ -54,7 +54,7 @@ const ScrollingLogos = ({
             className="h-10 flex items-center shrink-0"
             style={{ width: itemWidth }}
           >
-            <Image src={logo} alt="" className="object-contain m-auto max-w-full max-h-full" />
+            <Image src={logo} alt="" className="object-contain m-auto w-auto h-auto max-w-full max-h-full" />
           </div>
         ))}
       </div>

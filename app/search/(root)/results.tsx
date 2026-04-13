@@ -1,43 +1,43 @@
-// FIXME: Virtual list not work yet.
-
 "use client";
 
-import { SearchBarFormData } from "@/lib/zod_schemas/search-bar";
 import { useSearchParams } from "next/navigation";
-
-import ButtonOpenFilterSheet from "../button-open-filter-sheet";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInView } from "react-intersection-observer";
 
-import { fetchSearchResult } from "@/lib/actions/search";
-import SearchStatusBar, { SearchStatusBarSkeleton } from "./search-status-bar";
-
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import noResultImage from "@/public/images/no-result.svg";
-import Image from "next/image";
-import HotelCard from "@/components/hotel-card";
-import { AlertCircle } from "lucide-react";
+import { SearchBar_FormInput } from "@/lib/zod_schemas/search-bar.draft";
+import { fetchSearchResult } from "@/lib/actions/search/index.draft";
 import { PATHS } from "@/lib/constants";
 
+import ButtonOpenFilterSheet from "../button-open-filter-sheet";
+import SearchStatusBar, { SearchStatusBarSkeleton } from "./search-status-bar";
+import HotelCard from "@/components/hotel-card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, LoaderCircleIcon } from "lucide-react";
+import noResultImage from "@/public/images/no-result.svg";
 
 // temporary. TODO: move to types
 type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
 import type { CursorType } from "@/lib/actions/search";
+import { useFilterForm } from "../filter-form-context";
+
+// TODO: remove
+const pageSize = 2;
+
+const sort: SortType = "price_asc";
 
 export default function Results({
   searchBarFormValues,
 }: {
-  searchBarFormValues: SearchBarFormData;
+  searchBarFormValues: SearchBar_FormInput;
 }) {
   const searchParams = useSearchParams();
-  // TODO: remove
-  const pageSize = 2;
-
-  const sort: SortType = "price_asc";
   const [totalCount, setTotalCount] = useState(0);
+
+  const { getValues } = useFilterForm();
+  const filterFormValues = getValues();
 
   const {
     data,
@@ -50,17 +50,19 @@ export default function Results({
   } = useInfiniteQuery({
     queryKey: ["hotels", searchBarFormValues],
     queryFn: async ({ pageParam }: { pageParam: CursorType | null }) => {
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate network delay
       const page = await fetchSearchResult(
         searchBarFormValues,
+        filterFormValues,
         pageSize,
         sort,
         pageParam
       );
-      setTotalCount(page.totalCount);
       return page;
     },
     initialPageParam: null,
     getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,
+    refetchOnWindowFocus: false,
   });
 
   // flatten pages into a single array of hotels
@@ -70,24 +72,7 @@ export default function Results({
     setTotalCount(total);
   }, [data]);
 
-  // For virtualizer count include an extra slot for the loading sentinel when there's more to fetch
-  // TODO: Clarify this, I not quite understand it yet. // @Important.
-  const itemCount = hotels.length + (hasNextPage ? 1 : 0);
-
-  const rowVirtualizer = useVirtualizer({
-    count: itemCount,
-    estimateSize: () => 430, // approximate card height (adjust as needed)
-    // use the scrollable container by id to avoid needing useRef import
-    getScrollElement: () =>
-      document.getElementById("results-scroll-container") ?? document.scrollingElement,
-    overscan: 0,
-  });
-
-  const virtualItems = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
-
-  // Only trigger loading when the sentinel is actually at the viewport bottom.
-  // Use threshold: 1 so the callback fires when the sentinel is fully visible.
+  // sentinel to load next page when it comes into view
   const { ref: sentinelRef, inView } = useInView({
     root: null,
     rootMargin: "0px",
@@ -108,62 +93,66 @@ export default function Results({
   return (
     <div className="w-full flex flex-col space-y-3">
       <SearchStatusBar
-        location={searchBarFormValues.location}
+        location={searchBarFormValues.location.name}
         total={totalCount}
         searchParams={searchParams}
       />
 
-      {/* Virtualized list */}
-      <div
-        id="results-scroll-container"
-        className="w-full"
-        style={{ position: "relative", overflowY: "auto", height: "auto" }}
-      >
-        <ul style={{ height: totalSize, position: "relative" }}>
-          {virtualItems.map((virtualRow) => {
-            const index = virtualRow.index;
-            const isSentinel = index === hotels.length && hasNextPage;
+      <ul className="w-full grid grid-cols-1 min-[512px]:grid-cols-2 md:grid-cols-3 gap-4">
+        {hotels.map((hotel: any, index: number) => (
+          <li key={hotel.id} data-index={index}>
+            <HotelCard
+              hotel={hotel}
+              href={`${PATHS.hotels}/${hotel.id}?${searchParams.toString()}`}
+              showWardAtTopLeft={false}
+            />
+          </li>
+        ))}
 
-            const style: React.CSSProperties = {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              transform: `translateY(${virtualRow.start}px)`,
-              padding: 8,
-            };
+        {/* {isFetchingNextPage && Array.from({ length: pageSize }).map((_, index) => (
+          <li key={`loading-placeholder-${index}`}>
+            <div className="w-full h-106 rounded-lg overflow-hidden flex flex-col justify-between gap-y-2">
+              <Skeleton className="w-full h-50" />
+              <div className="flex justify-between px-3 py-2 flex-1 gap-x-2">
+                <div className="w-full flex flex-col gap-y-2">
+                  <Skeleton className="w-full h-4 rounded-lg" />
+                  <Skeleton className="w-full h-4 rounded-lg" />
+                  <Skeleton className="w-3/5 h-3 rounded-lg" />
+                </div>
+                <Skeleton className="size-10 rounded-sm" />
+              </div>
 
-            if (isSentinel) {
-              // sentinel slot used to trigger loading of next page
-              return (
-                <li key="loading" style={style}>
-                  <div ref={sentinelRef} aria-hidden className="w-full h-6" />
-                </li>
-              );
-            }
+              <div className="flex justify-between items-end px-3 py-2 flex-1 gap-x-2">
+                <div className="w-full flex flex-col gap-y-2">
+                  <Skeleton className="w-4/5 h-5 rounded-lg" />
+                  <Skeleton className="w-4/5 h-5 rounded-lg" />
+                </div>
+                <Skeleton className="w-20 h-10 rounded-sm" />
+              </div>
+            </div>
+          </li>
+        ))} */}
 
-            const hotel = hotels[index];
-            if (!hotel) return null;
-
-            return (
-              <li key={hotel.id} style={style}>
-                <HotelCard
-                  hotel={hotel}
-                  href={`${PATHS.hotels}/${hotel.id}?${searchParams.toString()}`}
-                  showWardAtTopLeft={false}
-                />
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Loading indicator for next page (renders below virtualized list) */}
-        {isFetchingNextPage && (
-          <div className="w-full flex items-center justify-center py-4">
-            <Skeleton className="w-40 h-10 rounded-sm" />
-          </div>
+        {/* sentinel to trigger loading next page */}
+        {hasNextPage && (
+          <li key="loading-sentinel" className="col-span-full">
+            <div ref={sentinelRef} aria-hidden className="w-full h-6" />
+          </li>
         )}
-      </div>
+      </ul>
+
+      {isFetchingNextPage && (
+        <div className="w-full flex items-center justify-center py-4 text-sm text-muted-foreground gap-x-2">
+          <LoaderCircleIcon className="size-4 animate-spin" />
+          Đang tải thêm kết quả...
+        </div>
+      )}
+
+      {!hasNextPage && (
+        <div className="w-full flex items-center justify-center py-4 text-sm text-muted-foreground">
+          Đã hiển thị tất cả kết quả
+        </div>
+      )}
     </div>
   );
 }
@@ -209,8 +198,8 @@ function NoResult() {
       <p className="text-sm text-muted-foreground">
         Bạn có thể điều chỉnh bộ lọc để tìm kiếm kết quả khác.
       </p>
-      <ButtonOpenFilterSheet className="lg:hidden">
-        <span className="hidden sm:block">Mở bộ lọc</span>
+      <ButtonOpenFilterSheet className="w-fit lg:hidden">
+        <span>Mở bộ lọc</span>
       </ButtonOpenFilterSheet>
     </div>
   );

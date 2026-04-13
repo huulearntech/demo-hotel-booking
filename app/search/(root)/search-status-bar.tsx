@@ -25,13 +25,10 @@ export default function SearchStatusBar({
   searchParams: ReadonlyURLSearchParams;
 }) {
   return (
-    <div className="flex items-center justify-between sticky top-21.5 lg:top-20.5 border-b p-3 -mt-3 z-10 bg-background shadow-md">
-      <div className="flex gap-x-4 items-center">
-        <ButtonOpenFilterSheet className="lg:hidden" />
-        <div className="flex flex-col text-sm">
-          <span className="font-bold"> {location} </span>
-          <span> {total} nơi lưu trú được tìm thấy </span>
-        </div>
+    <div className="flex items-center justify-between sticky top-21 lg:top-20.5 border-b p-3 -mt-3 z-10 bg-background shadow-md">
+      <div className="flex flex-col text-sm">
+        <span className="hidden font-bold md:block"> {location} </span>
+        <span> {total} nơi lưu trú được tìm thấy </span>
       </div>
       <div className="flex gap-x-4 items-center">
         <div className="flex gap-x-2">
@@ -43,8 +40,8 @@ export default function SearchStatusBar({
 
             <SelectContent position="popper">
               <SelectGroup>
-                <SelectItem value="price-desc">Giá cao nhất</SelectItem>
                 <SelectItem value="price-asc">Giá thấp nhất </SelectItem>
+                <SelectItem value="price-desc">Giá cao nhất</SelectItem>
                 <SelectItem value="rating">Điểm đánh giá cao nhất</SelectItem>
               </SelectGroup>
             </SelectContent>
@@ -55,10 +52,11 @@ export default function SearchStatusBar({
           className="h-fit bg-primary text-primary-foreground text-xs font-bold px-3 py-2 rounded-full flex items-center gap-x-2"
         >
           <a href={`${PATHS.searchMap}?${searchParams.toString()}`} target="_blank" >
-            Xem trên bản đồ
+            <span className="hidden lg:block">Xem trên bản đồ</span>
             <MapPinnedIcon className="size-4" />
           </a>
         </Button>
+        <ButtonOpenFilterSheet className="lg:hidden" />
       </div>
     </div>
   );

@@ -93,9 +93,9 @@ export default async function OverviewSection({
             </div>
           </div>
 
-          <div className="flex gap-x-2 py-2">
+          <div className="flex flex-col md:flex-row gap-x-2 py-2">
             <div className="flex flex-col text-end">
-              <span className="text-xs">Giá/phòng/đêm</span>
+              <span className="text-xs">Giá/phòng/đêm từ</span>
               <span className="h-fit text-[1.25rem] font-bold text-orange-600">{formatVND(minPrice.toNumber())}</span>
             </div>
             <a

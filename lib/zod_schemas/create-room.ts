@@ -19,7 +19,6 @@ export type RoomType_FormInput  = z.input<typeof schema_RoomType>;
 export type RoomType_FormOutput = z.output<typeof schema_RoomType>;
 export type RoomType_FormValues = z.infer<typeof schema_RoomType>;
 
-// TODO: how to select typeId?
 export const schema_Room = z.object({
   name: z.string().min(1, "Tên phòng không được để trống"),
   typeId: z.string().min(1, "Loại phòng không được để trống"),
