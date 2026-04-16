@@ -13,7 +13,7 @@ model BookingMetadata {
   checkOutDate      DateTime       @db.Date @map("check_out_date")
 
   numRooms          Int            @map("num_rooms")
-  numGuests         Int            @map("num_guests")
+  numGuests         Int            @map("num_guests") // TODO: separate adults and children
   snapshotRoomPrice Decimal        @db.Decimal(19, 4) @map("snapshot_room_price") // VND
   snapshotRoomTypeName String      @map("snapshot_room_type_name")
   snapshotCheckInTime  DateTime    @map("snapshot_check_in_time")
@@ -56,6 +56,7 @@ model Review {
   bookingId String   @unique @map("booking_id")
   booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  // TODO: rating vs reviewPoints?
   rating    Int      // 1..5
   comment   String?
   createdAt DateTime @default(now()) @map("created_at")

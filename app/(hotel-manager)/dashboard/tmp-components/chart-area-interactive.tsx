@@ -1,9 +1,9 @@
-// TODO: Fix AI generated slops in the chart tooltip component.
+// TODO: Fix AI generated chart tooltip component.
 
 "use client"
 
 import { useState, useEffect } from "react"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, TooltipProps } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -17,7 +17,6 @@ import {
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
 import {
@@ -42,11 +41,11 @@ const timeRangeValues: Record<TimeRangeOptions, number> = {
 
 const chartConfig = {
   revenue: {
-    label: "Revenue",
+    label: "Doanh thu",
     color: "var(--color-blue-500)",
   },
   numberOfBookings: {
-    label: "Bookings",
+    label: "Lượt đặt phòng",
     color: "var(--color-red-500)",
   },
 } satisfies ChartConfig
@@ -84,34 +83,6 @@ export function ChartAreaInteractive() {
   const sliceStart = Math.max(0, chartData.length - timeRangeValues[timeRange])
   const dataInTimeRange = chartData.slice(sliceStart)
 
-
-  // Vietnamese formatters
-  const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
-    month: "short",
-    day: "numeric",
-  })
-
-  const bookingsCompactFormatter = new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 1,
-    notation: "compact",
-    compactDisplay: "short",
-  })
-  const bookingsFullFormatter = new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 0,
-  })
-
-  const currencyCompactFormatter = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 1,
-    notation: "compact",
-    compactDisplay: "short",
-  })
-  const currencyFullFormatter = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  })
 
   return (
     <Card className="@container/card">
@@ -205,7 +176,6 @@ export function ChartAreaInteractive() {
               tickFormatter={(value) => {
                 const n = Number(value)
                 if (Number.isNaN(n)) return String(value)
-                // if (n >= 1_000_000) return currencyCompactFormatter.format(n)
                 return currencyCompactFormatter.format(n)
               }}
               label={{ value: "Doanh thu", angle: 90, position: "insideRight", offset: 10 }}
@@ -213,49 +183,7 @@ export function ChartAreaInteractive() {
             <ChartTooltip
               cursor={false}
               defaultIndex={isMobile ? -1 : 10}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value: any) => {
-                    const safeParseDate = (v: any): Date | null => {
-                      if (v instanceof Date && !Number.isNaN(v.getTime())) return v
-                      // If it's a numeric timestamp or numeric string
-                      const asNumber = typeof v === "number" ? v : Number(v)
-                      if (!Number.isNaN(asNumber)) {
-                        const d = new Date(asNumber)
-                        if (!Number.isNaN(d.getTime())) return d
-                      }
-                      // Try Date.parse on string
-                      const parsed = Date.parse(String(v))
-                      if (!Number.isNaN(parsed)) return new Date(parsed)
-                      return null
-                    }
-
-                    const d = safeParseDate(value)
-                    return d ? dateFormatter.format(d) : String(value ?? "")
-                  }}
-                  formatter={(value, name) => {
-                    const key = String(name) as keyof typeof chartConfig
-                    const label = chartConfig?.[key]?.label ?? String(name)
-
-                    if (key === "numberOfBookings") {
-                      const n = Number(value) || 0
-                      const formatted = n >= 1000 ? bookingsCompactFormatter.format(n) : bookingsFullFormatter.format(n)
-                      return [formatted, label]
-                    }
-
-                    if (key === "revenue") {
-                      const n = Number(value) || 0
-                      const formatted = n >= 1_000_000
-                        ? currencyCompactFormatter.format(n)
-                        : currencyFullFormatter.format(n)
-                      return [formatted, label]
-                    }
-
-                    return [String(value), label]
-                  }}
-                  indicator="dot"
-                />
-              }
+              content={<CustomTooltip />}
               isAnimationActive={false}
             />
             <Line
@@ -281,5 +209,97 @@ export function ChartAreaInteractive() {
         </ChartContainer>
       </CardContent>
     </Card>
+  )
+}
+
+// Vietnamese formatters
+const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
+  month: "short",
+  day: "numeric",
+})
+
+const bookingsCompactFormatter = new Intl.NumberFormat("vi-VN", {
+  maximumFractionDigits: 1,
+  notation: "compact",
+  compactDisplay: "short",
+})
+const bookingsFullFormatter = new Intl.NumberFormat("vi-VN", {
+  maximumFractionDigits: 0,
+})
+
+const currencyCompactFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 1,
+  notation: "compact",
+  compactDisplay: "short",
+})
+const currencyFullFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+})
+
+// Safe date parse used by tooltip
+const safeParseDate = (v: any): Date | null => {
+  if (v instanceof Date && !Number.isNaN(v.getTime())) return v
+  const asNumber = typeof v === "number" ? v : Number(v)
+  if (!Number.isNaN(asNumber)) {
+    const d = new Date(asNumber)
+    if (!Number.isNaN(d.getTime())) return d
+  }
+  const parsed = Date.parse(String(v))
+  if (!Number.isNaN(parsed)) return new Date(parsed)
+  return null
+}
+
+// Custom tooltip content to fix spacing, use Vietnamese, and show color indicator
+function CustomTooltip(props: any) {
+  const { active, payload, label } = props
+  if (!active || !payload || !payload.length) return null
+
+  const d = safeParseDate(label)
+  const labelText = d ? dateFormatter.format(d) : String(label ?? "")
+
+  return (
+    <div className="bg-white/95 text-slate-900 text-sm rounded-md shadow-md p-2 min-w-40">
+      <div className="text-xs text-slate-500 mb-1">{labelText}</div>
+      <div className="flex flex-col gap-1">
+        {payload.map((p: any) => {
+          // p.dataKey is the key used in Line dataKey
+          const key = String(p.dataKey) as keyof typeof chartConfig
+          const conf = chartConfig?.[key]
+          const color = conf?.color ?? p.color ?? p.stroke ?? "#000"
+
+          // Format value per key
+          let formattedValue = String(p.value)
+          if (key === "numberOfBookings") {
+            const n = Number(p.value) || 0
+            formattedValue = n >= 1000 ? bookingsCompactFormatter.format(n) : bookingsFullFormatter.format(n)
+          } else if (key === "revenue") {
+            const n = Number(p.value) || 0
+            formattedValue = n >= 1_000_000
+              ? currencyCompactFormatter.format(n)
+              : currencyFullFormatter.format(n)
+          }
+
+          const labelName = conf?.label ?? String(p.name ?? key)
+
+          return (
+            <div key={key} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  aria-hidden
+                  className="inline-block rounded-full"
+                  style={{ width: 10, height: 10, background: color }}
+                />
+                <span className="truncate text-sm text-slate-700">{labelName}</span>
+              </div>
+              <div className="text-sm font-medium text-slate-900 whitespace-nowrap">{formattedValue}</div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }

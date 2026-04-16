@@ -1,5 +1,8 @@
 "use server";
 import prisma from "@/lib/prisma";
+import { getHotelsByBoundingBox } from "@/lib/generated/prisma/sql";
+import { SearchBar_FormOutput } from "@/lib/zod_schemas/search-bar";
+import { FilterFormValues } from "@/lib/zod_schemas/filter";
 
 export type BBox = {
   west: number;
@@ -8,42 +11,51 @@ export type BBox = {
   north: number;
 }
 
-export async function getHotelsByBoundingBox(bbox: BBox) {
+export async function tmp_getHotelsByBoundingBox(
+  bbox: BBox,
+  searchBarFormValues: SearchBar_FormOutput, // This is currently called "search spec", though it is not correct term.
+  filterFormValues: FilterFormValues,
+  pageSize: number = 20,
+) {
   const { west, south, east, north } = bbox;
+  const {
+    inOutDates: { from: checkInDate, to: checkOutDate },
+    guestsAndRooms: { numAdults, numChildren, numRooms }
+  } = searchBarFormValues;
 
-  const where =
-    west <= east
-      ? {
-          latitude: { gte: south, lte: north },
-          longitude: { gte: west, lte: east },
-        }
-      : {
-          latitude: { gte: south, lte: north },
-          // When the bounding box crosses the antimeridian, select hotels with longitude >= west OR longitude <= east
-          OR: [{ longitude: { gte: west } }, { longitude: { lte: east } }],
-        };
+  const {
+    priceRange: [minPrice, maxPrice],
+    propertyTypes: hotelTypes,
+    amenities: facilities,
+  } = filterFormValues;
 
-  const hotels = await prisma.hotel.findMany({
-    take: 20,
-    where,
-    select: {
-      id: true,
-      name: true,
-      roomTypes: { select: { price: true }, take: 1, orderBy: { price: "asc" } },
-      reviewPoints: true,
-      numberOfReviews: true,
-      imageUrls: true,
-      latitude: true,
-      longitude: true,
-    },
-  }).then(hotels => hotels.map(hotel => ({
+  const hotels = await prisma.$queryRawTyped(getHotelsByBoundingBox(
+    checkInDate,
+    checkOutDate,
+    numAdults,
+    numRooms,
+    pageSize,
+
+
+    north,
+    south,
+    west,
+    east,
+
+
+    minPrice,
+    maxPrice,
+    facilities,
+    hotelTypes,
+
+
+    numChildren,  // TODO: move this up with the numAdults.
+  )).then(hotels => hotels.map(hotel => ({
     ...hotel,
-    price: hotel.roomTypes[0].price.toNumber() || 0, // convert Decimal to number, default to 0 if no room types
-    thumbnailUrl: hotel.imageUrls[0] ?? null,
-    roomTypes: undefined, // remove rooms from the result since we only needed the price
+    price: hotel.price?.toNumber() || 0, // convert Decimal to number, default to 0 if price is null
   })));
 
   return hotels;
 }
 
-export type Map_HotelCardProps = Awaited<ReturnType<typeof getHotelsByBoundingBox>>[number];
+export type Map_HotelCardProps = Awaited<ReturnType<typeof tmp_getHotelsByBoundingBox>>[number];

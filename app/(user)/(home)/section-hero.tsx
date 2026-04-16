@@ -36,7 +36,11 @@ export default function HeroSection() {
               Khám phá nhiều lựa chọn từ khách sạn, biệt thự, resort và hơn thế nữa
             </h2>
           </div>
-          <SearchBar className="bg-white text-primary placeholder:text-secondary p-4 lg:p-6 rounded-2xl lg:rounded-4xl border lg:absolute lg:inset-x-0" collapsible={false} />
+          <SearchBar
+            defaultLocationQuery=""
+            className="bg-white placeholder:text-secondary p-4 lg:p-6 rounded-2xl lg:rounded-4xl border lg:absolute lg:inset-x-0"
+            collapsible={false}
+          />
         </div>
       </div>
     </section>

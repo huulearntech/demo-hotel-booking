@@ -1,8 +1,10 @@
+// FIXME: when not collapsible, the search bar overflow. Have no fucking idea why when it's separated, it works. When merged, it doesn't.
 "use client";
 
+import { ComponentProps } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 import { vi } from "react-day-picker/locale";
 import { cn } from "@/lib/utils";
@@ -12,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Autocomplete,
   AutocompleteContent,
@@ -24,7 +25,7 @@ import {
 
 import { ArrowRight, ChevronDown, Minus, Plus, Search, RotateCwIcon, LoaderCircleIcon } from "lucide-react";
 
-import { schema_searchBar, type SearchBar_FormInput, type SearchBar_FormOutput, SearchBar_LocationType, SearchParamsCodec } from "@/lib/zod_schemas/search-bar.draft";
+import { codec_searchSpec, schema_searchBar, type SearchBar_FormInput, type SearchBar_FormOutput, SearchBar_LocationType, SearchParamsCodec } from "@/lib/zod_schemas/search-bar";
 import {
   MAX_ADULTS,
   MAX_CHILDREN,
@@ -37,16 +38,18 @@ import {
 } from "@/lib/constants";
 
 import useSWR, { mutate } from "swr";
-import { ComponentProps, useState, useEffect } from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { user_getLocationOrHotelByQueryString } from "@/lib/actions/search-bar";
 
 export default function SearchBar({
   defaultValues,
   className,
+  defaultLocationQuery = "",
   collapsible = true,
 }: {
   defaultValues?: SearchBar_FormInput;
   className?: string
+  defaultLocationQuery: string;
   collapsible: boolean
 }) {
   const [isOpenOnMobile, setIsOpenOnMobile] = useState(false);
@@ -55,7 +58,6 @@ export default function SearchBar({
     defaultValues: defaultValues ?? {
       location: {
         id: "",
-        name: "",
         type: "none",
       },
       inOutDates: {
@@ -82,6 +84,7 @@ export default function SearchBar({
           data-collapsible={collapsible}
           handleSubmit={handleSubmit}
           control={control}
+          defaultLocationQuery={defaultLocationQuery}
           className={cn(
             "w-full px-1.5 md:px-0 flex flex-col md:flex-row md:items-end gap-y-2 md:gap-y-0 md:gap-x-2 transition-all duration-300",
             "h-15.5 data-[collapsible=true]:data-[open=true]:h-59.5 data-[collapsible=true]:data-[open=true]:md:h-15.5 data-[collapsible=true]:max-md:overflow-hidden",
@@ -106,34 +109,38 @@ export function SearchBarForm({
   isOpenOnMobile,
   handleSubmit,
   control,
+  defaultLocationQuery,
   ...props
 }: ComponentProps<"form"> & {
   isOpenOnMobile?: boolean
   handleSubmit: ReturnType<typeof useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>>["handleSubmit"]
   control: ReturnType<typeof useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>>["control"]
+  defaultLocationQuery?: string
 }) {
-  const router = useRouter();
+  const [locationQuery, setLocationQuery] = useState(defaultLocationQuery ?? "");
 
+  const router = useRouter();
+  const pathname = usePathname();
   const onSubmit = (values: SearchBar_FormOutput) => {
     if (values.location.type === "none" || !values.location.id) {
       console.warn("TODO: Invalid location, not searching");
       return;
     }
+    // TODO: if the form is valid, put the form into local storage and read it on mount.
 
-    // TODO: may change search page search params into spec only, let id and type be params.
-
-    // TODO: this puts too much junk in the url
-    // TODO: stay on the map path when on map path.
-    let dest = "";
-    const encodedParams = SearchParamsCodec.encode(values);
+    // TODO: rename codec and types. The amount of confusion has reached critical point.
     if (values.location.type === "hotel") {
-      dest = PATHS.hotels + "/" + values.location.id;
+      const dest = PATHS.hotels + "/" + values.location.id;
+      const { location, ...spec } = values;
+      const encodedSpecOnly = codec_searchSpec.encode(spec);
+      const searchParams = new URLSearchParams(encodedSpecOnly).toString();
+      router.push(`${dest}?${searchParams}`);
     } else {
-      dest = PATHS.search;
+      const dest = pathname === PATHS.searchMap ? PATHS.searchMap : PATHS.search;
+      const encodedFullParams = SearchParamsCodec.encode(values);
+      const searchParams = new URLSearchParams(encodedFullParams).toString();
+      router.push(`${dest}?${searchParams}`);
     }
-
-    const searchParams = new URLSearchParams(encodedParams).toString();
-    router.push(`${dest}?${searchParams}`);
   };
 
   return (
@@ -149,7 +156,8 @@ export function SearchBarForm({
           <FormItem className="w-full">
             <FormLabel htmlFor="location-input" className="font-semibold">Khách sạn hoặc điểm đến</FormLabel>
             <LocationAutocomplete
-              value={field.value}
+              query={locationQuery}
+              setQuery={setLocationQuery}
               onValueChange={field.onChange}
             />
           </FormItem>
@@ -294,16 +302,6 @@ export function SearchBarForm({
   );
 }
 
-export function SearchBarSkeleton({ className }: { className?: string }) {
-  return (
-    <div className={cn("h-10 flex flex-col md:flex-row gap-2 items-start", className)}>
-      <Skeleton className="h-full w-full md:w-3/10 rounded-full" />
-      <Skeleton className="h-full w-full md:w-3/10 rounded-full" />
-      <Skeleton className="h-full w-full md:w-3/10 rounded-full" />
-      <Skeleton className="h-full w-full md:w-1/10 rounded-full" />
-    </div>
-  );
-}
 
 function useDebounced<T>(value: T, delay: number) {
   const [debounced, setDebounced] = useState<T>(value);
@@ -314,78 +312,46 @@ function useDebounced<T>(value: T, delay: number) {
   return debounced;
 }
 
-// TODO: Default suggestions on empty string.
-// TODO: value vs display value -> keep showing the name in the input, but store id+type in the form state.
-// FIXME: re-render too much + allow free text input that doesn't match any location (currently it does not allow to arrow navigate to the option)
 type Location = {
   id: string;
-  name: string;
   type: SearchBar_LocationType;
 }
+
+// TODO: This has reduced rerender compared to the original. But still rerender a lot. One keystroke causes 3 renders.
 function LocationAutocomplete({
-  value,
+  query,
+  setQuery,
   onValueChange,
 }: {
-  value: Location;
+  query: string;
+  setQuery: Dispatch<SetStateAction<string>>;
   onValueChange: (value: Location) => void;
 }) {
-  // display string shown in the input
-  const [display, setDisplay] = useState<string>(value.name); // careful with form initial value to avoid undefined.
-
-  // keep display in sync when parent value changes (e.g. form reset)
-  useEffect(() => {
-    setDisplay(value?.name ?? "");
-  }, [value?.id, value?.type, value?.name]);
-
-  const debouncedDisplay = useDebounced(display, 500);
+  const debouncedQuery = useDebounced(query, 500);
 
   const { data = [], isLoading, error } = useSWR(
-    debouncedDisplay && debouncedDisplay.trim() !== "" ? ["locations", debouncedDisplay] : null,
+    debouncedQuery && debouncedQuery.trim() !== "" ? ["locations", debouncedQuery] : null,
     async ([, q]) => user_getLocationOrHotelByQueryString(q),
     { dedupingInterval: 10_000 }
   );
 
-  const isTypingOrLoading = (display.trim() !== "" && display !== debouncedDisplay) || isLoading;
+  const isTypingOrLoading = (query.trim() !== "" && query !== debouncedQuery) || isLoading;
 
-  const items = (data ?? []).slice(0, MAX_LOCATION_AUTOCOMPLETE_RESULTS).filter((it: any) => it && it.id && it.name && it.type);
+  const items = data.filter((it: any) => it && it.id && it.name && it.type);
 
   const handleRetry = () => {
-    mutate(["locations", debouncedDisplay]);
-  };
-
-  // The Autocomplete primitive uses string values only. We encode selection as `${type}::${id}`.
-  const handleValueChange = (val: string) => {
-    if (!val) {
-      // cleared
-      setDisplay("");
-      onValueChange({ id: "", type: "none", name: "" });
-      return;
-    }
-
-    // If the value looks like our encoded selection, try to resolve it
-    if (val.includes("::")) {
-      const [type, ...rest] = val.split("::");
-      const id = rest.join("::");
-      const found = items.find((it: any) => String(it.id) === id && it.type === type);
-      if (found) {
-        setDisplay(found.name || "");
-        onValueChange({ id: String(found.id), type: found.type as SearchBar_LocationType, name: found.name || "" });
-        return;
-      }
-    }
-
-    // Otherwise treat as free text typing: update display and clear structured id/type
-    setDisplay(val);
-    onValueChange({ id: "", type: "none", name: val });
+    mutate(["locations", debouncedQuery]);
   };
 
   return (
     <Autocomplete
       modal={false}
       items={items}
-      value={display}
-      onValueChange={handleValueChange}
-      // itemToStringValue={item => `${item.type}::${item.id}`}
+      filter={null}
+      limit={MAX_LOCATION_AUTOCOMPLETE_RESULTS} // use or not?
+      itemToStringValue={item => item.name}
+      value={query}
+      onValueChange={setQuery}
     >
       <AutocompleteInput
         id="location-input"
@@ -424,13 +390,16 @@ function LocationAutocomplete({
           <AutocompleteEmpty>Không tìm thấy địa điểm này.</AutocompleteEmpty>
         )}
 
-        {!isTypingOrLoading && !error && items.length > 0 && (
+        {!error && items.length > 0 && (
           <AutocompleteList>
-            {items.map((item: any) => (
+            {items.map((item: { id: string, type: string, name: string }) => (
               <AutocompleteItem
                 key={`${item.type}::${item.id}`}
-                value={`${item.type}::${item.id}`}
+                value={item}
                 className="h-9"
+                onClick={() => {
+                  onValueChange({ id: item.id, type: item.type as SearchBar_LocationType });
+                }}
               >
                 {item.name}
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-accent text-primary py-0.5 px-2 rounded-full">
@@ -444,3 +413,6 @@ function LocationAutocomplete({
     </Autocomplete>
   );
 }
+
+
+// should experiment removing useSWR

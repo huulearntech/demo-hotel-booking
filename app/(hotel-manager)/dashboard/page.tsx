@@ -1,8 +1,4 @@
-import {
-  TaskList,
-  RoomStatusBoard,
-} from "./dashboardComponents";
-
+import RoomTypesOccupancyPctBoard from "./room-types-occupancy-pct-board";
 import UpcomingBooking, { UpcomingBookingSkeleton } from "./tmp-components/upcoming-booking";
 
 import { ChartAreaInteractive as RevenueChart } from "./tmp-components/chart-area-interactive";
@@ -11,25 +7,22 @@ import { Suspense } from "react";
 
 export default function DashboardPage() {
   return (
-    <main>
+    <main className="flex flex-col gap-y-6">
       <DashboardMetricCards />
-
-      <section className="flex flex-col gap-y-4" >
-
+      <section className="flex flex-col gap-y-4">
         <RevenueChart />
+      </section>
 
-        <div className="flex flex-col gap-y-4">
-          <h2>Upcoming Bookings</h2>
-          <Suspense fallback={<UpcomingBookingSkeleton />} >
-            <UpcomingBooking />
-          </Suspense>
-        </div>
+      <section className="flex flex-col gap-y-4">
+        <h2>Upcoming Bookings</h2>
+        <Suspense fallback={<UpcomingBookingSkeleton />} >
+          <UpcomingBooking />
+        </Suspense>
+      </section>
 
-        {/** May show occupancy? How? */}
-        <div className="bg-white p-3 rounded-lg shadow-sm">
-          <h2>Room Status</h2>
-          <RoomStatusBoard />
-        </div>
+      <section className="flex flex-col gap-y-4">
+        <h2>Room Status</h2>
+        <RoomTypesOccupancyPctBoard />
       </section>
     </main>
   );

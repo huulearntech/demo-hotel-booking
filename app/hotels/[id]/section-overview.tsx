@@ -5,28 +5,44 @@ import { fetchHotel } from "@/lib/actions/hotel";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ChevronRight, MapPin } from 'lucide-react';
 import { tvlk_favicon } from "@/public/logos";
-import { MAX_REVIEW_POINTS } from "@/lib/constants";
+import { MAX_REVIEW_POINTS, PATHS } from "@/lib/constants";
 import { formatVND } from "@/lib/utils";
 import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
+import { SearchSpec } from "@/lib/zod_schemas/search-bar";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 
 export default async function OverviewSection({
+  searchParams,
   hotel,
   poiCategoriesWithPlaces,
 }: {
-  hotel: Awaited<ReturnType<typeof fetchHotel>>
+  searchParams: SearchSpec,
+  hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>>
   poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>
 }) {
-
-  if (!hotel) return null;
-
   const {
     roomTypes: [{ price: minPrice }],
     bookingsMetadata,
     imageUrls,
     facilities,
-    ward: { name: wardName, district: { name: districtName, province: { name: provinceName } } },
+    ward: {
+      id: wardId,
+      name: wardName,
+      district: {
+        id: districtId,
+        name: districtName,
+        province: {
+          id: provinceId,
+          name: provinceName
+        } } },
   } = hotel;
+
+  const stringifiedSearchParams = new URLSearchParams(searchParams).toString();
+  const provinceUrl = `${PATHS.search}?locationId=${provinceId}&locationType=province&${stringifiedSearchParams}`;
+  const districtUrl = `${PATHS.search}?locationId=${districtId}&locationType=district&${stringifiedSearchParams}`;
+  const wardUrl = `${PATHS.search}?locationId=${wardId}&locationType=ward&${stringifiedSearchParams}`;
 
   const places = Object.values(poiCategoriesWithPlaces).flatMap(category => category.places).slice(0, 5); // pick 5
 
@@ -36,17 +52,35 @@ export default async function OverviewSection({
         {/** TODO: real link to regions */}
         <BreadcrumbList className="text-xs font-semibold">
           <BreadcrumbItem>
-            <BreadcrumbLink href="#">{provinceName}</BreadcrumbLink>
+            <BreadcrumbLink asChild>
+              <Link href={provinceUrl}>
+                {provinceName}
+              </Link>
+            </BreadcrumbLink>
           </BreadcrumbItem>
+
           <BreadcrumbSeparator />
+
           <BreadcrumbItem>
-            <BreadcrumbLink href="#">{districtName}</BreadcrumbLink>
+            <BreadcrumbLink asChild>
+              <Link href={districtUrl}>
+                {districtName}
+              </Link>
+            </BreadcrumbLink>
           </BreadcrumbItem>
+
           <BreadcrumbSeparator />
+
           <BreadcrumbItem>
-            <BreadcrumbLink href="#">{wardName}</BreadcrumbLink>
+            <BreadcrumbLink asChild>
+              <Link href={wardUrl}>
+                {wardName}
+              </Link>
+            </BreadcrumbLink>
           </BreadcrumbItem>
+
           <BreadcrumbSeparator />
+
           <BreadcrumbItem>
             <BreadcrumbLink href="#">{hotel.name}</BreadcrumbLink>
           </BreadcrumbItem>
@@ -96,14 +130,11 @@ export default async function OverviewSection({
           <div className="flex flex-col md:flex-row gap-x-2 py-2">
             <div className="flex flex-col text-end">
               <span className="text-xs">Giá/phòng/đêm từ</span>
-              <span className="h-fit text-[1.25rem] font-bold text-orange-600">{formatVND(minPrice.toNumber())}</span>
+              <span className="h-fit text-[1.25rem] font-bold text-primary">{formatVND(minPrice.toNumber())}</span>
             </div>
-            <a
-              href="#available_rooms"
-              className="font-bold text-white flex items-center bg-orange-600 px-3 py-2 rounded-[0.375rem] h-fit"
-            >
-              Chọn phòng
-            </a>
+            <Button asChild className="h-fit font-semibold">
+              <a href="#available_rooms"> Chọn phòng </a>
+            </Button>
           </div>
         </div>
 
@@ -114,7 +145,7 @@ export default async function OverviewSection({
                 <Image src={tvlk_favicon} alt="" className="mr-2" />
                 <div className="flex items-end text-primary">
                   <div className="text-[1.625rem] font-bold">{hotel.reviewPoints.toFixed(1)}</div>
-                  <div className="text-sm font-semibold"> {"/ " + MAX_REVIEW_POINTS} </div>
+                  <div className="text-sm font-semibold whitespace-pre">/ {MAX_REVIEW_POINTS}</div>
                 </div>
               </div>
 
@@ -197,6 +228,7 @@ export default async function OverviewSection({
 
 
         <div className="bg-white border border-gray-200 rounded-[0.625rem] p-3 flex-1 flex-col space-y-3">
+          <h2 className="font-bold"> Tổng quan về khách sạn </h2>
           <p className="text-sm max-h-20 overflow-hidden overflow-ellipsis">{hotel.description}</p>
           <div className="flex gap-x-1 text-sm font-bold text-primary">
             Xem thêm

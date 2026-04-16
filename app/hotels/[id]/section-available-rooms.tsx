@@ -11,8 +11,11 @@ import {
 import { PATHS } from "@/lib/constants";
 import { formatVND } from "@/lib/utils";
 
-import { user_getAvailableRoomTypeOfHotel, type UserGetAvailableRoomTypeOfHotelResult } from "@/lib/actions/hotel";
-import { SearchBar_FormInput } from "@/lib/zod_schemas/search-bar.draft";
+import {
+  user_getAvailableRoomTypeOfHotel,
+  type UserGetAvailableRoomTypeOfHotelResult
+} from "@/lib/actions/hotel";
+import { SearchBar_FormOutput } from "@/lib/zod_schemas/search-bar";
 
 export default async function AvailableRoomsSection({
   hotelId,
@@ -21,7 +24,7 @@ export default async function AvailableRoomsSection({
 }: {
   hotelId: string;
   hotelName: string;
-  searchBarFormData: SearchBar_FormInput
+  searchBarFormData: SearchBar_FormOutput
 }) {
   const { inOutDates: { from: checkInDate, to: checkOutDate }, guestsAndRooms: { numAdults, numChildren, numRooms } } = searchBarFormData;
 
@@ -53,13 +56,7 @@ function RoomTypeCard({ roomType }: { roomType: UserGetAvailableRoomTypeOfHotelR
   const { imageUrls } = roomType;
   return (
     <div
-      className="flex flex-col md:flex-row lg:flex-row bg-white rounded-xl p-4 shadow-md overflow-hidden"
-      style={{
-        backgroundImage: "url('/images/bg-room-card.svg')",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "right top",
-        backgroundSize: "220px"
-      }}
+      className="flex flex-col md:flex-row lg:flex-row bg-white rounded-xl p-4 shadow-md overflow-hidden bg-linear-to-b from-primary/15 to-transparent to-80%"
     >
       {/* Image column */}
       <div className="w-full md:w-2/5 lg:w-1/3 shrink-0">
@@ -146,23 +143,21 @@ function RoomTypeCard({ roomType }: { roomType: UserGetAvailableRoomTypeOfHotelR
           </ul>
         </section>
 
-        <footer className="mt-4 flex items-center justify-between">
-          <div className="text-base lg:text-lg font-extrabold text-orange-600">
+        <footer className="mt-4 flex items-center justify-end gap-x-4">
+          <div className="text-base lg:text-lg font-extrabold text-primary">
             {formatVND(roomType.price.toNumber())}
           </div>
 
-          <div>
-            <a
+          <a
             // TODO: link to booking page (onclick must handle create booking metadata)
-              href={PATHS.bookings + "/1"}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center bg-primary text-white text-sm font-bold px-4 py-2 rounded-md"
-              aria-label={`Đặt phòng ${roomType.name} với giá ${roomType.price.toNumber()} VND`}
-            >
-              Chọn
-            </a>
-          </div>
+            href={PATHS.bookings + "/1"}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center bg-primary text-white text-sm font-bold px-4 py-2 rounded-md"
+            aria-label={`Đặt phòng ${roomType.name} với giá ${roomType.price.toNumber()} VND`}
+          >
+            Chọn
+          </a>
         </footer>
       </div>
     </div>

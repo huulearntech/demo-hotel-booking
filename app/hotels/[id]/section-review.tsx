@@ -55,6 +55,7 @@ export default async function ReviewSection({
   )
 }
 
+// TODO: remove like button for simplicity.
 function ReviewCard({
   meta
 }: {

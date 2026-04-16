@@ -8,24 +8,35 @@ import { Loader2Icon } from "lucide-react";
 
 import MyMarker from "./my-marker";
 
-import { type Map_HotelCardProps, type BBox, getHotelsByBoundingBox } from "@/lib/actions/search/map";
+import { type Map_HotelCardProps, type BBox } from "@/lib/actions/search/map";
 import { haversineMeters } from "@/lib/utils";
+
+
+import { useFilterForm } from "../filter-form-context";
+import { tmp_getHotelsByBoundingBox } from "@/lib/actions/search/map";
+import { codec_searchSpec, SearchBar_FormOutput } from "@/lib/zod_schemas/search-bar";
 
 // TODO: May add an error state and show error if fetch fails.
 function MapController({
+  searchBarValues,
   onUpdateBBox,
   debounceMs = 2000,
   minMoveMeters = 500,
   setDataState,
 }: {
+  searchBarValues: SearchBar_FormOutput;
   onUpdateBBox?: (b: BBox) => void;
   debounceMs?: number;
   minMoveMeters?: number;
     setDataState: Dispatch<SetStateAction<{ hotels: Map_HotelCardProps[]; loading: boolean }>>;
 }) {
+
   const map = useMap();
   const bboxRef = useRef<BBox | null>(null);
   const timerRef = useRef<number | null>(null);
+
+  // TODO: Clean up filter logic. For now it works good, but logic is a bit scattered.
+  const filter = useFilterForm();
 
   const scheduleFetch = useCallback(
     (newBbox: BBox) => {
@@ -36,7 +47,7 @@ function MapController({
         window.clearTimeout(timerRef.current);
       }
 
-      // avoid fetching if center didn't move enough or change zoom enough
+      // avoid fetching if center didn't move enough
       if (bboxRef.current) {
         const prevCenter: [number, number] = [
           (bboxRef.current.north + bboxRef.current.south) / 2,
@@ -56,8 +67,12 @@ function MapController({
 
       timerRef.current = window.setTimeout(async () => {
         try {
+          // TODO: Clean up filter logic.
+          const filterValues = filter.getValues();
+
           bboxRef.current = newBbox;
-          const res = await getHotelsByBoundingBox(newBbox);
+          const res = await tmp_getHotelsByBoundingBox(newBbox, searchBarValues, filterValues);
+          console.log("fetched hotels for bbox", newBbox, res.length, filterValues, searchBarValues);
           setDataState({ hotels: res, loading: false });
         } catch (err) {
           console.error("fetch hotels error", err);
@@ -112,6 +127,7 @@ function MapController({
 }
 
 type MapClientProps = {
+  searchBarValues: SearchBar_FormOutput;
   initialCenter?: [number, number];
   zoom?: number;
   debounceMs?: number;
@@ -119,6 +135,7 @@ type MapClientProps = {
 };
 
 export default function MapClient({
+  searchBarValues,
   initialCenter = [21.0278, 105.8342],
   zoom = 13,
   debounceMs = 800,
@@ -128,6 +145,9 @@ export default function MapClient({
     hotels: [],
     loading: true,
   });
+
+  const { location, ...searchBarValuesWithoutLocation } = searchBarValues;
+  const stringifiedSearchParams = new URLSearchParams(codec_searchSpec.encode(searchBarValuesWithoutLocation)).toString();
 
   // optional external hook for bbox changes (minimal)
   const handleBBoxChange = useCallback((b: BBox) => {
@@ -143,6 +163,7 @@ export default function MapClient({
         />
 
         <MapController
+          searchBarValues={searchBarValues}
           debounceMs={debounceMs}
           minMoveMeters={minMoveMeters}
           onUpdateBBox={handleBBoxChange}
@@ -162,7 +183,7 @@ export default function MapClient({
         )}
 
         {dataState.hotels.map((hotel) => (
-          <MyMarker key={hotel.id} hotel={hotel} />
+          <MyMarker key={hotel.id} hotel={hotel} searchParams={stringifiedSearchParams} />
         ))}
 
         <ZoomControl position="topright" />

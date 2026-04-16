@@ -1,8 +1,11 @@
+// TODO: what to put in location id when location type is 'nearby'?
 import { z } from "zod";
 
-export const SearchBarFormSchema = z.object({
-  // TODO: handle location requirement gracefully in UI
-  location: z.string().trim().min(1, "Địa điểm không được để trống"),
+const locationTypes = ["none", "province", "district", "ward", "hotel", "nearby"] as const;
+export type SearchBar_LocationType = typeof locationTypes[number];
+
+export const schema_searchBar = z.object({
+  location: z.object({ type: z.enum(locationTypes), id: z.string() }), // TODO: further validation.
   inOutDates: z.object({
     from: z.date(),
     to: z.date(),
@@ -20,7 +23,7 @@ export const SearchBarFormSchema = z.object({
     numChildren: z.number().min(0).max(6),
     numRooms: z.number().min(1).max(30),
   }).superRefine(({ numAdults, numRooms }, ctx) => {
-    if ( numRooms > numAdults ) {
+    if (numRooms > numAdults) {
       ctx.addIssue({
         code: "custom",
         message: "Số phòng không được nhiều hơn số khách người lớn",
@@ -30,11 +33,14 @@ export const SearchBarFormSchema = z.object({
   }),
 });
 
-export type SearchBarFormData = z.infer<typeof SearchBarFormSchema>;
+
+export type SearchBar_FormInput = z.input<typeof schema_searchBar>;
+export type SearchBar_FormOutput = z.output<typeof schema_searchBar>;
 
 // TODO: Name these types better. These are used for encoding/decoding search params in URL, so they are all strings. But the naming is not great.
 export type SearchParams = {
-  location: string,
+  locationId: string,
+  locationType: SearchBar_LocationType,
   checkInDate: string,
   checkOutDate: string,
   numAdults: string,
@@ -44,47 +50,122 @@ export type SearchParams = {
 
 export const SearchParamsCodec = z.codec(
   z.object({
-    location:     z.string(),
-    checkInDate:  z.iso.date(),
+    locationId: z.string(),
+    locationType: z.enum(locationTypes),
+    checkInDate: z.iso.date(),
     checkOutDate: z.iso.date(),
-    numAdults:    z.string(),
-    numChildren:  z.string(),
-    numRooms:     z.string(),
+    numAdults: z.string(),
+    numChildren: z.string(),
+    numRooms: z.string(),
   }),
-  SearchBarFormSchema,
+  schema_searchBar,
   {
-  encode(data: z.infer<typeof SearchBarFormSchema>) {
-    return {
-      location:     data.location,
-      checkInDate:  data.inOutDates.from.toISOString().split("T")[0],
-      checkOutDate: data.inOutDates.to.toISOString().split("T")[0],
-      numAdults:    data.guestsAndRooms.numAdults.toString(),
-      numChildren:  data.guestsAndRooms.numChildren.toString(),
-      numRooms:     data.guestsAndRooms.numRooms.toString(),
-    };
-  },
+    encode(data: SearchBar_FormInput) {
+      return {
+        locationId: data.location.id,
+        locationType: data.location.type,
+        checkInDate: data.inOutDates.from.toISOString().split("T")[0],
+        checkOutDate: data.inOutDates.to.toISOString().split("T")[0],
+        numAdults: data.guestsAndRooms.numAdults.toString(),
+        numChildren: data.guestsAndRooms.numChildren.toString(),
+        numRooms: data.guestsAndRooms.numRooms.toString(),
+      };
+    },
 
-  decode(input: SearchParams): z.infer<typeof SearchBarFormSchema> {
-    const {
-      location,
-      checkInDate,
-      checkOutDate,
-      numAdults,
-      numChildren,
-      numRooms,
-    } = input;
+    decode(input: SearchParams): SearchBar_FormInput {
+      const {
+        locationId,
+        locationType,
+        checkInDate,
+        checkOutDate,
+        numAdults,
+        numChildren,
+        numRooms,
+      } = input;
 
-    return SearchBarFormSchema.parse({
-      location,
-      inOutDates: {
-        from: new Date(checkInDate),
-        to: new Date(checkOutDate),
-      },
-      guestsAndRooms: {
-        numAdults: parseInt(numAdults, 10) || 2,
-        numChildren: parseInt(numChildren, 10) || 0,
-        numRooms: parseInt(numRooms, 10) || 1,
-      },
-    });
-  },
+      return ({
+        location: {
+          type: locationType,
+          id: locationId,
+        },
+        inOutDates: {
+          from: new Date(checkInDate),
+          to: new Date(checkOutDate),
+        },
+        guestsAndRooms: {
+          numAdults: parseInt(numAdults, 10) || 2,
+          numChildren: parseInt(numChildren, 10) || 0,
+          numRooms: parseInt(numRooms, 10) || 1,
+        },
+      });
+    },
+  }
+);
+
+
+
+/// ----------- TEST -------------------
+export const schema_searchSpec = z.object({
+  inOutDates: z.object({
+    from: z.date(),
+    to: z.date(),
+  }),
+  guestsAndRooms: z.object({
+    numAdults: z.number().int().min(1).max(30),
+    numChildren: z.number().int().min(0).max(6),
+    numRooms: z.number().int().min(1).max(30),
+  }),
 });
+
+
+export type SearchSpec = {
+  checkInDate: string,
+  checkOutDate: string,
+  numAdults: string,
+  numChildren: string,
+  numRooms: string,
+}
+
+export const codec_searchSpec = z.codec(
+  z.object({
+    checkInDate: z.iso.date(),
+    checkOutDate: z.iso.date(),
+    numAdults: z.string(),
+    numChildren: z.string(),
+    numRooms: z.string(),
+  }),
+  schema_searchSpec,
+  {
+    encode(data: z.input<typeof schema_searchSpec>) {
+      return {
+        checkInDate: data.inOutDates.from.toISOString().split("T")[0],
+        checkOutDate: data.inOutDates.to.toISOString().split("T")[0],
+        numAdults: data.guestsAndRooms.numAdults.toString(),
+        numChildren: data.guestsAndRooms.numChildren.toString(),
+        numRooms: data.guestsAndRooms.numRooms.toString(),
+      };
+    },
+
+    decode(input: SearchSpec): z.input<typeof schema_searchSpec> {
+      const {
+        checkInDate,
+        checkOutDate,
+        numAdults,
+        numChildren,
+        numRooms,
+      } = input;
+
+      return schema_searchSpec.parse({
+        inOutDates: {
+          from: new Date(checkInDate),
+          to: new Date(checkOutDate),
+        },
+        guestsAndRooms: {
+          numAdults: parseInt(numAdults, 10) || 2,
+          numChildren: parseInt(numChildren, 10) || 0,
+          numRooms: parseInt(numRooms, 10) || 1,
+        },
+      });
+    },
+  }
+);

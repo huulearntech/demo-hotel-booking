@@ -5,6 +5,7 @@ import { renderToString } from "react-dom/server";
 
 import { type Map_HotelCardProps } from "@/lib/actions/search/map";
 import { formatVND } from "@/lib/utils";
+import { PATHS } from "@/lib/constants";
 
 function createPriceIcon(price: number) {
   const PriceIcon = () => {
@@ -24,7 +25,14 @@ function createPriceIcon(price: number) {
 }
 
 
-export default function MyMarker({ hotel } : { hotel: Map_HotelCardProps }) {
+// TODO: name it better
+export default function MyMarker({
+  hotel,
+  searchParams
+}: {
+  hotel: Map_HotelCardProps;
+  searchParams: string;
+}) {
   return (
     <Marker position={[hotel.latitude, hotel.longitude]} icon={createPriceIcon(hotel.price)}>
       <Popup closeButton={false}>
@@ -39,19 +47,19 @@ export default function MyMarker({ hotel } : { hotel: Map_HotelCardProps }) {
           </div>
           <div className="flex flex-col gap-y-1">
             <h3 className="text-base font-bold">{hotel.name}</h3>
-            <div className="inline-flex items-center gap-x-1 text-xs">
-              <div className="font-black text-primary">{hotel.reviewPoints.toFixed(1)}/5</div>
+            <div className="inline-flex items-center gap-x-1 text-sm">
+              <div className="font-black text-primary whitespace-pre">{hotel.reviewPoints.toFixed(1)} / 5</div>
               <div className="font-medium text-gray-500">({hotel.numberOfReviews} đánh giá)</div>
             </div>
 
-            <div className="text-base font-bold text-orange-500">
-              { formatVND(hotel.price) } / đêm
+            <div className="text-primary font-semibold text-sm">
+              <span className="font-bold"> {formatVND(hotel.price)} </span>
+              <span className="whitespace-pre"> / đêm</span>
             </div>
             <div className="mt-2">
-              <Button asChild className="w-full bg-orange-500 hover:bg-orange-600 focus:ring-orange-300">
+              <Button asChild className="w-full">
                 <a
-                  // TODO: with spec
-                  href={`/hotels/${hotel.id}`}
+                  href={`${PATHS.hotels}/${hotel.id}?${searchParams}`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm text-primary-foreground! font-bold!"

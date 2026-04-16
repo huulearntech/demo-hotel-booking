@@ -14,12 +14,14 @@ export async function fetchHotel(hotelId: string) {
       },
       ward: {
         select: {
+          id: true,
           name: true,
           district: {
             select: {
+              id: true,
               name: true,
               province: {
-                select: { name: true, },
+                select: { id: true, name: true, },
               },
             },
           },

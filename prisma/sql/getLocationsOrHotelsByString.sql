@@ -4,22 +4,18 @@ WITH locations AS (
   SELECT id, name, 'hotel' AS type,
     similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM hotels
-  WHERE id IS NOT NULL AND name IS NOT NULL
   UNION ALL
   SELECT id, name, 'province' AS type,
     similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM provinces
-  WHERE id IS NOT NULL AND name IS NOT NULL
   UNION ALL
   SELECT id, name, 'district' AS type,
     similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM districts
-  WHERE id IS NOT NULL AND name IS NOT NULL
   UNION ALL
   SELECT id, name, 'ward' AS type,
     similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
   FROM wards
-  WHERE id IS NOT NULL AND name IS NOT NULL
 )
 SELECT id, name, type
 FROM locations

@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 
-import { SearchBar_FormInput } from "@/lib/zod_schemas/search-bar.draft";
-import { fetchSearchResult } from "@/lib/actions/search/index.draft";
+import { codec_searchSpec, SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
+import { fetchSearchResult, type CursorType } from "@/lib/actions/search";
 import { PATHS } from "@/lib/constants";
 
 import ButtonOpenFilterSheet from "../button-open-filter-sheet";
@@ -20,7 +20,6 @@ import noResultImage from "@/public/images/no-result.svg";
 
 // temporary. TODO: move to types
 type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
-import type { CursorType } from "@/lib/actions/search";
 import { useFilterForm } from "../filter-form-context";
 
 // TODO: remove
@@ -29,15 +28,20 @@ const pageSize = 2;
 const sort: SortType = "price_asc";
 
 export default function Results({
+  locationName,
   searchBarFormValues,
 }: {
+  locationName: string;
   searchBarFormValues: SearchBar_FormInput;
 }) {
   const searchParams = useSearchParams();
   const [totalCount, setTotalCount] = useState(0);
 
+      // Temporarily put filter here.
   const { getValues } = useFilterForm();
-  const filterFormValues = getValues();
+
+  const { location, ...searchSpecWithoutLocation } = searchBarFormValues;
+  const searchSpecString = new URLSearchParams(codec_searchSpec.encode(searchSpecWithoutLocation)).toString();
 
   const {
     data,
@@ -48,9 +52,12 @@ export default function Results({
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["hotels", searchBarFormValues],
+    queryKey: ["hotels", searchBarFormValues], // TODO: should also include filterFormValues and sort in the query key
     queryFn: async ({ pageParam }: { pageParam: CursorType | null }) => {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate network delay
+      // await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate network delay
+      // Temporarily put filter here.
+      const filterFormValues = getValues();
+
       const page = await fetchSearchResult(
         searchBarFormValues,
         filterFormValues,
@@ -93,7 +100,7 @@ export default function Results({
   return (
     <div className="w-full flex flex-col space-y-3">
       <SearchStatusBar
-        location={searchBarFormValues.location.name}
+        location={locationName}
         total={totalCount}
         searchParams={searchParams}
       />
@@ -103,35 +110,11 @@ export default function Results({
           <li key={hotel.id} data-index={index}>
             <HotelCard
               hotel={hotel}
-              href={`${PATHS.hotels}/${hotel.id}?${searchParams.toString()}`}
+              href={`${PATHS.hotels}/${hotel.id}?${searchSpecString}`}
               showWardAtTopLeft={false}
             />
           </li>
         ))}
-
-        {/* {isFetchingNextPage && Array.from({ length: pageSize }).map((_, index) => (
-          <li key={`loading-placeholder-${index}`}>
-            <div className="w-full h-106 rounded-lg overflow-hidden flex flex-col justify-between gap-y-2">
-              <Skeleton className="w-full h-50" />
-              <div className="flex justify-between px-3 py-2 flex-1 gap-x-2">
-                <div className="w-full flex flex-col gap-y-2">
-                  <Skeleton className="w-full h-4 rounded-lg" />
-                  <Skeleton className="w-full h-4 rounded-lg" />
-                  <Skeleton className="w-3/5 h-3 rounded-lg" />
-                </div>
-                <Skeleton className="size-10 rounded-sm" />
-              </div>
-
-              <div className="flex justify-between items-end px-3 py-2 flex-1 gap-x-2">
-                <div className="w-full flex flex-col gap-y-2">
-                  <Skeleton className="w-4/5 h-5 rounded-lg" />
-                  <Skeleton className="w-4/5 h-5 rounded-lg" />
-                </div>
-                <Skeleton className="w-20 h-10 rounded-sm" />
-              </div>
-            </div>
-          </li>
-        ))} */}
 
         {/* sentinel to trigger loading next page */}
         {hasNextPage && (

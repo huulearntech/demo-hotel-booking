@@ -1,23 +1,21 @@
 filter: onsubmit need to somehow capture the search spec to call server action, or set searchparams
   then router.push.
 
+filter: make it sticky on large screen.
+
 proxy: handle redirecting.
 
-filter: cleanup className
-
-search bar schema: transform from Date in react-day-picker to YYYY-MM-DD in searchParams
-
-search bar submit: different target url on home, search vs map. and handle trolling search params
-
 types: unified them into one place, such as "types" folder.
+search bar: ambiguity on naming input/output/value of zod types.
 
-consider make a form + search bar provider that wrap the whole app, or somehow merge these two.
+consider? make buckets for materialized view in search query: bucket for (province or district) & (3d | 7d | 15d | 30d) & (2guest | ... commonly search number of guests)
 
-consider make buckets for materialized view in search query: bucket for (province or district) & (3d | 7d | 15d | 30d) & (2guest | ... commonly search number of guests)
-
-filter: make it sticky.
+search bar -> search page -> result: too bloated on tossing name prop around.
 
 homepage: favorite destination -> real link
+
+hotel owner dashboard: make meaningful analytical charts.
+
 
 // TODO: Flow
 // 1. Basic info (name, email, phone) -> sign up for account

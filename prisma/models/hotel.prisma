@@ -16,7 +16,6 @@ model Hotel {
 
   checkInTime           DateTime    @db.Time  @map("check_in_time")
   checkOutTime          DateTime    @db.Time  @map("check_out_time")
-  // breakfastAvailability Boolean     @map("breakfast_availability") // TODO: remove to simplify the pet project.
   
   imageUrls             String[]    @map("image_urls")   // TODO: should have videos
 

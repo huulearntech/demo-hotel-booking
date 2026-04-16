@@ -9,10 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ResponsiveContainer,
   PieChart,
@@ -29,17 +26,10 @@ type RevenueItem = {
 };
 
 type Props = {
-  rooms?: RevenueItem[]; // revenue per room
+  // component now expects aggregated revenue per room type
   roomTypes?: RevenueItem[]; // revenue per room type
   height?: number;
 };
-
-const DEFAULT_ROOMS: RevenueItem[] = [
-  { id: "r1", name: "101", revenue: 12_000 },
-  { id: "r2", name: "102", revenue: 8_500 },
-  { id: "r3", name: "103", revenue: 4_200 },
-  { id: "r4", name: "104", revenue: 2_300 },
-];
 
 const DEFAULT_ROOM_TYPES: RevenueItem[] = [
   { id: "t1", name: "Standard", revenue: 18_000 },
@@ -57,20 +47,12 @@ const COLORS = [
   "#ec4899",
 ];
 
-type ModeOptions = "room" | "roomType";
-
 export default function PiechartPercentageOfRevenueComeFrom({
-  rooms = DEFAULT_ROOMS,
   roomTypes = DEFAULT_ROOM_TYPES,
   height = 260,
 }: Props) {
-  const [mode, setMode] = useState<"room" | "roomType">("room");
-
-  const data = useMemo(() => (mode === "room" ? rooms : roomTypes), [
-    mode,
-    rooms,
-    roomTypes,
-  ]);
+  // component now shows only room type aggregated revenue
+  const data = useMemo(() => roomTypes, [roomTypes]);
 
   const total = useMemo(
     () => data.reduce((s, d) => s + Math.max(0, d.revenue), 0),
@@ -86,6 +68,12 @@ export default function PiechartPercentageOfRevenueComeFrom({
       })),
     [data, total]
   );
+
+  const vndFormatter = new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  });
 
   const renderActiveShape = (props: any) => {
     const {
@@ -117,8 +105,8 @@ export default function PiechartPercentageOfRevenueComeFrom({
           textAnchor="middle"
           dominantBaseline="central"
           fill="#111827"
-          fontSize={14}
-          fontWeight={700}
+          fontSize={13}
+          fontWeight={600}
         >
           {payload.name}
         </text>
@@ -129,8 +117,9 @@ export default function PiechartPercentageOfRevenueComeFrom({
           dominantBaseline="central"
           fill="#6b7280"
           fontSize={12}
+          fontWeight={500}
         >
-          {`${percent.toFixed(1)}% — $${value.toLocaleString()}`}
+          {`${percent.toFixed(1)}% — ${vndFormatter.format(Number(value) || 0)}`}
         </text>
       </g>
     );
@@ -168,62 +157,26 @@ export default function PiechartPercentageOfRevenueComeFrom({
                 </Pie>
 
                 <Tooltip
-                  formatter={(value: number) =>
-                    `$${(Number(value) || 0).toLocaleString()}`
-                  }
-                  itemStyle={{ color: "#111827" }}
+                  formatter={(value: number) => vndFormatter.format(Number(value) || 0)}
+                  itemStyle={{ color: "#111827", fontSize: 13, fontWeight: 600 }}
                 />
               </PieChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Sidebar: Toggle + Legend */}
+        {/* Sidebar: Legend */}
         <div className="flex flex-col gap-4 @container/card w-full">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              Mode
-            </span>
-            <ToggleGroup
-              type="single"
-              value={mode}
-              onValueChange={(value) => setMode(value as ModeOptions)}
-              variant="outline"
-              className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
-            >
-              <ToggleGroupItem value="room">Room</ToggleGroupItem>
-              <ToggleGroupItem value="roomType">Room type</ToggleGroupItem>
-            </ToggleGroup>
-            <Select value={mode} onValueChange={(mode) => setMode(mode as ModeOptions)}>
-              <SelectTrigger
-                className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-                size="sm"
-                aria-label="Select a value"
-              >
-                <SelectValue placeholder="Room" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="room" className="rounded-lg">
-                  Room
-                </SelectItem>
-                <SelectItem value="roomType" className="rounded-lg">
-                  Room type
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <span className="text-sm font-medium text-muted-foreground">Room type</span>
           </div>
 
           <div>
-            <div className="text-sm text-muted-foreground mb-2">
-              Percentage of total revenue
-            </div>
+            <div className="text-sm text-muted-foreground mb-2">Percentage of total revenue</div>
 
             <div className="flex flex-col gap-2">
               {chartData.map((d, i) => (
-                <div
-                  key={d.id}
-                  className="flex items-center justify-between gap-2"
-                >
+                <div key={d.id} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
                     <span
                       style={{
@@ -235,14 +188,14 @@ export default function PiechartPercentageOfRevenueComeFrom({
                       }}
                     />
                     <div className="text-sm">
-                      <div className="font-medium">{d.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        ${d.revenue.toLocaleString()}
+                      <div className="font-medium" style={{ fontSize: 13, fontWeight: 600 }}>
+                        {d.name}
                       </div>
+                      <div className="text-xs text-muted-foreground">{vndFormatter.format(d.revenue)}</div>
                     </div>
                   </div>
 
-                  <div className="text-sm font-medium">
+                  <div className="text-sm font-medium" style={{ fontSize: 13, fontWeight: 600 }}>
                     {d.percent ? `${d.percent.toFixed(1)}%` : "0%"}
                   </div>
                 </div>

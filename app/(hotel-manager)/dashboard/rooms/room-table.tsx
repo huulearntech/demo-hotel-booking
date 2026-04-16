@@ -7,10 +7,10 @@ import { DataTable } from "@/components/data-table";
 import { createColumns } from "./columns";
 import { hotelowner_deleteRoomById } from "@/lib/actions/hotel-manager/rooms";
 
-import type { RoomSerialized } from "@/lib/actions/hotel-manager/rooms";
+import type { RoomType } from "@/lib/actions/hotel-manager/rooms";
 
-export default function RoomTable({ rooms }: { rooms: RoomSerialized[] }) {
-  const [roomsSerialized, setRoomsSerialized] = useState<RoomSerialized[]>(rooms);
+export default function RoomTable({ rooms }: { rooms: RoomType[] }) {
+  const [roomsSerialized, setRoomsSerialized] = useState<RoomType[]>(rooms);
 
   // TODO: Handle user quit or refresh during the optimistic delete window (e.g. by using a "pendingDelete" state and checking it on mount to restore any rooms that were pending delete but not confirmed by the server)
   const columns = createColumns((id: string) => {
@@ -44,7 +44,7 @@ export default function RoomTable({ rooms }: { rooms: RoomSerialized[] }) {
 
     // Show toast with Undo action
     toast("Deleted room", {
-      description: deletedRoom.type,
+      description: deletedRoom.name,
       action: {
         label: "Undo",
         onClick: () => {

@@ -38,8 +38,7 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
     .slice(0, half)
     .map(({ userId, hotelId, roomTypeId, roomTypeName }) => {
       const checkOutDate = faker.date.recent({ refDate: today });
-      // ensure checkInDate is before checkOutDate
-      const checkInDate = faker.date.between({ from: new Date(checkOutDate.getTime() - 7 * 24 * 60 * 60 * 1000), to: checkOutDate });
+      const checkInDate = faker.date.recent({ days: 10, refDate: checkOutDate });
       const createdAt = faker.date.recent({ refDate: checkInDate });
       const snapshotRoomPriceNum = faker.number.int({ min: 100_000, max: 1_000_000, multipleOf: 1_000 });
 
@@ -54,7 +53,7 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
         createdAt,
         numRooms: faker.number.int({ min: 1, max: 3 }),
         numGuests: faker.number.int({ min: 1, max: 6 }),
-        snapshotCheckInTime: faker.date.between({ from: checkInDate, to: checkOutDate }),
+        snapshotCheckInTime: faker.date.between({ from: checkInDate, to: checkOutDate }), // FIXME: this is time in the day, not some bullshit AI gave. 
         snapshotCheckOutTime: faker.date.between({ from: checkInDate, to: checkOutDate }),
       };
     });
@@ -62,9 +61,9 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
   const upcomingBookingsInputs: Prisma.BookingMetadataCreateInput[] = pairs
     .slice(half)
     .map(({ userId, hotelId, roomTypeId, roomTypeName }) => {
-      const checkInDate = faker.date.soon({ refDate: today });
+      const checkInDate = faker.date.soon({ days: 10, refDate: today });
       // ensure checkOutDate is after checkInDate
-      const checkOutDate = faker.date.soon({ refDate: checkInDate });
+      const checkOutDate = faker.date.soon({ days: 10, refDate: checkInDate });
       const createdAt = faker.date.recent({ refDate: today });
       const snapshotRoomPriceNum = faker.number.int({ min: 100_000, max: 1_000_000, multipleOf: 1_000 });
 
@@ -125,7 +124,7 @@ async function seedBookings(bookingsMetadata: BookingMetadata[]) {
 
 async function seedReviews() {
   const bookings = await prisma.booking.findMany({
-    where: { status: "COMPLETED" },
+    where: { status: "COMPLETED", review: { is: null } },
     select: { id: true },
   });
 

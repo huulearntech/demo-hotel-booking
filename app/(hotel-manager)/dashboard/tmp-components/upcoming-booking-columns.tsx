@@ -7,111 +7,154 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
-
-import { Copy, Check, X } from "lucide-react";
+import { MoreHorizontal, Copy, Phone, ArrowRight } from "lucide-react";
 
 import type { UpcomingBooking } from "@/lib/actions/hotel-manager/bookings";
+import { BookingStatus } from "@/lib/generated/prisma/enums";
+import { formatVND } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
 
+function formatDateShort(date: Date) {
+  return new Intl.DateTimeFormat("vi-VN", { year: "numeric", month: "short", day: "numeric" }).format(date);
+}
+
+const colorForStatus: Record<BookingStatus, string> = {
+  PENDING: "bg-yellow-100 text-yellow-700",
+  CONFIRMED: "bg-green-100 text-green-700",
+  COMPLETED: "bg-blue-100 text-blue-700",
+  CANCELLED: "bg-red-100 text-red-700",
+} as const;
+
+const statusLabel: Record<BookingStatus, string> = {
+  PENDING: "Đang chờ",
+  CONFIRMED: "Đã xác nhận",
+  COMPLETED: "Hoàn tất",
+  CANCELLED: "Đã hủy",
+} as const;
 export const columns: ColumnDef<UpcomingBooking>[] = [
-  {
-    accessorKey: "guestName",
-    header: "Guest",
-    cell: ({ row }) => <div className="text-sm font-medium text-slate-900">{row.original.user.name}</div>,
-  },
-  {
-    accessorKey: "roomNumber",
-    header: "Room",
-  },
-  {
-    accessorKey: "checkInDate",
-    header: "Check-in",
-    cell: ({ row }) => (
-      <div className="text-sm">{new Intl.DateTimeFormat(
-        'en-US',
-        {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }
-      ).format(row.original.checkInDate)}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "checkOutDate",
-    header: "Check-out",
-    cell: ({ row }) => (
-      <div className="text-sm">{new Intl.DateTimeFormat(
-        'en-US',
-        {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }
-      ).format(row.original.checkOutDate)}
-      </div>
-    ),
-  },
   // {
-  //   id: "nights",
-  //   header: "Nights",
-  //   cell: ({ row }) => <div className="text-sm">{daysBetweenUTC(row.original.checkIn, row.original.checkOut)}</div>,
+  //   id: "bookingId",
+  //   header: "Mã đặt phòng",
+  //   accessorFn: (row) => row.id,
+  //   cell: ({ row }) => (
+  //     <div className="flex items-center gap-2">
+  //       <div className="truncate font-mono text-xs">{row.original.id}</div>
+  //       <Button variant="ghost" size="icon-sm" onClick={() => navigator.clipboard.writeText(row.original.id)}>
+  //         <Copy className="size-4" />
+  //       </Button>
+  //     </div>
+  //   ),
   // },
   {
-    accessorKey: "totalPrice",
-    header: "Total",
-    cell: ({ row }) => <div className="text-sm font-medium">{row.original.totalPrice}</div>,
+    id: "customer",
+    header: "Khách hàng",
+    accessorFn: (row) => row.customerName,
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <div className="truncate font-medium">{row.original.customerName}</div>
+        <div className="text-xs text-muted-foreground truncate">{row.original.customerEmail}</div>
+      </div>
+    )
   },
   {
-    id: "status",
-    header: "Status",
+    id: "contact",
+    header: "Liên hệ",
+    accessorFn: (row) => row.customerPhone,
+    cell: ({ row }) => <div className="text-sm truncate"> {row.original.customerPhone} </div>
+  },
+  {
+    id: "roomType",
+    header: "Loại phòng",
+    accessorFn: (row) => row.roomTypeName,
+    cell: ({ row }) => <div className="truncate">{row.original.roomTypeName}</div>
+  },
+  {
+    id: "roomsGuests",
+    header: "Phòng / Khách",
+    cell: ({ row }) => (
+      <div className="text-sm">
+        <div>{row.original.numRooms} phòng</div>
+        <div className="text-muted-foreground text-xs">{row.original.numGuests} khách</div>
+      </div>
+    )
+  },
+  {
+    id: "checkinCheckout",
+    header: () => <div className="inline-flex gap-1 items-center">Nhận phòng <ArrowRight className="size-4"/> Trả phòng</div>,
     cell: ({ row }) => {
-      const s = row.original.status;
-      const cls =
-        s === "COMPLETED"
-          ? "bg-green-100 text-green-800"
-          : s === "CANCELLED"
-            ? "bg-red-100 text-red-800"
-            : "bg-yellow-100 text-yellow-800";
-      return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${cls}`}>{s.replace("_", " ")}</span>;
-    },
+      const checkIn = row.original.checkInDate;
+      const checkOut = row.original.checkOutDate;
+      const nights = differenceInDays(checkOut, checkIn);
+      return (
+        <div className="min-w-0">
+          <div className="truncate">{formatDateShort(checkIn)}</div>
+          <div className="text-xs text-muted-foreground">{formatDateShort(checkOut)} • {nights} đêm</div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "price",
+    accessorKey: "totalPrice",
+    header: () => <div className="text-right">Giá</div>,
+    cell: ({ row }) => {
+      return <div className="text-right font-medium">{formatVND(row.original.totalPrice)}</div>
+    }
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Ngày tạo",
+    cell: ({ row }) => formatDateShort(row.original.createdAt)
+  },
+  {
+    accessorKey: "status",
+    header: "Trạng thái",
+    cell: ({ row }) => {
+      const status = row.original.status as BookingStatus;
+      const cls = colorForStatus[status];
+      const label = statusLabel[status];
+      return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${cls}`}>{label}</span>
+    }
+  },
+  {
+    accessorKey: "notes",
+    header: "Ghi chú",
+    cell: ({ row }) => <div className="truncate text-sm">{row.original.notes}</div>
   },
   {
     id: "actions",
-    header: "Actions",
-    cell: ({ row }) => (
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost" aria-label="Open actions">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => console.log("check-in", row.original.id)}>
-            <Check className="mr-2 h-4 w-4" />
-            Check-in
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => console.log("cancel", row.original.id)}>
-            <X className="mr-2 h-4 w-4" />
-            Cancel
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(row.original.id);
-                console.log("copied", row.original.id);
-              } catch (e) {
-                console.error(e);
-              }
-            }}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Copy ID
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
+    header: "Hành động",
+    cell: ({ row }) => {
+      const booking = row.original;
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="size-8">
+              <span className="sr-only">Mở menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel className="text-xs text-secondary-foreground">Hành động</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(booking.id)}>
+              <div className="flex flex-col gap-1">
+                Sao chép mã đặt phòng
+                <div className="truncate font-mono text-xs">{row.original.id}</div>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => {/* view customer */}}>Xem khách hàng</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {/* view booking */}}>Xem chi tiết đặt phòng</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {/* message customer */}}>Nhắn khách</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => {/* confirm booking */}}>Xác nhận đặt phòng</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {/* cancel booking */}}>Hủy đặt phòng</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
+  }
 ];

@@ -1,11 +1,13 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { type SearchBarFormData } from "@/lib/zod_schemas/search-bar";
+import { type SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
 
 import { getHotelsBySearchBarForm } from "@/lib/generated/prisma/sql";
 import { HotelCardProps } from "@/lib/types/hotel-card";
 import { Decimal } from "@prisma/client/runtime/client";
+import { FilterFormValues } from "@/lib/zod_schemas/filter";
+import { FILTER_MAX_PRICE, FILTER_MIN_PRICE } from "@/lib/constants";
 
 type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
 
@@ -20,17 +22,29 @@ export type CursorType = {
   // if we want to indicate the end of the list, we can return null for the whole cursor instead of having nullable fields
 }
 
+// FIXME: not debounced or bind to the apply button yet.
 export async function fetchSearchResult(
-  searchBarFormValues: SearchBarFormData,
+  searchBarFormValues: SearchBar_FormInput,
+  filterFormValues: FilterFormValues,
   pageSize: number,
   sort: SortType,
   cursor: CursorType | null
-): Promise<{ items: HotelCardProps[]; totalCount: number; nextCursor: CursorType | null }> {
+): Promise<{
+  items: HotelCardProps[];
+  totalCount: number;
+  nextCursor: CursorType | null
+}> {
   const {
-    location,
+    location: { id: locationId, type: locationType },
     inOutDates: { from: checkInDate, to: checkOutDate },
     guestsAndRooms: { numAdults, numChildren, numRooms }
   } = searchBarFormValues;
+
+  const {
+    priceRange: [minPrice, maxPrice],
+    propertyTypes: hotelTypes,
+    amenities: facilities,
+  } = filterFormValues;
 
   const lastPrice = cursor?.lastPrice ?? null;
   const lastReviewPoints = cursor?.lastReviewPoints ?? null;
@@ -38,7 +52,7 @@ export async function fetchSearchResult(
 
   // TODO: filter facilities
   const result = await prisma.$queryRawTyped(getHotelsBySearchBarForm(
-    location,
+    locationId,
     checkInDate,
     checkOutDate,
     numAdults,
@@ -47,7 +61,13 @@ export async function fetchSearchResult(
     sort as string,
     lastPrice,
     lastReviewPoints,
-    lastHotelIndex
+    lastHotelIndex,
+    locationType, // Temporarily put this at the end.
+    minPrice,
+    maxPrice,
+    facilities,
+    hotelTypes,
+    numChildren  // TODO: move this up with the numAdults.
   ));
 
   const items = result.map((hotel) => ({
@@ -65,19 +85,21 @@ export async function fetchSearchResult(
       name: hotel.wardName,
       district: { province: { name: hotel.provinceName } }
     },
-    imageUrls: hotel.imageUrls ?? [],
+    imageUrls: hotel.thumbnailUrl ? [hotel.thumbnailUrl] : [], // TODO: cleanup.
     facilities: (hotel.facilityNames ?? []).map((facilityName: string) => ({ name: facilityName })),
   }));
+
   const totalCount = result[0]?.totalCount ?? 0;
   const lastItem = result[result.length - 1];
-  
-  // totalCount being fetch over and over again for every page is not ideal, but it's a tradeoff to avoid a separate count query. We can optimize later if needed.
+
   return {
     items,
     totalCount,
     nextCursor: lastItem ?
       {
-        lastPrice: lastItem.minPrice!.toNumber(), // TODO: depend on sort order.
+        lastPrice: sort === 'price_desc'
+          ? (lastItem.maxPrice?.toNumber() ?? FILTER_MAX_PRICE)
+          : (lastItem.minPrice?.toNumber() ?? FILTER_MIN_PRICE),
         lastReviewPoints: lastItem.reviewPoints,
         lastHotelIndex: lastItem.id,
       }

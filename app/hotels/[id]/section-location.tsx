@@ -69,10 +69,9 @@ export default async function LocationSection({
           ))}
         </div>
 
-        <div className="flex gap-x-2 text-sm font-bold items-center">
-          <Info className="size-3.5"/>
-          <div>
-            Khoảng cách hiển thị dựa trên đường chim bay. Khoảng cách di chuyển thực tế có thể khác.          </div>
+        <div className="flex gap-x-2 text-sm items-center">
+          <Info className="size-3.5 shrink-0"/>
+          <div> Khoảng cách hiển thị dựa trên đường chim bay. Khoảng cách di chuyển thực tế có thể khác. </div>
         </div>
       </div>
     </section>

@@ -22,7 +22,7 @@ export default function NotFound () {
           />
         </div>
         <div className="w-full flex flex-col items-center justify-center space-y-4">
-          <Frown className="h-10 w-10 text-gray-400" />
+          <Frown className="h-10 w-10" />
           <h2 className="text-xl font-semibold">404 Not Found</h2>
           <p>Không tìm thấy tài nguyên này.</p>
           <Button asChild>

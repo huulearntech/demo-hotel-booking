@@ -1,11 +1,11 @@
 import { DataTable } from "@/components/data-table";
-import { columns } from "../bookings/columns";
-import { hotelowner_getUpcomingBookings } from "@/lib/actions/hotel-manager/bookings";
+import { columns } from "./upcoming-booking-columns";
+import { tmp_hotelowner_getUpcomingBookings } from "@/lib/actions/hotel-manager/bookings";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function UpcomingBooking() {
-  const upcomingBookings = await hotelowner_getUpcomingBookings();
+  const upcomingBookings = await tmp_hotelowner_getUpcomingBookings();
   return (
     <DataTable columns={columns} data={upcomingBookings} />
   );

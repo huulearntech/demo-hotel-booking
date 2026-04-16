@@ -12,6 +12,7 @@ import { useFilterForm } from './filter-form-context';
 import { defaultFilterValues, FILTER_CATEGORIES } from "@/lib/zod_schemas/filter";
 
 import { FILTER_MAX_PRICE, FILTER_MIN_PRICE, FILTER_PRICE_STEP } from '@/lib/constants';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
   const { control } = useFilterForm();
@@ -59,7 +60,7 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
                       }
                     }}
                   />
-                  <div className="h-px w-2 bg-(--color-border) top-1/2 left-1/2 -translate-x-1 absolute" />
+                  <div className="h-0 w-2 border border-(--color-border) top-1/2 left-1/2 -translate-x-1 absolute" />
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -141,6 +142,7 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
 
 export function FilterForm__Reset_and_Apply_Buttons() {
   const { reset, getValues, formState } = useFilterForm();
+  const queryClient = useQueryClient();
   const filterHasChanged = formState.isDirty;
   const formValues = getValues();
   const isDefault = (
@@ -169,6 +171,8 @@ export function FilterForm__Reset_and_Apply_Buttons() {
         onClick={() => {
           const values = getValues();
           console.log(values, "filter has changed: ", filterHasChanged); // call some server actions (only if filterHasChanged)
+          // FIXME: This works sometime, not work sometime.
+          queryClient.resetQueries({ queryKey: ["hotels"] });
           reset(values);
         }}
       >

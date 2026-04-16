@@ -41,9 +41,9 @@ async function seedHotelOwners(count = 5) {
 
   if (process.env.FAKE_HOTEL_OWNER_NAME && process.env.FAKE_HOTEL_OWNER_EMAIL && process.env.FAKE_HOTEL_OWNER_PASSWORD) {
     users.push({
-      name: "owner",
-      email: "owner@owner.owner",
-      password: "password",
+      name: process.env.FAKE_HOTEL_OWNER_NAME,
+      email: process.env.FAKE_HOTEL_OWNER_EMAIL,
+      password: process.env.FAKE_HOTEL_OWNER_PASSWORD,
       role: UserRole.HOTEL_OWNER,
       profileImageUrl: faker.image.avatar(),
     });

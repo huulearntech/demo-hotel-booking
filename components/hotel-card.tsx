@@ -91,8 +91,8 @@ export default function HotelCard({
         </div>
 
         <div className="flex justify-between items-end">
-          <div className="font-bold text-orange-600">{formatVND(price)}</div>
-          <button className="font-bold bg-orange-600 text-primary-foreground px-3 py-2 rounded-[0.375rem] text-sm">
+          <div className="font-bold text-primary">{formatVND(price)}</div>
+          <button className="font-bold bg-primary text-primary-foreground px-3 py-2 rounded-[0.375rem] text-sm">
             Xem
           </button>
         </div>

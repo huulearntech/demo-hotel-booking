@@ -40,7 +40,7 @@ export default function PriceDetail() {
         </div>
         <div className="flex flex-col items-end">
           <div className="text-sm font-semibold text-gray-500 line-through">2345678</div>
-          <div className="font-semibold text-orange-500">1234567</div>
+          <div className="font-semibold text-primary">1234567</div>
         </div>
       </div>
 

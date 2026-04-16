@@ -33,27 +33,27 @@ import Link from "next/link"
 
 const navMain = [
   {
-    title: "Dashboard",
+    title: "Tổng quan",
     url: PATHS.hotelDashboard,
     icon: LayoutDashboardIcon,
   },
   {
-    title: "Analytics",
+    title: "Thống kê",
     url: PATHS.hotelStatistics,
     icon: BarChartBigIcon,
   },
   {
-    title: "Rooms",
+    title: "Phòng",
     url: PATHS.hotelRooms,
     icon: RoomIcon,
   },
   {
-    title: "Bookings",
+    title: "Lượt đặt phòng",
     url: PATHS.hotelBookings,
     icon: TicketsIcon,
   },
   {
-    title: "Reviews",
+    title: "Đánh giá",
     url: PATHS.hotelReviews,
     icon: CircleStarIcon,
   }
@@ -78,7 +78,7 @@ export default function DashboardSidebar({ ...props }: ComponentProps<typeof Sid
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent
-        // NOTE: The shadcn's SidebarContent has the scrollbar flickering when being opened from the icon-collapsed state.
+        // NOTE: avoid scrollbar flickering
         className="overflow-x-clip!"
       >
         <NavMain items={navMain} />

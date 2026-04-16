@@ -33,7 +33,7 @@ async function main() {
   const hotels = await seedHotels(hotelData);
   const roomTypes = await seedRoomTypes(hotels);
   await seedRooms(roomTypes);
-  const users = await seedRegularUsers(10);
+  const users = await seedRegularUsers(1000);
   await seedConnectionHotelsOnFacilities(hotels);
   await seedConnectionRoomTypesOnFacilities(roomTypes);
   const bookingsMetadata = await seedBookingsMetadata(users, roomTypes);
@@ -44,11 +44,36 @@ async function main() {
   console.log("Database seeded successfully!");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// main()
+//   .catch((e) => {
+//     console.error(e);
+//     process.exit(1);
+//   })
+//   .finally(async () => {
+//     await prisma.$disconnect();
+//   });
+
+async function deleteAllData(): Promise<void> {
+  await prisma.country.deleteMany();
+  await prisma.province.deleteMany();
+  await prisma.district.deleteMany();
+  await prisma.ward.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.facility.deleteMany();
+  await prisma.hotel.deleteMany();
+  await prisma.roomType.deleteMany();
+  await prisma.room.deleteMany();
+  await prisma.booking.deleteMany();
+  await prisma.review.deleteMany();
+}
+
+// Uncomment this function call to delete all data before seeding.
+// Be careful, this will irreversibly delete all data in the database.
+// deleteAllData()
+//   .catch((e) => {
+//     console.error(e);
+//     process.exit(1);
+//   })
+//   .finally(async () => {
+//     await prisma.$disconnect();
+//   });

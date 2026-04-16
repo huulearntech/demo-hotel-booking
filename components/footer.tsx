@@ -106,14 +106,14 @@ export default function Footer() {
           <ul className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:flex lg:flex-col lg:space-y-3 text-sm text-gray-300">
             {Object.entries(socialMedia).map(([name, src], index) => (
               <li key={index} className="inline-flex space-x-2 items-center">
-                <Image src={src} alt="" />
+                <Image src={src} alt="" className="bg-white rounded-sm p-0.5" />
                 <a href="#" className="hover:underline"> {name} </a>
               </li>
             ))}
           </ul>
         </div>
       </div>
-      <hr className="w-full my-4 border-gray-500" />
+      <hr className="w-full my-4 border-gray-300" />
       <div className="text-sm mb-4 text-center">
         <p>Demo website made by Huu Trinh 2025</p>
       </div>

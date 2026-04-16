@@ -14,10 +14,37 @@ import {
 
 import HotelCard from "@/components/hotel-card";
 import { fetchFeed } from "@/lib/actions/home";
+import { codec_searchSpec } from "@/lib/zod_schemas/search-bar";
+import { PATHS } from "@/lib/constants";
+
+// TODO: Standardize this as the default. Maybe get from local storage first, if there is none, fallback?
+const defaultSpec: {
+  inOutDates: {
+    from: Date,
+    to: Date
+  },
+  guestsAndRooms: {
+    numAdults: number,
+    numChildren: number,
+    numRooms: number
+  }
+} = {
+  inOutDates: {
+    from: new Date(),
+    to: new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
+  },
+  guestsAndRooms: {
+    numAdults: 2,
+    numChildren: 0,
+    numRooms: 1
+  }
+};
 
 // Simplify things, maybe just need to be polised on user role for now.
 export default async function Feed () {
   const title = "Khám phá điểm đến";
+  const stringifiedSearchParams = new URLSearchParams(codec_searchSpec.encode(defaultSpec)).toString();
+
   const locations = await fetchFeed();
   return (
     <section className="flex flex-col gap-y-4">
@@ -52,8 +79,7 @@ export default async function Feed () {
                   >
                     <HotelCard
                       hotel={hotel}
-                      // TODO
-                      href="#"
+                      href={`${PATHS.hotels}/${hotel.id}?${stringifiedSearchParams}`}
                     />
                   </CarouselItem>
                 ))}
