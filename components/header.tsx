@@ -22,7 +22,7 @@ export default async function Header({ className }: { className?: string }) {
         <Link href={PATHS.home}>
           <Image
             src={tvlk_logo_text_dark}
-            alt="Traveloka Header Logo"
+            alt=""
             className="h-10 w-auto object-contain"
           />
         </Link>
@@ -35,12 +35,12 @@ export default async function Header({ className }: { className?: string }) {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <Button asChild variant="link" className="hidden md:block">
+            <Button asChild variant="link" className="hidden md:block text-black">
               <Link href={PATHS.signUpHotel}>
                 Đăng ký cơ sở lưu trú của bạn
               </Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="text-primary hover:text-primary">
               <Link href={PATHS.signIn}> Đăng nhập </Link>
             </Button>
             <Button asChild>

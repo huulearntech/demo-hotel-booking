@@ -12,6 +12,7 @@ export const schemaSignUp = z.object({
 });
 
 export const userUpdateNameSchema = schemaSignUp.pick({ name: true })
+export type UserUpdateNameData = z.infer<typeof userUpdateNameSchema>;
 
 // export const schemaForgotPassword = z.object({
 //   email: z.email({ message: "Invalid email address" }),

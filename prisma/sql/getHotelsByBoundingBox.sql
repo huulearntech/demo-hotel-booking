@@ -33,7 +33,7 @@ WITH available AS (
     JOIN rooms r ON r.type_id = rt.id
     LEFT JOIN "_BookingToRoom" b2r ON b2r."B" = r.id
     LEFT JOIN bookings b ON b.id = b2r."A"
-    LEFT JOIN "BookingMetadata" bm ON bm.id = b.metadata_id
+    LEFT JOIN booking_metadata bm ON bm.id = b.metadata_id
     WHERE rt.price BETWEEN $10 AND $11
       AND rt.adult_capacity * $4 >= $3
       AND (rt.adult_capacity + rt.children_capacity) * $4 >= $3 + $14

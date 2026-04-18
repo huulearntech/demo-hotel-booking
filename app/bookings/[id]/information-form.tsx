@@ -37,7 +37,7 @@ export default function InformationForm () {
           {errors.name && <div className="text-sm text-destructive ml-1">{errors.name.message}</div>}
           <div className="text-xs font-semibold text-gray-500 ml-1">như trên CMND (không dấu)</div>
         </div>
-        <div className="w-full flex gap-x-6">
+        <div className="w-full flex flex-col gap-y-4 md:flex-row md:gap-y-0 md:gap-x-6">
           <div className="w-full flex flex-col gap-y-1">
             <Label htmlFor="phone-number" className="text-xs font-semibold ml-1">Số điện thoại</Label>
             <div className="flex gap-x-1">
@@ -78,7 +78,7 @@ export default function InformationForm () {
         />
         {errors.note && <div className="text-sm text-destructive ml-1">{errors.note.message}</div>}
         <div className="text-xs text-gray-500 ml-1">
-          Lưu ý: Đây chỉ là yêu cầu — khách sạn sẽ cố gắng đáp ứng nhưng không đảm bảo. Có thể phát sinh phí phụ thu hoặc cần xác nhận thêm từ khách sạn.
+          Lưu ý: Tất cả các yêu cầu tùy thuộc vào tình trạng sẵn có và không được đảm bảo. Có thể phát sinh thêm phí. Vui lòng liên hệ trực tiếp với nhân viên khách sạn để biết thêm thông tin.
         </div>
       </div>
     </form>

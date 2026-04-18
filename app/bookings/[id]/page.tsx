@@ -1,4 +1,4 @@
-// User will make a newe draft booking every request
+// User will make a new draft booking every request
 // but only when the user submits the information form,
 // the rooms must be recheck for availability. If true,
 // then hold the rooms for 15-20 minutes,
@@ -8,10 +8,6 @@
 // => thus, draft booking only needs to know the number of rooms in that roomtype,
 // and doesn't need to know which rooms, because the rooms will be rechecked for availability
 // when the user submits the information form anyway.
-
-
-// If then, should I make a separate table for draft bookings? (Holds the snapshot information)
-// => only make it real booking when all steps are done.
 
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -29,11 +25,9 @@ import {
   ArrowRight,
   BedDouble,
   DoorOpen,
-  ForkKnife,
-  ScrollText,
 } from "lucide-react";
 import { tvlk_logo_text_dark } from "@/public/logos"
-import { Prisma } from "@/lib/generated/prisma/client";
+import { BedType, Prisma } from "@/lib/generated/prisma/client";
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,16 +39,23 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
   const bookingMetadataAndHotel = await prisma.bookingMetadata.findUnique({
     where: { id, userId: session.user.id },
     select: {
-      hotel: {
+      roomType: {
         select: {
-          name: true,
-          reviewPoints: true,
-          numberOfReviews: true,
-          facilities: { select: { name: true, iconUrl: true } }
+          hotel: {
+            select: {
+              name: true,
+              type: true,
+              reviewPoints: true,
+              numberOfReviews: true,
+              facilities: { select: { id: true, name: true, iconUrl: true } }
+            }
+          },
+          bedType: true,
         }
       },
       numRooms: true,
-      numGuests: true,
+      numAdults: true,
+      numChildren: true,
       snapshotCheckInTime: true,
       snapshotCheckOutTime: true,
       snapshotRoomTypeName: true,
@@ -65,18 +66,31 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
   });
   if (!bookingMetadataAndHotel) notFound();
 
-  const { hotel: { name: hotelName, reviewPoints, numberOfReviews, facilities }, ...bookingMetadata } = bookingMetadataAndHotel;
+  const {
+    roomType: {
+      hotel: {
+        name: hotelName,
+        type: hotelType,
+        reviewPoints,
+        numberOfReviews,
+        facilities
+      },
+      bedType,
+    },
+    ...bookingMetadata
+  } = bookingMetadataAndHotel;
 
   return (
     <InformationFormProvider defaultValues={{ name: name || "", email: email || "" }} >
       <header className="w-full h-20 z-60 bg-white shadow-md sticky top-0">
         <div className="flex h-full justify-between items-center content">
           <div className="flex items-center">
-            <Image src={tvlk_logo_text_dark} alt="Traveloka Header Logo" />
+            <Image src={tvlk_logo_text_dark} alt="" />
             <div className="h-10 w-px bg-gray-200 mx-3"></div>
             <div className="flex flex-col gap-y-1 p-4">
-              <div className="text-base text-black font-semibold">
-                {hotelName}
+              <div className="flex items-center gap-x-2">
+                <span className="text-base text-black font-semibold"> {hotelName} </span>
+                <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-primary lowercase first-letter:capitalize">{hotelType}</span>
               </div>
               <div className="flex items-center gap-x-2 text-xs">
                 <span className="text-primary font-black">{reviewPoints.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
@@ -85,35 +99,29 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           <div className="flex items-center gap-16">
-            {/** TODO: Stepper */}
-            Stepper go here
+            <Stepper step={1} />
           </div>
         </div>
       </header>
 
-      <div className="min-h-screen bg-[url('/images/bg-booking-page.webp')] bg-no-repeat bg-bottom">
-        <main className="content grid gap-6 pt-6 pb-10 grid-cols-1 lg:grid-cols-[1fr_25rem] lg:items-start">
+      <div className="bg-[url('/images/bg-booking-page.webp')] bg-no-repeat bg-bottom">
+        <main className="content grid gap-6 pt-6 grid-cols-1 lg:grid-cols-[1fr_25rem] lg:items-start">
           <div className="order-2 lg:col-start-2 lg:row-start-1">
-            <BookingSummary bookingMetadata={bookingMetadata} facilities={facilities} />
+            <BookingSummary bookingMetadata={bookingMetadata} facilities={facilities} bedType={bedType} />
           </div>
 
-          <div className="order-3 row-span-3 lg:col-start-1 flex flex-col gap-y-6 min-w-100">
+          <div className="order-3 row-span-3 lg:col-start-1 min-w-100">
             <InformationForm />
-
-            <div className="w-full h-fit flex flex-col rounded-4xl bg-white shadow-lg p-4 gap-y-4">
-              <div className="flex flex-col gap-y-2">
-                <div className="flex gap-x-2 items-center">
-                  <ScrollText className="size-5" />
-                  <h2 className="text-xl font-semibold"> Chính sách chỗ ở </h2>
-                </div>
-                <div className="text-sm font-medium text-gray-500">
-                  Vui lòng đọc kỹ các chính sách của chỗ ở trước khi hoàn tất đặt chỗ.
-                </div>
-              </div>
-            </div>
           </div>
           <div className="order-4 lg:col-start-2 lg:row-start-2">
-            <PriceDetail />
+            <PriceDetail
+              snapshotRoomTypeName={bookingMetadata.snapshotRoomTypeName}
+              snapshotRoomPrice={bookingMetadata.snapshotRoomPrice.toNumber()}
+              nights={differenceInDays(bookingMetadata.checkOutDate, bookingMetadata.checkInDate)}
+              numRooms={bookingMetadata.numRooms}
+              // FIXME: temporary total price calculation, must be calculated in Decimal on server.
+              totalPrice={bookingMetadata.snapshotRoomPrice.toNumber() * bookingMetadata.numRooms * differenceInDays(bookingMetadata.checkOutDate, bookingMetadata.checkInDate)}
+            />
           </div>
         </main>
       </div>
@@ -124,11 +132,13 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
 async function BookingSummary({
   bookingMetadata,
   facilities,
+  bedType,
 }: {
   bookingMetadata: Prisma.BookingMetadataGetPayload<{
     select: {
       numRooms: true,
-      numGuests: true,
+      numAdults: true,
+      numChildren: true,
       snapshotCheckInTime: true,
       snapshotCheckOutTime: true,
       snapshotRoomTypeName: true,
@@ -136,11 +146,13 @@ async function BookingSummary({
       checkOutDate: true,
     }
   }>,
-  facilities: { name: string, iconUrl: string | null }[],
+  facilities: { id: string, name: string, iconUrl: string | null }[],
+  bedType: BedType,
 }) {
   const {
     numRooms,
-    numGuests,
+    numAdults,
+    numChildren,
     snapshotCheckInTime,
     snapshotCheckOutTime,
     snapshotRoomTypeName,
@@ -189,35 +201,81 @@ async function BookingSummary({
             }).format(checkOutDate)}
           </div>
           <div className="text-xs">
-            Trước {new Intl.DateTimeFormat('vi-VN', {
+            {/* Trước {new Intl.DateTimeFormat('vi-VN', {
               hour: '2-digit',
               minute: '2-digit'
-            }).format(snapshotCheckOutTime)}
+            }).format(snapshotCheckOutTime)} */}
+            {snapshotCheckOutTime.toISOString()}
           </div>
         </div>
       </div>
 
       <div className="flex gap-x-2 items-center">
         <DoorOpen className="size-4" />
-        <div className="text-sm font-semibold">{numGuests} khách</div>
-        <div className="w-px bg-gray-500 h-3 mx-1"></div>
-        <BedDouble className="size-4" />
-        <ForkKnife className="size-4" />
+        <div className="text-sm font-semibold">
+          <span>{numAdults} người lớn</span>
+          {numChildren > 0 && <span>, {numChildren} trẻ em</span>}
+        </div>
+        <div className="w-px bg-gray-500 h-3 mx-1" />
+        <div className="flex items-center gap-x-1">
+          <BedDouble className="size-4" />
+          <span className="text-sm font-semibold lowercase first-letter:capitalize">Giuờng {bedType}</span>
+        </div>
       </div>
-      <div className="flex gap-x-2 flex-wrap text-sm text-gray-500">
-        {facilities.filter(facility => facility.iconUrl).map((facility, index) => (
-          <div key={index} className="flex items-center gap-x-2">
-            <Image
-              src={facility.iconUrl!}
-              alt=""
-              className="size-4"
-              width={16}
-              height={16}
-            />
-            {facility.name}
-          </div>
-        ))}
+      <div className="flex flex-wrap gap-x-3 gap-y-2 text-sm text-gray-500">
+        {facilities
+          .filter((facility) => facility.iconUrl)
+          .map(facility => (
+        <div
+          key={facility.id}
+          className="flex items-center gap-x-2 flex-1 min-w-32"
+        >
+          <Image
+            src={facility.iconUrl!}
+            alt={facility.name}
+            className="w-4 h-4"
+            width={16}
+            height={16}
+          />
+          <span className="text-xs truncate">{facility.name}</span>
+        </div>
+          ))}
       </div>
     </div>
   )
+}
+
+// Just a stepper for this specific booking flow.
+function Stepper({ step }: { step: 1 | 2 }) {
+  return (
+    <div className="flex items-center gap-x-3">
+      <div className="flex items-center">
+        <div
+          className={`flex items-center justify-center w-6 h-6 rounded-full ${
+            step === 1 ? "bg-primary text-white" : "bg-gray-200 text-gray-500"
+          }`}
+        >
+          <span className="text-xs font-semibold">1</span>
+        </div>
+        <span className={`ml-2 text-sm ${step === 1 ? "text-primary font-medium" : "text-gray-500"}`}>
+          Điền thông tin
+        </span>
+      </div>
+
+      <div className={`h-px w-10 mx-3 ${step === 2 ? "bg-primary" : "bg-gray-200"}`} />
+
+      <div className="flex items-center">
+        <div
+          className={`flex items-center justify-center w-6 h-6 rounded-full ${
+            step === 2 ? "bg-primary text-white" : "bg-gray-200 text-gray-500"
+          }`}
+        >
+          <span className="text-xs font-semibold">2</span>
+        </div>
+        <span className={`ml-2 text-sm ${step === 2 ? "text-primary font-medium" : "text-gray-500"}`}>
+          Thanh toán
+        </span>
+      </div>
+    </div>
+  );
 }

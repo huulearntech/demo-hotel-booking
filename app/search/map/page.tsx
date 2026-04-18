@@ -13,14 +13,13 @@ import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 const MapClient = dynamic(() => import("./map-client"), { ssr: false });
 
 export default function SearchMapPage() {
-  // FIXME: This does correctly show the empty location, but need to show. so the logic isn't wrong, but just not work.
-  // FIXME: and also, using search params only on page mount make it not updated when user change the search params.
+  // FIXME: using search params only on page mount make it not updated when user change the search params.
   const searchParams = useSearchParams();
 
-  const searchBarValuesFromSearchParams = {
+  const searchBarValuesFromSearchParams: SearchBar_FormInput = {
     location: {
       id: searchParams.get("locationId") || "",
-      type: (searchParams.get("locationType") as SearchBar_FormInput["location"]["type"]) || "city",
+      type: ((searchParams.get("locationType") || "none") as SearchBar_FormInput["location"]["type"]),
     },
     inOutDates: {
       from: new Date(searchParams.get("checkInDate")!),
@@ -31,14 +30,11 @@ export default function SearchMapPage() {
       numChildren: searchParams.get("numChildren") ? parseInt(searchParams.get("numChildren")!) : 0,
       numRooms: searchParams.get("numRooms") ? parseInt(searchParams.get("numRooms")!) : 1,
     },
-  } satisfies SearchBar_FormInput;
+  };
 
   const { success, data: defaultSearchBarValues } = schema_searchBar.safeParse(searchBarValuesFromSearchParams);
-  if (!success) {
-    return null;
-    // TODO: Default values.
-  }
-  // TODO: Search on search bar should keep the map view.
+  console.log("defaultSearchBarValues", defaultSearchBarValues);
+  if (!success) return null;
   return (
     <FilterFormProvider>
       <FilterSheetProvider>
@@ -46,7 +42,6 @@ export default function SearchMapPage() {
           <div className="sticky top-0 w-full py-3 shadow-lg bg-white z-1000 flex items-end justify-center gap-x-2">
             <ButtonOpenFilterSheet className="mb-0.5" />
             <SearchBar
-              defaultLocationQuery={""}
               defaultValues={defaultSearchBarValues}
               className="content mx-0"
               collapsible

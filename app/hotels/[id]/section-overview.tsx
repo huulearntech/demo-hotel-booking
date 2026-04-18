@@ -23,8 +23,7 @@ export default async function OverviewSection({
   poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>
 }) {
   const {
-    roomTypes: [{ price: minPrice }],
-    bookingsMetadata,
+    roomTypes: [{ price: minPrice, bookingsMetadata }],
     imageUrls,
     facilities,
     ward: {
@@ -91,7 +90,7 @@ export default async function OverviewSection({
         {imageUrls.length > 0 &&
           <Image
             src={imageUrls[0]}
-            alt=""
+            alt={`Ảnh 1 của ${hotel.name}`}
             width={400}
             height={300}
             className="object-cover w-full h-full row-span-1 col-span-1 lg:row-span-2 lg:col-span-2"
@@ -101,7 +100,7 @@ export default async function OverviewSection({
           <Image
             key={index}
             src={src}
-            alt=""
+            alt={`Ảnh ${index + 1} của ${hotel.name}`}
             width={400}
             height={300}
             className="w-full h-full object-cover"
@@ -110,7 +109,7 @@ export default async function OverviewSection({
         {imageUrls.length > 6 &&
           <Image
             src={imageUrls[6]}
-            alt=""
+            alt={`Ảnh 7 của ${hotel.name}`}
             width={400}
             height={300}
             className="w-full h-full object-cover hidden lg:block"
@@ -160,7 +159,7 @@ export default async function OverviewSection({
                 <div key={booking.id} className="flex items-start gap-x-2">
                   <Image
                     src={user.profileImageUrl ?? tvlk_favicon}
-                    alt=""
+                    alt={`Ảnh đại diện của ${user.name}`}
                     className="size-6 rounded-full"
                     width={24}
                     height={24}
@@ -182,7 +181,7 @@ export default async function OverviewSection({
               <h2>Trong khu vực</h2>
               <a href="#location" className="text-sm text-primary flex gap-x-1">
                 Xem bản đồ
-                <ChevronRight className="size-5" />
+                <ChevronRight className="size-5" aria-hidden />
               </a>
             </div>
             <div className="flex flex-col gap-y-2 text-sm">
@@ -206,7 +205,7 @@ export default async function OverviewSection({
               <h2>Tiện ích chính</h2>
               <a href="#facilities" className="text-sm text-primary flex gap-x-1">
                 Xem thêm
-                <ChevronRight className="size-5" />
+                <ChevronRight className="size-5" aria-hidden />
               </a>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -218,6 +217,7 @@ export default async function OverviewSection({
                     className="size-4"
                     width={16}
                     height={16}
+                    aria-hidden
                   />
                   {facility.name}
                 </div>
@@ -232,7 +232,7 @@ export default async function OverviewSection({
           <p className="text-sm max-h-20 overflow-hidden overflow-ellipsis">{hotel.description}</p>
           <div className="flex gap-x-1 text-sm font-bold text-primary">
             Xem thêm
-            <ChevronRight className="size-5" />
+            <ChevronRight className="size-5" aria-hidden />
           </div>
         </div>
       </div>

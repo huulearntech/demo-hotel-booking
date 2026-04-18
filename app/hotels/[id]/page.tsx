@@ -25,7 +25,6 @@ export default async function Page(props: {
   if (!safeDecodedParams.success || !hotel) notFound()
 
   const {
-    bookingsMetadata,
     reviewPoints,
     numberOfReviews
   } = hotel;
@@ -44,11 +43,7 @@ export default async function Page(props: {
   return (
     <>
       <div className="flex flex-col py-3 sticky top-0 shadow-lg bg-white z-20 gap-y-4">
-        <SearchBar
-          defaultLocationQuery={hotel.name}
-          defaultValues={searchBarFormData}
-          collapsible
-        />
+        <SearchBar defaultValues={searchBarFormData} collapsible />
         <Navbar />
       </div>
       <main className="flex flex-col gap-y-4 content my-4 [&>section]:scroll-mt-35">
@@ -60,7 +55,7 @@ export default async function Page(props: {
         <AvailableRoomsSection hotelId={hotel.id} hotelName={hotel.name} searchBarFormData={searchBarFormData}/>
         <LocationSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <FacilitiesSection hotel={hotel} />
-        <ReviewSection hotelName={hotel.name} bookingsMetadata={bookingsMetadata} reviewPoints={reviewPoints} numberOfReviews={numberOfReviews} />
+        <ReviewSection hotelName={hotel.name} hotelId={hotel.id} numberOfReviews={numberOfReviews} reviewPoints={reviewPoints}/>
       </main>
     </>
   );

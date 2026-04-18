@@ -19,13 +19,12 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
   );
 
   // Build sampling pairs: pick random user + random roomType (use roomType.hotelId)
-  type Pair = { userId: string; hotelId: string; roomTypeId: string; roomTypeName: string };
+  type Pair = { userId: string; roomTypeId: string; roomTypeName: string };
   const pairs: Pair[] = Array.from({ length: numEntries }, () => {
     const user = faker.helpers.arrayElement(users);
     const roomType = faker.helpers.arrayElement(roomTypes);
     return {
       userId: user.id,
-      hotelId: roomType.hotelId,
       roomTypeId: roomType.id,
       roomTypeName: roomType.name,
     };
@@ -36,7 +35,7 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
 
   const pastBookingsInputs: Prisma.BookingMetadataCreateInput[] = pairs
     .slice(0, half)
-    .map(({ userId, hotelId, roomTypeId, roomTypeName }) => {
+    .map(({ userId, roomTypeId, roomTypeName }) => {
       const checkOutDate = faker.date.recent({ refDate: today });
       const checkInDate = faker.date.recent({ days: 10, refDate: checkOutDate });
       const createdAt = faker.date.recent({ refDate: checkInDate });
@@ -44,7 +43,6 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
 
       return {
         user: { connect: { id: userId } },
-        hotel: { connect: { id: hotelId } },
         roomType: { connect: { id: roomTypeId } },
         snapshotRoomTypeName: roomTypeName,
         checkInDate,
@@ -52,7 +50,8 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
         snapshotRoomPrice: new Decimal(snapshotRoomPriceNum),
         createdAt,
         numRooms: faker.number.int({ min: 1, max: 3 }),
-        numGuests: faker.number.int({ min: 1, max: 6 }),
+        numAdults: faker.number.int({ min: 1, max: 6 }),
+        numChildren: faker.number.int({ min: 1, max: 3 }),
         snapshotCheckInTime: faker.date.between({ from: checkInDate, to: checkOutDate }), // FIXME: this is time in the day, not some bullshit AI gave. 
         snapshotCheckOutTime: faker.date.between({ from: checkInDate, to: checkOutDate }),
       };
@@ -60,7 +59,7 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
 
   const upcomingBookingsInputs: Prisma.BookingMetadataCreateInput[] = pairs
     .slice(half)
-    .map(({ userId, hotelId, roomTypeId, roomTypeName }) => {
+    .map(({ userId, roomTypeId, roomTypeName }) => {
       const checkInDate = faker.date.soon({ days: 10, refDate: today });
       // ensure checkOutDate is after checkInDate
       const checkOutDate = faker.date.soon({ days: 10, refDate: checkInDate });
@@ -69,7 +68,6 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
 
       return {
         user: { connect: { id: userId } },
-        hotel: { connect: { id: hotelId } },
         roomType: { connect: { id: roomTypeId } },
         snapshotRoomTypeName: roomTypeName,
         checkInDate,
@@ -77,7 +75,8 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
         snapshotRoomPrice: new Decimal(snapshotRoomPriceNum),
         createdAt,
         numRooms: faker.number.int({ min: 1, max: 3 }),
-        numGuests: faker.number.int({ min: 1, max: 6 }),
+        numAdults: faker.number.int({ min: 1, max: 6 }),
+        numChildren: faker.number.int({ min: 1, max: 3 }),
         snapshotCheckInTime: faker.date.between({ from: checkInDate, to: checkOutDate }),
         snapshotCheckOutTime: faker.date.between({ from: checkInDate, to: checkOutDate }),
       };
@@ -128,12 +127,12 @@ async function seedReviews() {
     select: { id: true },
   });
 
-  const reviews = bookings.map(({ id }) => ({
+  const reviews: Prisma.ReviewCreateManyInput[] = bookings.map(({ id }) => ({
     bookingId: id,
     rating: faker.number.int({ min: 1, max: 5 }),
     comment: faker.lorem.sentences(2),
     createdAt: faker.date.recent(),
-  })) satisfies Prisma.ReviewCreateManyInput[];
+  }));
 
   await prisma.review.createMany({
     data: reviews,

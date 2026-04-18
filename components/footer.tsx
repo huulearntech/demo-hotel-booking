@@ -59,7 +59,7 @@ export default function Footer() {
       <div className="flex flex-col lg:flex-row content justify-between pt-14 pb-4">
         <div className="flex flex-col space-y-4 lg:w-[35%]">
           <div>
-            <Image src={tvlk_logo_text_light} alt="Traveloka Logo" />
+            <Image src={tvlk_logo_text_light} alt="" />
             <div className="inline-flex space-x-4">
               <Image src={iata} alt="IATA Logo" className="h-auto"/>
               <Image src={bst} alt="BST Logo" className="h-auto"/>
@@ -80,7 +80,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8">
-          <h3 className="font-bold mb-2 justify-between">Về Traveloka</h3>
+          <h3 className="font-bold mb-2 justify-between">Về Hoteloka</h3>
           <ul className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:flex lg:flex-col lg:space-y-3 text-sm text-gray-300">
             {about.map((text, index) => (
               <li key={index} className="inline-flex space-x-2 items-center">

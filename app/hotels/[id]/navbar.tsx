@@ -32,7 +32,7 @@ export default function Navbar() {
         if (typeof window === "undefined") return;
         const candidates = anchorElements
           .map((el) => ({ el, top: el.getBoundingClientRect().top }))
-          .filter((c) => c.top <= window.innerHeight / 2);
+          .filter((c) => c.top <= 128); // height of navbar
 
         if (candidates.length == 0) {
           setActive("overview");

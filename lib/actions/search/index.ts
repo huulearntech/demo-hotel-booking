@@ -26,9 +26,9 @@ export type CursorType = {
 export async function fetchSearchResult(
   searchBarFormValues: SearchBar_FormInput,
   filterFormValues: FilterFormValues,
-  pageSize: number,
   sort: SortType,
-  cursor: CursorType | null
+  cursor: CursorType | null,
+  pageSize: number = 10,
 ): Promise<{
   items: HotelCardProps[];
   totalCount: number;
@@ -50,7 +50,6 @@ export async function fetchSearchResult(
   const lastReviewPoints = cursor?.lastReviewPoints ?? null;
   const lastHotelIndex = cursor?.lastHotelIndex ?? null;
 
-  // TODO: filter facilities
   const result = await prisma.$queryRawTyped(getHotelsBySearchBarForm(
     locationId,
     checkInDate,
@@ -78,8 +77,8 @@ export async function fetchSearchResult(
     numberOfReviews: hotel.numberOfReviews,
     roomTypes: [{
       price: sort === 'price_desc'
-        ? (hotel.maxPrice?.toNumber?.() || 0)
-        : (hotel.minPrice?.toNumber?.() || 0)
+        ? (hotel.maxPrice?.toNumber() || 0)
+        : (hotel.minPrice?.toNumber() || 0)
     }],
     ward: {
       name: hotel.wardName,
@@ -90,7 +89,7 @@ export async function fetchSearchResult(
   }));
 
   const totalCount = result[0]?.totalCount ?? 0;
-  const lastItem = result[result.length - 1];
+  const lastItem = result[pageSize - 1];
 
   return {
     items,

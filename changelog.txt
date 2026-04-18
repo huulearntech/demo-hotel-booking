@@ -16,6 +16,14 @@ homepage: favorite destination -> real link
 
 hotel owner dashboard: make meaningful analytical charts.
 
+rate limiting these path (not limited to): bookings, change password,...  
+
+review's pagination: doesn't work
+
+seeding: booking: incrementally, bulk on each search.
+
+Date object: fix mismatch between server and client, and especially in Nextjs.
+
 
 // TODO: Flow
 // 1. Basic info (name, email, phone) -> sign up for account

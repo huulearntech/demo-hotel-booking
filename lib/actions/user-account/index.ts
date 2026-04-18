@@ -36,12 +36,15 @@ export async function user_getRecentBookingsPaginated(
     include: {
       metadata: {
         select: {
-          hotel: { select: { name: true } },
+          roomType: {
+            select: { hotel: { select: { name: true } } }
+          },
           snapshotRoomPrice: true,
           checkInDate: true,
           checkOutDate: true,
           numRooms: true,
-          numGuests: true,
+          numAdults: true,
+          numChildren: true,
         },
       },
     },
@@ -70,12 +73,13 @@ type BookingWithMeta = Prisma.BookingGetPayload<{
   include: {
     metadata: {
       select: {
-        hotel: { select: { name: true } };
+        roomType: { select: { hotel: { select: { name: true } } } };
         snapshotRoomPrice: true;
         checkInDate: true;
         checkOutDate: true;
         numRooms: true;
-        numGuests: true;
+        numAdults: true;
+        numChildren: true;
       };
     };
   };
@@ -87,9 +91,9 @@ export type RecentBookingType = Omit<BookingWithMeta, "metadata"> & {
 };
 
 
-import { userUpdateNameSchema } from "@/lib/zod_schemas/auth";
+import { UserUpdateNameData, userUpdateNameSchema } from "@/lib/zod_schemas/auth";
 
-export async function user_updateName(newName: string): Promise<OperationResult<{ id: string; name: string }>> {
+export async function user_updateName(formData_newName: UserUpdateNameData): Promise<OperationResult<{ id: string; name: string }>> {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthenticated", status: 401 };
@@ -98,8 +102,9 @@ export async function user_updateName(newName: string): Promise<OperationResult<
     return { ok: false, error: "Unauthorized", status: 403 };
   }
 
-  const parsed = userUpdateNameSchema.safeParse(newName);
+  const parsed = userUpdateNameSchema.safeParse(formData_newName);
   if (!parsed.success) {
+    console.log("Validation error:", parsed.error);
     return { ok: false, error: parsed.error.message, status: 400 };
   }
 
@@ -115,6 +120,7 @@ export async function user_updateName(newName: string): Promise<OperationResult<
     return { ok: true, data: user };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.log("Database error:", message);
     return { ok: false, error: message, status: 500 };
   }
 }

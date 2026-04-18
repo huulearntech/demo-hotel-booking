@@ -26,10 +26,9 @@ LEFT JOIN LATERAL (
 -- compute how many rooms are already booked for this room type in the given date range
 LEFT JOIN LATERAL (
   SELECT COALESCE(SUM(bm.num_rooms), 0) AS booked_rooms
-  FROM "BookingMetadata" bm
+  FROM booking_metadata bm
   RIGHT JOIN bookings b ON b.metadata_id = bm.id
-  WHERE bm.hotel_id = $1
-    AND bm.room_type_id = rt.id
+  WHERE bm.room_type_id = rt.id
     AND (
       bm.check_in_date BETWEEN $2 AND $3
       OR bm.check_out_date BETWEEN $2 AND $3

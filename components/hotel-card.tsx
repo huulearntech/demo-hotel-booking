@@ -36,7 +36,7 @@ export default function HotelCard({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={cn("w-full min-h-106 flex flex-col rounded-lg shadow-md overflow-hidden hover:shadow-primary/50 hover:shadow-md", className)}
+      className={cn("bg-white w-full min-h-106 flex flex-col rounded-lg shadow-md overflow-hidden hover:shadow-primary/50 hover:shadow-md", className)}
     >
       <div className="relative h-50 overflow-hidden">
         <Image

@@ -51,7 +51,7 @@ WITH base AS (
             FROM rooms r2
             JOIN "_BookingToRoom" b2r ON b2r."B" = r2.id
             JOIN bookings b2 ON b2.id = b2r."A"
-            LEFT JOIN "BookingMetadata" bm2 ON b2.metadata_id = bm2.id
+            LEFT JOIN booking_metadata bm2 ON b2.metadata_id = bm2.id
             WHERE bm2.check_in_date < $3
               AND bm2.check_out_date > $2
               AND b2.status IN ('CONFIRMED','PENDING')

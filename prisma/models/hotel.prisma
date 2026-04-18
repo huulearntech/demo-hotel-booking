@@ -27,7 +27,6 @@ model Hotel {
   facilities            Facility[]
   favoritedBy           Favorite[]
   recentlyViewedBy      RecentlyViewed[]
-  bookingsMetadata      BookingMetadata[]
 
   @@map("hotels")
 }

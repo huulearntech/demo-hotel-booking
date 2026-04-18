@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 
+import { useFilterForm } from "../filter-form-context";
 import { codec_searchSpec, SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
 import { fetchSearchResult, type CursorType } from "@/lib/actions/search";
 import { PATHS } from "@/lib/constants";
@@ -20,24 +21,15 @@ import noResultImage from "@/public/images/no-result.svg";
 
 // temporary. TODO: move to types
 type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
-import { useFilterForm } from "../filter-form-context";
-
-// TODO: remove
-const pageSize = 2;
-
 const sort: SortType = "price_asc";
 
 export default function Results({
-  locationName,
   searchBarFormValues,
 }: {
-  locationName: string;
   searchBarFormValues: SearchBar_FormInput;
 }) {
   const searchParams = useSearchParams();
   const [totalCount, setTotalCount] = useState(0);
-
-      // Temporarily put filter here.
   const { getValues } = useFilterForm();
 
   const { location, ...searchSpecWithoutLocation } = searchBarFormValues;
@@ -54,16 +46,13 @@ export default function Results({
   } = useInfiniteQuery({
     queryKey: ["hotels", searchBarFormValues], // TODO: should also include filterFormValues and sort in the query key
     queryFn: async ({ pageParam }: { pageParam: CursorType | null }) => {
-      // await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate network delay
-      // Temporarily put filter here.
       const filterFormValues = getValues();
 
       const page = await fetchSearchResult(
         searchBarFormValues,
         filterFormValues,
-        pageSize,
         sort,
-        pageParam
+        pageParam,
       );
       return page;
     },
@@ -73,7 +62,7 @@ export default function Results({
   });
 
   // flatten pages into a single array of hotels
-  const hotels = data?.pages ? data.pages.flatMap((p: any) => p.items) : [];
+  const hotels = data?.pages.flatMap(p => p.items) ?? [];
   useEffect(() => {
     const total = data?.pages?.[0]?.totalCount ?? 0;
     setTotalCount(total);
@@ -100,7 +89,6 @@ export default function Results({
   return (
     <div className="w-full flex flex-col space-y-3">
       <SearchStatusBar
-        location={locationName}
         total={totalCount}
         searchParams={searchParams}
       />

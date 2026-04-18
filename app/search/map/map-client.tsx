@@ -35,7 +35,7 @@ function MapController({
   const bboxRef = useRef<BBox | null>(null);
   const timerRef = useRef<number | null>(null);
 
-  // TODO: Clean up filter logic. For now it works good, but logic is a bit scattered.
+  // TODO: Clean up filter logic. For now it can work, but logic is a bit scattered, and the change doesn't take place immediately.
   const filter = useFilterForm();
 
   const scheduleFetch = useCallback(
@@ -83,7 +83,9 @@ function MapController({
         }
       }, debounceMs);
     },
-    [debounceMs, minMoveMeters, onUpdateBBox, setDataState]
+    // TODO: Clean up or this shit gonna be slow.
+    // FIXME: Added filter and searchBarValues into dependency array but changes still don't take place immediately.
+    [debounceMs, minMoveMeters, onUpdateBBox, setDataState, filter, searchBarValues]
   );
 
   useMapEvents({
@@ -121,7 +123,7 @@ function MapController({
         timerRef.current = null;
       }
     };
-  }, [map]);
+  }, [map, filter, searchBarValues]);
 
   return null;
 }

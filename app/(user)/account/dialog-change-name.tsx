@@ -41,7 +41,7 @@ export default function ChangeNameDialog({ originalName }: { originalName: strin
     setOpen(false);
 
     startTransition(async () => {
-      const res = await user_updateName(formValues.name);
+      const res = await user_updateName(formValues);
       if (res.ok) {
         toast.success("Cập nhật tên thành công");
       } else {

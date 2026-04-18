@@ -42,11 +42,12 @@ const fmtDateTime = (d?: string | Date | null) => {
 
 function BookingCard({ booking }: { booking: RecentBookingType }) {
   const {
-    hotel: { name: hotelName },
+    roomType: { hotel: { name: hotelName } },
     checkInDate,
     checkOutDate,
     numRooms,
-    numGuests,
+    numAdults,
+    numChildren,
   } = booking.metadata;
   const totalPrice = booking.totalPrice;
   const createdAt = booking.createdAt;
@@ -74,7 +75,7 @@ function BookingCard({ booking }: { booking: RecentBookingType }) {
           </div>
           <div className="hidden md:block h-5 w-px bg-muted/40" />
           <div className="hidden md:block text-muted-foreground">{numRooms} phòng</div>
-          <div className="hidden md:block text-muted-foreground">{numGuests} khách</div>
+          <div className="hidden md:block text-muted-foreground">{numAdults} người lớn + {numChildren} trẻ em</div>
         </div>
 
         <div className="flex items-center gap-3">

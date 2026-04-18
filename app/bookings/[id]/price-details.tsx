@@ -7,7 +7,19 @@ import { useInformationForm  } from "./information-form-context";
 import { BookingFormValues } from "@/lib/zod_schemas/booking";
 
 
-export default function PriceDetail() {
+export default function PriceDetail({
+  snapshotRoomTypeName,
+  snapshotRoomPrice,
+  nights,
+  numRooms,
+  totalPrice, // Must be calculated on the server and passed in, to prevent weird stuffs.
+}: {
+  snapshotRoomTypeName: string;
+  snapshotRoomPrice: number;
+  nights: number;
+  numRooms: number;
+  totalPrice: number;
+}) {
   const onSubmit = (data: BookingFormValues) => {
     // replace with real submit logic
     console.log("form submit", data);
@@ -24,23 +36,36 @@ export default function PriceDetail() {
         <div className="flex justify-between">
           <div className="flex flex-col gap-y-1">
             <div>Giá phòng</div>
-            <div>(xSố lượng) Tên phòng</div>
+            <div>({numRooms}x) {snapshotRoomTypeName}</div>
           </div>
-          <div>654321 VND</div>
+          <div>
+            {new Intl.NumberFormat('vi-VN', {
+              style: 'currency',
+              currency: 'VND',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }).format(snapshotRoomPrice)}
+          </div>
         </div>
         <div className="flex justify-between">
-          <div>Thue va phi</div>
-          <div>123456 VND</div>
+          <div>Thời gian lưu trú</div>
+          <div>{nights} đêm</div>
         </div>
       </div>
       <div className="flex justify-between p-4 bg-[linear-gradient(313.11deg,rgb(247,252,222)18.59%,rgb(255,255,255)89.04%)]">
         <div className="flex flex-col">
           <div className="text-sm font-semibold">Tổng cộng</div>
-          <div className="text-sm text-gray-500">1 phòng, 1 đêm</div>
+          <div className="text-sm text-gray-500">{numRooms} phòng, {nights} đêm</div>
         </div>
-        <div className="flex flex-col items-end">
-          <div className="text-sm font-semibold text-gray-500 line-through">2345678</div>
-          <div className="font-semibold text-primary">1234567</div>
+
+        <div className="font-semibold text-primary">
+          {new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(totalPrice)
+          }
         </div>
       </div>
 
@@ -55,7 +80,7 @@ export default function PriceDetail() {
         <Link href="#" className="underline">Điều khoản và Điều kiện</Link>,
         <Link href="#" className="underline">Chính sách Bảo mật</Link>{", và "}
         <Link href="#" className="underline">Quy trình Hoàn tiền Lưu trú</Link>
-        {" của Traveloka."}
+        {" của Hoteloka."}
       </div>
     </div>
   )

@@ -56,10 +56,10 @@ export default async function Feed () {
         className="content"
       >
         <div className="overflow-x-auto justify-start">
-          <TabsList className="bg-inherit gap-x-2" >
+          <TabsList className="bg-inherit gap-x-2 h-11">
             {locations.map(({ provinceName }) => (
               <TabsTrigger value={provinceName} key={provinceName}
-                className="h-9 text-sm font-bold px-3 py-2 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:text-primary-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 bg-accent text-foreground dark:text-muted-foreground data-[state=active]:shadow-sm"
+                className="h-[calc(100%-1px)] text-sm font-bold px-3 py-2 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:text-primary-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 bg-accent text-primary dark:text-muted-foreground data-[state=active]:shadow-sm"
               >
                 {provinceName}
               </TabsTrigger>

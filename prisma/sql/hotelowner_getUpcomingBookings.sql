@@ -7,7 +7,8 @@ SELECT
   b.customer_name AS "customerName",
   b.customer_email AS "customerEmail",
   b.customer_phone AS "customerPhone",
-  bm.num_guests AS "numGuests",
+  bm.num_adults AS "numAdults",
+  bm.num_children AS "numChildren",
   bm.num_rooms AS "numRooms",
   bm.check_in_date AS "checkInDate",
   bm.check_out_date AS "checkOutDate",
@@ -15,8 +16,9 @@ SELECT
   bm.snapshot_room_type_name AS "roomTypeName",
   COUNT(*) OVER() AS "totalCount"
 FROM bookings b
-JOIN "BookingMetadata" bm ON b.metadata_id = bm.id
-WHERE bm.hotel_id = $1
-  AND bm.check_in_date >= now()
+JOIN booking_metadata bm ON b.metadata_id = bm.id
+JOIN room_types rt ON bm.room_type_id = rt.id
+WHERE rt.hotel_id = $1
+AND bm.check_in_date >= now()
   -- AND b.status IN ('pending', 'confirmed') -- Uncomment if you want to filter by booking status
 ORDER BY b.created_at ASC;

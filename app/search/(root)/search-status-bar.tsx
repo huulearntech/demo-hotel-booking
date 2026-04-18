@@ -16,20 +16,15 @@ import { PATHS } from "@/lib/constants";
 import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 
 export default function SearchStatusBar({
-  location,
   total,
   searchParams
 }: {
-  location: string;
   total: number;
   searchParams: ReadonlyURLSearchParams;
 }) {
   return (
     <div className="flex items-center justify-between sticky top-21 lg:top-20.5 border-b p-3 -mt-3 z-10 bg-background shadow-md">
-      <div className="flex flex-col text-sm">
-        <span className="hidden font-bold md:block"> {location} </span>
-        <span> {total} nơi lưu trú được tìm thấy </span>
-      </div>
+      <span className="text-sm"> {total} nơi lưu trú được tìm thấy </span>
       <div className="flex gap-x-4 items-center">
         <div className="flex gap-x-2">
           <Label htmlFor="sort-by-select" className="text-xs font-semibold" >Sắp xếp theo:</Label>

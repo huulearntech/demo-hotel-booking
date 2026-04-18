@@ -44,14 +44,14 @@ async function main() {
   console.log("Database seeded successfully!");
 }
 
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
 
 async function deleteAllData(): Promise<void> {
   await prisma.country.deleteMany();

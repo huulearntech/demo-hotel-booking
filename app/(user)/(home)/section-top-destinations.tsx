@@ -91,11 +91,12 @@ export default function TopDestinationsSection () {
                 alt=""
                 className="absolute object-cover inset-0 w-full h-full group-hover:scale-110 transition-transform duration-300"
               />
-              <div className="absolute top-0 left-0 px-3 py-2 text-white bg-primary/50 rounded-br-[10px]">
-                <h3 className="lg:text-base font-semibold whitespace-pre-wrap wrap-break-word">{dest.name}</h3>
+              <div className="absolute inset-0 bg-black/25 group-hover:bg-black/40 duration-300"></div>
+              <div className="absolute top-0 left-0 right-0 p-3 text-white">
+                <h3 className="font-semibold whitespace-pre-wrap wrap-break-word">{dest.name}</h3>
               </div>
-              <div className="absolute bottom-0 group-hover:bottom-8 opacity-0 group-hover:opacity-100 transition-all duration-300
-             text-white border border-white bg-primary/50 rounded-[10px] px-4 py-2 text-xs text-center font-semibold left-1/2 -translate-x-1/2">
+              <div className="absolute bottom-0 group-hover:bottom-8 opacity-0 group-hover:opacity-100 duration-300
+             text-white border border-white rounded-[10px] px-4 py-2 text-xs text-center font-semibold left-1/2 -translate-x-1/2">
                 Xem thêm chỗ nghỉ
               </div>
             </div>

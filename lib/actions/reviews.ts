@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Prisma } from "../generated/prisma/client";
+import { getReviewsOfHotel } from "../generated/prisma/sql";
 
 type CreateReviewForBookingData = Prisma.ReviewUncheckedCreateInput;
 
@@ -35,4 +36,40 @@ export async function user_createReviewForBooking(
     },
     update: {}, // No update allowed, or you can specify fields to update if you want to allow editing the review
   });
+}
+
+export async function user_getReviewsOfHotel(
+  hotelId: string,
+  cursorCreatedAt?: Date,
+  cursorId?: string,
+  limit: number = 1
+) {
+  
+  const reviews = await prisma.$queryRawTyped(getReviewsOfHotel(
+    hotelId,
+    cursorCreatedAt ?? null,
+    cursorId ?? null,
+    limit
+  ));
+
+  // Determine next and previous cursors
+  const nextCursor = reviews.length > 0
+    ? {
+        createdAt: reviews[reviews.length - 1].created_at,
+        id: reviews[reviews.length - 1].review_id,
+      }
+    : null;
+
+  const prevCursor = reviews.length > 0
+    ? {
+        createdAt: reviews[0].created_at,
+        id: reviews[0].review_id,
+      }
+    : null;
+
+  return {
+    reviews,
+    nextCursor,
+    prevCursor,
+  };
 }

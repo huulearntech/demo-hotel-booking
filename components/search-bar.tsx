@@ -1,7 +1,6 @@
-// FIXME: when not collapsible, the search bar overflow. Have no fucking idea why when it's separated, it works. When merged, it doesn't.
 "use client";
 
-import { ComponentProps } from "react";
+import { ComponentProps, useLayoutEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, usePathname } from "next/navigation";
@@ -39,37 +38,41 @@ import {
 
 import useSWR, { mutate } from "swr";
 import { useState, useEffect, Dispatch, SetStateAction } from "react";
-import { user_getLocationOrHotelByQueryString } from "@/lib/actions/search-bar";
+import { user_getLocationNameOrHotelNameById, user_getLocationOrHotelByQueryString } from "@/lib/actions/search-bar";
 
 export default function SearchBar({
   defaultValues,
   className,
-  defaultLocationQuery = "",
   collapsible = true,
 }: {
   defaultValues?: SearchBar_FormInput;
   className?: string
-  defaultLocationQuery: string;
   collapsible: boolean
 }) {
   const [isOpenOnMobile, setIsOpenOnMobile] = useState(false);
+  // const storedStringifiedSearchBarForm = typeof window !== "undefined" ? sessionStorage.getItem("searchBarForm") : null;
+  // const storedFormValues = storedStringifiedSearchBarForm ? SearchParamsCodec.safeDecode(JSON.parse(storedStringifiedSearchBarForm)) : null;
+
   const form = useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>({
     resolver: zodResolver(schema_searchBar),
-    defaultValues: defaultValues ?? {
-      location: {
-        id: "",
-        type: "none",
-      },
-      inOutDates: {
-        from: new Date(),
-        to: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-      guestsAndRooms: {
-        numAdults: 2,
-        numChildren: 0,
-        numRooms: 1,
-      }
-    }
+    defaultValues: defaultValues ?? (
+      // storedFormValues?.success ?
+      //   storedFormValues.data :
+        {
+          location: {
+            id: "",
+            type: "none",
+          },
+          inOutDates: {
+            from: new Date(),
+            to: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+          guestsAndRooms: {
+            numAdults: 2,
+            numChildren: 0,
+            numRooms: 1,
+          }
+        })
   });
 
   const { handleSubmit, control } = form;
@@ -84,7 +87,6 @@ export default function SearchBar({
           data-collapsible={collapsible}
           handleSubmit={handleSubmit}
           control={control}
-          defaultLocationQuery={defaultLocationQuery}
           className={cn(
             "w-full px-1.5 md:px-0 flex flex-col md:flex-row md:items-end gap-y-2 md:gap-y-0 md:gap-x-2 transition-all duration-300",
             "h-15.5 data-[collapsible=true]:data-[open=true]:h-59.5 data-[collapsible=true]:data-[open=true]:md:h-15.5 data-[collapsible=true]:max-md:overflow-hidden",
@@ -109,15 +111,28 @@ export function SearchBarForm({
   isOpenOnMobile,
   handleSubmit,
   control,
-  defaultLocationQuery,
   ...props
 }: ComponentProps<"form"> & {
   isOpenOnMobile?: boolean
   handleSubmit: ReturnType<typeof useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>>["handleSubmit"]
   control: ReturnType<typeof useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>>["control"]
-  defaultLocationQuery?: string
 }) {
-  const [locationQuery, setLocationQuery] = useState(defaultLocationQuery ?? "");
+  const [locationQuery, setLocationQuery] = useState("");
+  useLayoutEffect(() => {
+    const fetchLocationName = async () => {
+      const defaultSearchBarLocation = control._defaultValues?.location;
+      if (!defaultSearchBarLocation) return;
+      if (
+        defaultSearchBarLocation.id &&
+        defaultSearchBarLocation.type &&
+        ["province", "district", "ward", "hotel"].includes(defaultSearchBarLocation.type)
+      ) {
+        const locationName = await user_getLocationNameOrHotelNameById(defaultSearchBarLocation.id, defaultSearchBarLocation.type);
+        setLocationQuery(locationName || "");
+      }
+    };
+    fetchLocationName();
+  }, [control._defaultValues.location]);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -126,7 +141,7 @@ export function SearchBarForm({
       console.warn("TODO: Invalid location, not searching");
       return;
     }
-    // TODO: if the form is valid, put the form into local storage and read it on mount.
+    // sessionStorage.setItem("searchBarForm", JSON.stringify(SearchParamsCodec.encode(values)));
 
     // TODO: rename codec and types. The amount of confusion has reached critical point.
     if (values.location.type === "hotel") {

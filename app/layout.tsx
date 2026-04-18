@@ -38,7 +38,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body className={cn(geistSans.variable, geistMono.variable, "antialiased")}>
+      <body className={cn(geistSans.variable, geistMono.variable, "antialiased bg-white")}>
         <SessionProvider refetchOnWindowFocus={false}>
           <TanstackQueryProvider>
             <TooltipProvider>
