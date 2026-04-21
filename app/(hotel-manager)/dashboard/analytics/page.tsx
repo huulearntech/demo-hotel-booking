@@ -1,21 +1,28 @@
 import { ChartAreaInteractive } from "../tmp-components/chart-area-interactive";
-import { DashboardCharts } from "./charts";
-import PiechartPercentageOfRevenueComeFrom from "./piechart-percentage-of-revenue-come-from";
+import PiechartPctRevenueBookingsRatings from "./piechart-pct-revenue-bookings-ratings";
 import RatingDistribution from "./rating-distribution";
 
 import { hotelowner_getRatingDistribution } from "@/lib/actions/hotel-manager/analytics";
 
 export default async function HotelManagerStatisticsPage() {
   const dist = await hotelowner_getRatingDistribution();
-
-  // normalize to array of { rating: '1'..'5', count }
   const data = [1, 2, 3, 4, 5].map((r) => ({ rating: String(r), count: dist[r] ?? 0 }));
+
   return (
-    <>
-      <ChartAreaInteractive />
-      <DashboardCharts />
-      <PiechartPercentageOfRevenueComeFrom />
-      <RatingDistribution data={data} />
-    </>
+    <main className="flex flex-col gap-y-6">
+      <section>
+        <ChartAreaInteractive />
+      </section>
+
+      <div className="flex flex-col gap-y-6 lg:flex-row lg:items-start lg:gap-x-6">
+        <section className="flex-1">
+          <PiechartPctRevenueBookingsRatings />
+        </section>
+
+        <section className="flex-1">
+          <RatingDistribution data={data} />
+        </section>
+      </div>
+    </main>
   );
 }

@@ -13,49 +13,48 @@ import {
 
 import { Copy, Edit, Ellipsis, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Prisma } from "@/lib/generated/prisma/client";
+import { BedType } from "@/lib/generated/prisma/browser";
 
 export function createColumns(handleDelete: (id: string) => void):
- ColumnDef<Prisma.RoomGetPayload<{
-    include: {
-      type: {
-        select: {
-          hotel: { select: { name: true } },
-          name: true,
-          adultCapacity: true,
-          childrenCapacity: true,
-          imageUrls: true,
-          bedType: true,
-          price: true,
-        },
-      },
-    },
-  }>>[] {
+  ColumnDef<{
+    id: string,
+    name: string,
+    adultCapacity: number,
+    childrenCapacity: number,
+    imageUrls: string[],
+    bedType: BedType,
+    price: number,
+    createdAt: Date,
+  }>[] {
   return [
     {
       accessorKey: "name",
-      header: "Tên phòng",
+      header: "Tên loại phòng",
       cell: ({ row }) => row.original.name,
-    },
-    {
-      accessorKey: "type",
-      header: "Loại phòng",
-      cell: ({ row }) => row.original.type ?? "—",
     },
     {
       accessorKey: "price",
       header: "Giá",
-      cell: ({ row }) => row.original.type.price.toString() ?? "—",
+      cell: ({ row }) => new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        maximumFractionDigits: 0,
+      }).format(row.original.price),
     },
     {
       accessorKey: "adultCapacity",
       header: "Sức chứa người lớn",
-      cell: ({ row }) => row.original.type.adultCapacity ?? "—",
+      cell: ({ row }) => row.original.adultCapacity,
     },
     {
       accessorKey: "childrenCapacity",
       header: "Sức chứa trẻ em",
-      cell: ({ row }) => row.original.type.childrenCapacity ?? "—",
+      cell: ({ row }) => row.original.childrenCapacity,
+    },
+    {
+      accessorKey: "bedType",
+      header: "Loại giường",
+      cell: ({ row }) => row.original.bedType,
     },
     {
       accessorKey: "createdAt",

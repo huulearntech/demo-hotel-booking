@@ -25,7 +25,6 @@ function createPriceIcon(price: number) {
 }
 
 
-// TODO: name it better
 export default function MyMarker({
   hotel,
   searchParams
@@ -48,7 +47,7 @@ export default function MyMarker({
           <div className="flex flex-col gap-y-1">
             <h3 className="text-base font-bold">{hotel.name}</h3>
             <div className="inline-flex items-center gap-x-1 text-sm">
-              <div className="font-black text-primary whitespace-pre">{hotel.reviewPoints.toFixed(1)} / 5</div>
+              <div className="font-black text-primary whitespace-pre">{hotel.rating.toFixed(1)} / 5</div>
               <div className="font-medium text-gray-500">({hotel.numberOfReviews} đánh giá)</div>
             </div>
 

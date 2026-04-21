@@ -5,7 +5,16 @@ import prisma from "@/lib/prisma";
 
 import { fakerVI as faker } from "@faker-js/faker";
 
+
+const randomQuarterTimeOn = (d: Date) => {
+  const t = new Date(d);
+  t.setHours(faker.number.int({ min: 0, max: 23 }), faker.number.int({ min: 0, max: 3 }) * 15, 0, 0);
+  return t;
+};
+
+
 async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
+  console.log("Seeding booking metadata");
   if (users.length === 0 || roomTypes.length === 0) {
     console.warn("No data provided for seeding bookings. Skipping.");
     return [];
@@ -52,8 +61,8 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
         numRooms: faker.number.int({ min: 1, max: 3 }),
         numAdults: faker.number.int({ min: 1, max: 6 }),
         numChildren: faker.number.int({ min: 1, max: 3 }),
-        snapshotCheckInTime: faker.date.between({ from: checkInDate, to: checkOutDate }), // FIXME: this is time in the day, not some bullshit AI gave. 
-        snapshotCheckOutTime: faker.date.between({ from: checkInDate, to: checkOutDate }),
+        snapshotCheckInTime: randomQuarterTimeOn(checkInDate),
+        snapshotCheckOutTime: randomQuarterTimeOn(checkOutDate),
       };
     });
 
@@ -97,6 +106,7 @@ async function seedBookingsMetadata(users: User[], roomTypes: RoomType[]) {
 }
 
 async function seedBookings(bookingsMetadata: BookingMetadata[]) {
+  console.log("Seeding bookings");
   if (bookingsMetadata.length === 0) {
     console.warn("No data provided for seeding bookings. Skipping.");
     return [];
@@ -108,7 +118,8 @@ async function seedBookings(bookingsMetadata: BookingMetadata[]) {
       customerName: `${faker.person.firstName()} ${faker.person.lastName()}`,
       customerEmail: faker.internet.email(),
       customerPhone: faker.phone.number(),
-      status: faker.helpers.arrayElement(["CANCELLED", "COMPLETED"] as BookingStatus[]),
+      // FIXME: status logic not good.
+      status: faker.helpers.arrayElement(["CANCELLED", "CHECKED_IN", "CHECKED_OUT"] as BookingStatus[]),
       createdAt: faker.date.recent({ refDate: checkInDate }),
     };
   });
@@ -122,8 +133,9 @@ async function seedBookings(bookingsMetadata: BookingMetadata[]) {
 }
 
 async function seedReviews() {
+  console.log("Seeding reviews");
   const bookings = await prisma.booking.findMany({
-    where: { status: "COMPLETED", review: { is: null } },
+    where: { status: "CHECKED_OUT", review: { is: null } },
     select: { id: true },
   });
 

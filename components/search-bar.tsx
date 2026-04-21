@@ -239,7 +239,7 @@ export function SearchBarForm({
                     <div className="flex space-x-2 items-center">
                       <Button
                         onClick={() => setGuests({ numAdults: field.value.numAdults - 1 })}
-                        disabled={field.value.numAdults <= MIN_ADULTS}
+                        disabled={field.value.numAdults <= Math.max(MIN_ADULTS, field.value.numRooms)}
                         className="flex size-6 items-center justify-center rounded-full"
                       >
                         <Minus className="size-4" />

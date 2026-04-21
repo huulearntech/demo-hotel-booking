@@ -116,7 +116,7 @@ export async function hotelowner_getRoomTypes():
       childrenCapacity: true,
       imageUrls: true,
       createdAt: true,
-      updatedAt: true,
+      bedType: true,
     }
   }>, "price"> & { price: number })[]>>
 {
@@ -139,7 +139,7 @@ export async function hotelowner_getRoomTypes():
       childrenCapacity: true,
       imageUrls: true,
       createdAt: true,
-      updatedAt: true,
+      bedType: true,
     },
     orderBy: { createdAt: "desc" },
   }).then((rooms) => rooms.map((room) => ({

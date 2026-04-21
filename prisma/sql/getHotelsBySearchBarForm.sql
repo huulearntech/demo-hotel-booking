@@ -17,7 +17,7 @@ WITH base AS (
     h.id,
     h.name,
     h.image_urls[1] AS "thumbnailUrl",
-    h.review_points AS "reviewPoints",
+    h.rating AS rating,
     h.number_of_reviews AS "numberOfReviews",
     h.type,
     w.name AS "wardName",
@@ -54,7 +54,7 @@ WITH base AS (
             LEFT JOIN booking_metadata bm2 ON b2.metadata_id = bm2.id
             WHERE bm2.check_in_date < $3
               AND bm2.check_out_date > $2
-              AND b2.status IN ('CONFIRMED','PENDING')
+              AND b2.status IN ('PAID','PENDING_TO_PAY')
               AND r2.type_id = rt.id
           ), 0
         )) >= $5
@@ -92,14 +92,14 @@ AND (
   ($7 IN ('price_asc', 'price_desc') AND $8::numeric IS NULL)
   OR ($7 = 'review_points_desc' AND $9::double precision IS NULL)
   -- Otherwise apply cursor comparison for the chosen ordering
-  OR ($7 = 'price_asc'          AND (b."minPrice", b.id) > ($8::numeric, $10::text))
-  OR ($7 = 'price_desc'         AND (b."maxPrice", b.id) < ($8::numeric, $10::text))
-  OR ($7 = 'review_points_desc' AND (b."reviewPoints", b.id) < ($9::double precision, $10::text))
+  OR ($7 = 'price_asc'          AND (b."minPrice", b.id) > ($8::numeric, $10::uuid))
+  OR ($7 = 'price_desc'         AND (b."maxPrice", b.id) < ($8::numeric, $10::uuid))
+  OR ($7 = 'review_points_desc' AND (b.rating, b.id) < ($9::double precision, $10::uuid))
 )
 ORDER BY
   (CASE WHEN $7 = 'price_desc'         THEN b."maxPrice" END) DESC,
   (CASE WHEN $7 = 'price_asc'          THEN b."minPrice" END) ASC,
-  (CASE WHEN $7 = 'review_points_desc' THEN b."reviewPoints" END) DESC,
+  (CASE WHEN $7 = 'review_points_desc' THEN b.rating END) DESC,
   b.id ASC
 LIMIT $6
 ;

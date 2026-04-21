@@ -1,5 +1,5 @@
 filter: onsubmit need to somehow capture the search spec to call server action, or set searchparams
-  then router.push.
+  then router.push. and also sortby
 
 filter: make it sticky on large screen.
 
@@ -7,10 +7,6 @@ proxy: handle redirecting.
 
 types: unified them into one place, such as "types" folder.
 search bar: ambiguity on naming input/output/value of zod types.
-
-consider? make buckets for materialized view in search query: bucket for (province or district) & (3d | 7d | 15d | 30d) & (2guest | ... commonly search number of guests)
-
-search bar -> search page -> result: too bloated on tossing name prop around.
 
 homepage: favorite destination -> real link
 
@@ -23,6 +19,11 @@ review's pagination: doesn't work
 seeding: booking: incrementally, bulk on each search.
 
 Date object: fix mismatch between server and client, and especially in Nextjs.
+
+review the page hotel-owner/reviews for AI - generated code.
+
+// solved: get room type of hotel: the check in date and check out date off for one day. ( it seems to be inclusive, but I have checked the query and it is half inclusive)
+// turns out it was date conversion bug.
 
 
 // TODO: Flow

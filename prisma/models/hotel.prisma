@@ -1,17 +1,17 @@
 model Hotel {
-  id                    String      @id @default(cuid())
+  id                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                  String
-  ownerId               String      @unique @map("owner_id")
+  ownerId               String      @unique @map("owner_id") @db.Uuid
   owner                 User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  wardId                String      @map("ward_id")
+  wardId                String      @map("ward_id") @db.Uuid
   ward                  Ward        @relation(fields: [wardId], references: [id], onDelete: Cascade)
   longitude             Float
   latitude              Float
 
   type                  HotelType
   description           String?
-  reviewPoints          Float       @map("review_points")      // NOTE: this is a denormalized field and must be updated via triggers.
+  rating                Float       // NOTE: this is a denormalized field and must be updated via triggers.
   numberOfReviews       Int         @map("number_of_reviews") // NOTE: this is a denormalized field and must be updated via triggers. 
 
   checkInTime           DateTime    @db.Time  @map("check_in_time")
@@ -61,7 +61,7 @@ enum FacilityType {
 // There are two types of facilities: those that are universal and thus have icons (e.g., "Free Wi-Fi", "Swimming Pool"), and those that are specific to a hotel and thus do not have icons (e.g., "Located in a historic building", "Has a rooftop bar").
 // For the former, we can have a predefined list of facilities with icons. For the latter, we can allow hotel owners to create custom facilities without icons. To accommodate both types, we can make the iconUrl field optional. If it's null, it means it's a custom facility without an icon.
 model Facility {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique
   iconUrl   String?  @map("icon_url")
   type      FacilityType
@@ -76,11 +76,11 @@ model Facility {
 }
 
 model Room {
-  id         String     @id @default(cuid())
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String     @unique
-  typeId     String     @map("type_id")
+  typeId     String     @db.Uuid @map("type_id")
   type       RoomType   @relation(fields: [typeId], references: [id], onDelete: Cascade)
-  status     RoomStatus @default(AVAILABLE)
+  status     RoomStatus @default(ACTIVE)
 
   bookings   Booking[]
 
@@ -93,9 +93,7 @@ model Room {
 
 // If we allow booked status, it would be a denormalized field that must be updated via triggers when a booking is made or canceled. This allows us to prevent double booking of the same room. However, it also adds complexity to the system and can lead to data inconsistency if not handled properly. Therefore, we can choose to only have AVAILABLE, OCCUPIED, MAINTENANCE, and OUT_OF_SERVICE statuses, and rely on the bookings table to determine if a room is booked or not.
 enum RoomStatus {
-  AVAILABLE
-  BOOKED // ?? This status is set when a booking is made but not yet checked in. Once the guest checks in, the status will be changed to OCCUPIED. This allows us to prevent double booking of the same room.
-  OCCUPIED
+  ACTIVE
   MAINTENANCE
   OUT_OF_SERVICE
 }
@@ -109,8 +107,9 @@ enum BedType {
 }
 
 model RoomType {
-  id               String   @id @default(cuid())
-  hotelId          String   @map("hotel_id")
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  hotelId          String   @db.Uuid @map("hotel_id")
   hotel            Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   name             String
@@ -122,16 +121,36 @@ model RoomType {
   areaM2           Float    @map("area_m2")
   bedType          BedType  @map("bed_type")
 
-  imageUrls        String[] @map("image_urls")  // TODO: should have videos
+  imageUrls        String[] @map("image_urls")  // TODO: add videos
 
   rooms            Room[]
   facilities       Facility[]
   bookingsMetadata BookingMetadata[]
+  inventories       RoomTypeInventory[]
 
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt      @map("updated_at")
 
   @@unique([hotelId, name])
-  @@map("room_types")
   @@index([hotelId])
+  @@map("room_types")
+}
+
+// Store inventory of each room type for each date in the next 30 days.
+// Should automatically delete inventory for past dates and create inventory for new dates via cron job everyday.
+// Should update this via database trigger.
+model RoomTypeInventory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomTypeId  String   @map("room_type_id") @db.Uuid
+  roomType    RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  date        DateTime @db.Date
+  totalRooms  Int      @map("total_rooms")
+  bookedRooms Int      @map("booked_rooms")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  @@unique([roomTypeId, date])
+  @@map("room_type_inventories")
 }

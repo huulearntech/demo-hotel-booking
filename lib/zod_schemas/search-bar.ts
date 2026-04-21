@@ -48,6 +48,13 @@ export type SearchParams = {
   numRooms: string,
 }
 
+export function toYYYY_MM_DD(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export const SearchParamsCodec = z.codec(
   z.object({
     locationId: z.string(),
@@ -61,11 +68,12 @@ export const SearchParamsCodec = z.codec(
   schema_searchBar,
   {
     encode(data: SearchBar_FormInput) {
+      console.log("Encoding search params:", data);
       return {
         locationId: data.location.id,
         locationType: data.location.type,
-        checkInDate: data.inOutDates.from.toISOString().split("T")[0],
-        checkOutDate: data.inOutDates.to.toISOString().split("T")[0],
+        checkInDate: toYYYY_MM_DD(data.inOutDates.from),
+        checkOutDate: toYYYY_MM_DD(data.inOutDates.to),
         numAdults: data.guestsAndRooms.numAdults.toString(),
         numChildren: data.guestsAndRooms.numChildren.toString(),
         numRooms: data.guestsAndRooms.numRooms.toString(),
@@ -83,14 +91,16 @@ export const SearchParamsCodec = z.codec(
         numRooms,
       } = input;
 
+      console.log("Decoding search params:", input);
+
       return ({
         location: {
           type: locationType,
           id: locationId,
         },
         inOutDates: {
-          from: new Date(checkInDate),
-          to: new Date(checkOutDate),
+          from: new Date(checkInDate.concat("T00:00:00Z")), // Ensure it's treated as UTC to avoid timezone issues
+          to: new Date(checkOutDate.concat("T00:00:00Z")),
         },
         guestsAndRooms: {
           numAdults: parseInt(numAdults, 10) || 2,
@@ -138,8 +148,8 @@ export const codec_searchSpec = z.codec(
   {
     encode(data: z.input<typeof schema_searchSpec>) {
       return {
-        checkInDate: data.inOutDates.from.toISOString().split("T")[0],
-        checkOutDate: data.inOutDates.to.toISOString().split("T")[0],
+        checkInDate: toYYYY_MM_DD(data.inOutDates.from),
+        checkOutDate: toYYYY_MM_DD(data.inOutDates.to),
         numAdults: data.guestsAndRooms.numAdults.toString(),
         numChildren: data.guestsAndRooms.numChildren.toString(),
         numRooms: data.guestsAndRooms.numRooms.toString(),
@@ -157,8 +167,8 @@ export const codec_searchSpec = z.codec(
 
       return schema_searchSpec.parse({
         inOutDates: {
-          from: new Date(checkInDate),
-          to: new Date(checkOutDate),
+          from: new Date(checkInDate.concat("T00:00:00Z")), // Ensure it's treated as UTC to avoid timezone issues
+          to: new Date(checkOutDate.concat("T00:00:00Z")),
         },
         guestsAndRooms: {
           numAdults: parseInt(numAdults, 10) || 2,

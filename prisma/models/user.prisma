@@ -5,7 +5,7 @@ enum UserRole {
 }
 
 model User {
-  id               String            @id @default(cuid())
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email            String            @unique
   password         String
   name             String
@@ -33,11 +33,11 @@ enum UserStatus {
 }
 
 model Favorite {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  hotelId   String   @map("hotel_id")
+  hotelId   String   @map("hotel_id") @db.Uuid
   hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -50,11 +50,11 @@ model Favorite {
 }
 
 model RecentlyViewed {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  hotelId   String   @map("hotel_id")
+  hotelId   String   @map("hotel_id") @db.Uuid
   hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   viewedAt  DateTime @default(now())

@@ -8,6 +8,7 @@ import { Decimal } from "@prisma/client/runtime/client";
 // if Hotel model has a field of Unsupported (geolocation), Prisma will not allow to use create
 
 async function seedHotels(data: { wardId: string, ownerId: string }[]) {
+  console.log("Seeding hotels");
   if (data.length === 0) {
     console.warn("No data provided for seeding hotels.");
     return [];
@@ -41,11 +42,12 @@ async function seedHotels(data: { wardId: string, ownerId: string }[]) {
       latitude: faker.number.float({ min: 20.85, max: 21.1, multipleOf: 0.000001 }),
       type: faker.helpers.arrayElement(Object.values(HotelType)),
       description: faker.lorem.paragraph(),
-      reviewPoints: 0,
+      rating: 0,
       numberOfReviews: 0,
       checkInTime,
       checkOutTime,
       imageUrls: faker.helpers.uniqueArray(() => faker.image.url({ width: 400, height: 300 }), 8),
+      status: "ACTIVE",
     };
   }) ;
 
@@ -56,13 +58,13 @@ async function seedHotels(data: { wardId: string, ownerId: string }[]) {
 }
 
 async function seedRoomTypes(hotels: Hotel[]) {
+  console.log("Seeding room types");
   if (hotels.length === 0) {
     console.warn("No hotels provided for seeding room types.");
     return [];
   }
   const roomTypes: Prisma.RoomTypeUncheckedCreateInput[] = [];
   for (const hotel of hotels) {
-    // generate an array of distinct noun-based type names for this hotel
     const typeCount = faker.number.int({ min: 3, max: 6 });
     const typeNames = faker.helpers.uniqueArray(
       () => faker.word.noun({ length: { min: 4, max: 10 } }),
@@ -83,6 +85,7 @@ async function seedRoomTypes(hotels: Hotel[]) {
       });
     });
   }
+  console.log(roomTypes[0]);
   return prisma.roomType.createManyAndReturn({
     data: roomTypes,
     skipDuplicates: true,
@@ -90,6 +93,7 @@ async function seedRoomTypes(hotels: Hotel[]) {
 }
 
 async function seedRooms(roomTypes: RoomType[]) {
+  console.log("Seeding rooms");
   if (roomTypes.length === 0) {
     console.warn("No hotels provided for seeding rooms.");
     return [];
@@ -185,6 +189,7 @@ const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl: string }
 ];
 
 async function seedFacilities() {
+  console.log("Seeding facilities");
   const result = await prisma.facility.createManyAndReturn({
     data: [...inRoomFacilities, ...nonInRoomFacilities],
     skipDuplicates: true,
@@ -194,6 +199,7 @@ async function seedFacilities() {
 }
 
 async function seedConnectionHotelsOnFacilities(hotels: Hotel[]) {
+  console.log("Seeding hotel-facility connections");
   if (hotels.length === 0) {
     console.warn("No hotels provided for seeding hotel-facility connections.");
     return;
@@ -228,6 +234,7 @@ async function seedConnectionHotelsOnFacilities(hotels: Hotel[]) {
 }
 
 async function seedConnectionRoomTypesOnFacilities(roomTypes: RoomType[]) {
+  console.log("Seeding roomType-facility connections");
   if (roomTypes.length === 0) {
     console.warn("No roomTypes provided for seeding roomType-facility connections.");
     return;

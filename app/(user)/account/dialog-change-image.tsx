@@ -22,7 +22,7 @@ export default function AvatarWithCloudinaryUploader({
       />
       <AvatarPrimitive.Fallback
         data-slot="avatar-fallback"
-        className="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm"
+        className="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm truncate"
       >
         {name}
       </AvatarPrimitive.Fallback>

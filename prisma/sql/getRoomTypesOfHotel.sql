@@ -29,11 +29,10 @@ LEFT JOIN LATERAL (
   FROM booking_metadata bm
   RIGHT JOIN bookings b ON b.metadata_id = bm.id
   WHERE bm.room_type_id = rt.id
-    AND (
-      bm.check_in_date BETWEEN $2 AND $3
-      OR bm.check_out_date BETWEEN $2 AND $3
-    )
-    AND b.status IN ('CONFIRMED', 'PENDING')
+    -- overlap check for [bm.check_in_date, bm.check_out_date) and [$2, $3)
+    AND bm.check_in_date < $3
+    AND bm.check_out_date > $2
+    AND b.status IN ('PAID', 'PENDING_TO_PAY')
 ) b ON true
 
 -- aggregate facilities for this room type as a JSONB array of {id, name, iconUrl}

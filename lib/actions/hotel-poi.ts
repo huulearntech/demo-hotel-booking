@@ -1,6 +1,3 @@
-// TODO: Merge this file with ./hotel.ts
-// This works well for now
-
 import {
   LucideFerrisWheel,
   Store,

@@ -45,7 +45,7 @@ export default function InformationForm () {
                 type="tel"
                 id="phone-number"
                 {...register("phone")}
-                className={buttonVariants({ variant: "outline", size: "default", className: "flex-1 h-10" })}
+                className={buttonVariants({ variant: "outline", size: "default", className: "h-10" })}
                 placeholder="Nhập số điện thoại"
               />
             </div>
@@ -58,7 +58,7 @@ export default function InformationForm () {
               type="email"
               id="email"
               {...register("email")}
-              className={buttonVariants({ variant: "outline", size: "default", className: "flex-1 h-10" })}
+              className={buttonVariants({ variant: "outline", size: "default", className: "h-10" })}
               placeholder="Nhập địa chỉ email"
             />
             {errors.email && <div className="text-sm text-destructive ml-1">{errors.email.message}</div>}

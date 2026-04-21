@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 
 import HeaderAvatar from './header-avatar';
 import { Button } from '@/components/ui/button';
-import { HeartIcon } from 'lucide-react';
 import { tvlk_logo_text_dark } from "@/public/logos"
 
 
@@ -26,28 +25,23 @@ export default async function Header({ className }: { className?: string }) {
             className="h-10 w-auto object-contain"
           />
         </Link>
-        {user ? (
-          <div className="flex items-center gap-x-8">
-            <Link href={PATHS.favorites}>
-              <HeartIcon className="size-6" strokeWidth={2} />
-            </Link>
-            <HeaderAvatar {...user} />
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button asChild variant="link" className="hidden md:block text-black">
-              <Link href={PATHS.signUpHotel}>
-                Đăng ký cơ sở lưu trú của bạn
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="text-primary hover:text-primary">
-              <Link href={PATHS.signIn}> Đăng nhập </Link>
-            </Button>
-            <Button asChild>
-              <Link href={PATHS.signUp}> Đăng ký </Link>
-            </Button>
-          </div>
-        )}
+        {user
+          ? <HeaderAvatar {...user} />
+          : (
+            <div className="flex items-center gap-2">
+              <Button asChild variant="link" className="hidden md:block text-black">
+                <Link href={PATHS.signUpHotel}>
+                  Đăng ký cơ sở lưu trú của bạn
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="text-primary hover:text-primary">
+                <Link href={PATHS.signIn}> Đăng nhập </Link>
+              </Button>
+              <Button asChild>
+                <Link href={PATHS.signUp}> Đăng ký </Link>
+              </Button>
+            </div>
+          )}
       </div>
     </header>
   );

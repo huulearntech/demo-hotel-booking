@@ -9,7 +9,7 @@ export type HotelCardProps = Prisma.HotelGetPayload<{
     id: true,
     name: true,
     imageUrls: true,
-    reviewPoints: true,
+    rating: true,
     numberOfReviews: true,
     ward: { select: { name: true, district: { select: { province: { select: { name: true } } } } }, },
     facilities: { select: { name: true } },

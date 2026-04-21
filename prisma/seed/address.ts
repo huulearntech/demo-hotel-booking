@@ -5,6 +5,7 @@ import { Country, District, Province } from "@/lib/generated/prisma/client";
 
 // Seed Vietnam as the only country for simplicity
 async function seedCountryVietnam() {
+  console.log("Seeding country: Vietnam");
   return await prisma.country.upsert({
     where: { name: "Vietnam" },
     update: {}, // No updates needed, we just want to ensure it exists
@@ -15,6 +16,7 @@ async function seedCountryVietnam() {
 }
 
 async function seedProvinces(country: Country, count = 5) {
+  console.log("Seeding provinces");
   const provinces = Array.from({ length: count }, () => ({
     countryId: country.id,
     name: faker.location.city(),
@@ -26,6 +28,7 @@ async function seedProvinces(country: Country, count = 5) {
 }
 
 async function seedDistricts(provinces: Province[], countPerProvince = 5) {
+  console.log("Seeding districts");
   if (provinces.length === 0) {
     console.warn("No provinces found. Skipping district seeding.");
     return [];
@@ -47,6 +50,7 @@ async function seedDistricts(provinces: Province[], countPerProvince = 5) {
 }
 
 async function seedWards(districts: District[], countPerDistrict = 5) {
+  console.log("Seeding wards");
   if (districts.length === 0) {
     console.warn("No districts found. Skipping ward seeding.");
     return [];

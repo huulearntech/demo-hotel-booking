@@ -1,9 +1,8 @@
-// TODO: Fix AI generated chart tooltip component.
-
+// TODO:
 "use client"
 
 import { useState, useEffect } from "react"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, TooltipProps } from "recharts"
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -54,7 +53,7 @@ type ChartDataItem = Awaited<ReturnType<typeof fetchLast90DaysRevenueAndNumberOf
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = useState<TimeRangeOptions>("90d")
+  const [timeRange, setTimeRange] = useState<TimeRangeOptions>("7d")
   const [chartData, setChartData] = useState<ChartDataItem[]>([])
 
   useEffect(() => {
@@ -73,12 +72,6 @@ export function ChartAreaInteractive() {
       mounted = false
     }
   }, []);
-
-  useEffect(() => {
-    if (isMobile) {
-      setTimeRange("7d")
-    }
-  }, [isMobile])
 
   const sliceStart = Math.max(0, chartData.length - timeRangeValues[timeRange])
   const dataInTimeRange = chartData.slice(sliceStart)

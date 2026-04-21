@@ -10,44 +10,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy, Phone, ArrowRight } from "lucide-react";
+import { MoreHorizontal, ArrowRight } from "lucide-react";
 
 import type { UpcomingBooking } from "@/lib/actions/hotel-manager/bookings";
 import { BookingStatus } from "@/lib/generated/prisma/enums";
-import { formatVND } from "@/lib/utils";
+import { cn, formatVND } from "@/lib/utils";
 import { differenceInDays } from "date-fns";
 
 function formatDateShort(date: Date) {
   return new Intl.DateTimeFormat("vi-VN", { year: "numeric", month: "short", day: "numeric" }).format(date);
 }
 
-const colorForStatus: Record<BookingStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700",
-  CONFIRMED: "bg-green-100 text-green-700",
-  COMPLETED: "bg-blue-100 text-blue-700",
-  CANCELLED: "bg-red-100 text-red-700",
-} as const;
+const map: Record<BookingStatus, { text: string; variant: string }> = {
+  PENDING_TO_PAY: { text: "Pending", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Confirmed", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Checked in", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Checked out", variant: "bg-sky-100 text-sky-800" },
+  CANCELLED: { text: "Cancelled", variant: "bg-red-100 text-red-800" },
+};
 
-const statusLabel: Record<BookingStatus, string> = {
-  PENDING: "Đang chờ",
-  CONFIRMED: "Đã xác nhận",
-  COMPLETED: "Hoàn tất",
-  CANCELLED: "Đã hủy",
-} as const;
 export const columns: ColumnDef<UpcomingBooking>[] = [
-  // {
-  //   id: "bookingId",
-  //   header: "Mã đặt phòng",
-  //   accessorFn: (row) => row.id,
-  //   cell: ({ row }) => (
-  //     <div className="flex items-center gap-2">
-  //       <div className="truncate font-mono text-xs">{row.original.id}</div>
-  //       <Button variant="ghost" size="icon-sm" onClick={() => navigator.clipboard.writeText(row.original.id)}>
-  //         <Copy className="size-4" />
-  //       </Button>
-  //     </div>
-  //   ),
-  // },
   {
     id: "customer",
     header: "Khách hàng",
@@ -77,7 +59,10 @@ export const columns: ColumnDef<UpcomingBooking>[] = [
     cell: ({ row }) => (
       <div className="text-sm">
         <div>{row.original.numRooms} phòng</div>
-        <div className="text-muted-foreground text-xs">{row.original.numGuests} khách</div>
+        <div className="text-muted-foreground text-xs">{row.original.numAdults} khách người lớn</div>
+        {row.original.numChildren > 0 && (
+          <div className="text-muted-foreground text-xs">{row.original.numChildren} khách trẻ em</div>
+        )}
       </div>
     )
   },
@@ -113,10 +98,14 @@ export const columns: ColumnDef<UpcomingBooking>[] = [
     accessorKey: "status",
     header: "Trạng thái",
     cell: ({ row }) => {
-      const status = row.original.status as BookingStatus;
-      const cls = colorForStatus[status];
-      const label = statusLabel[status];
-      return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${cls}`}>{label}</span>
+      return (
+        <span className={cn(
+          "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+          map[row.original.status].variant
+        )}>
+          {map[row.original.status].text}
+        </span>
+      )
     }
   },
   {

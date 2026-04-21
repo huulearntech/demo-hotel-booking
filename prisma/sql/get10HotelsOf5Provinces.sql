@@ -13,7 +13,7 @@ ranked_hotels AS (
     h.id,
     h.name,
     h.type,
-    h.review_points,
+    h.rating,
     h.number_of_reviews,
     COALESCE(array_to_json(h.image_urls), '[]'::json) AS image_urls,
     w.name AS ward_name,
@@ -30,7 +30,7 @@ ranked_hotels AS (
       FROM room_types rt
       WHERE rt.hotel_id = h.id
     ) AS min_price,
-    ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY h.review_points DESC NULLS LAST) AS rn
+    ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY h.rating DESC NULLS LAST) AS rn
   FROM hotels h
   LEFT JOIN wards     w ON h.ward_id     = w.id
   LEFT JOIN districts d ON w.district_id = d.id
@@ -45,7 +45,7 @@ SELECT
       'id', rh.id,
       'name', rh.name,
       'type', rh.type,
-      'reviewPoints', rh.review_points,
+      'rating', rh.rating,
       'numberOfReviews', rh.number_of_reviews,
       'facilities', rh.facilities,
       'minPrice', rh.min_price,

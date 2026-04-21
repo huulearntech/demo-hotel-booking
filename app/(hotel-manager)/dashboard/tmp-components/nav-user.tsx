@@ -1,3 +1,4 @@
+// BUG: sometimes this shit doesn't appear, especially when just signing in.
 "use client"
 
 import {
@@ -98,22 +99,22 @@ export function NavUser() {
               <DropdownMenuGroup>
                 <DropdownMenuItem>
                   <UserCircleIcon />
-                  Account
+                  Tài khoản
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                {/* <DropdownMenuItem>
                   <CreditCardIcon />
                   Billing
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <BellRingIcon />
                   Notifications
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem>
                   <LogOutIcon />
-                  Log out
+                  Đăng xuất
                 </DropdownMenuItem>
               </AlertDialogTrigger>
             </DropdownMenuContent>

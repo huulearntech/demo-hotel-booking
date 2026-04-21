@@ -23,7 +23,7 @@ export default function HotelCard({
     id,
     name,
     imageUrls: [thumbUrl],
-    reviewPoints,
+    rating,
     numberOfReviews,
     ward: { name: wardName, district: { province: { name: provinceName } } },
     roomTypes: [{ price }],
@@ -68,7 +68,7 @@ export default function HotelCard({
           <div className="flex gap-x-1">
             <h3 role="heading" className="grow font-bold line-clamp-2 overflow-hidden overflow-ellipsis">{name}</h3>
             <div className="flex flex-col items-end">
-              <span className="text-xs font-black text-blue-950">{reviewPoints.toFixed(1)}</span>
+              <span className="text-xs font-black text-blue-950">{rating.toFixed(1)}</span>
               <span className="text-xs font-semibold">({numberOfReviews})</span>
             </div>
           </div>

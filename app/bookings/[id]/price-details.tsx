@@ -4,8 +4,9 @@ import Link from "next/link";
 import { TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInformationForm  } from "./information-form-context";
-import { BookingFormValues } from "@/lib/zod_schemas/booking";
 
+// TODO: remove this.
+import { fake_payment_just_for_testing } from "@/lib/actions/payment";
 
 export default function PriceDetail({
   snapshotRoomTypeName,
@@ -13,17 +14,16 @@ export default function PriceDetail({
   nights,
   numRooms,
   totalPrice, // Must be calculated on the server and passed in, to prevent weird stuffs.
+  metadataId,  //FIXME: just temporarily put this here.
 }: {
   snapshotRoomTypeName: string;
   snapshotRoomPrice: number;
   nights: number;
   numRooms: number;
   totalPrice: number;
+  metadataId: string;
 }) {
-  const onSubmit = (data: BookingFormValues) => {
-    // replace with real submit logic
-    console.log("form submit", data);
-  }
+
   const { handleSubmit } = useInformationForm();
   return (
     <div className="flex flex-col rounded-4xl bg-white shadow-lg">
@@ -71,7 +71,9 @@ export default function PriceDetail({
 
       <Button
         className="m-4 rounded-full h-12 font-semibold"
-        onClick={handleSubmit(onSubmit)}
+        onClick={handleSubmit(value => {
+          fake_payment_just_for_testing(metadataId, value)
+        })}
       >
         Tiếp tục
       </Button>

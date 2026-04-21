@@ -16,11 +16,11 @@ async function main() {
   console.log("Seeding database...");
 
   const Vietnam = await seedCountryVietnam();
-  const provinces = await seedProvinces(Vietnam, 5);
-  const districts = await seedDistricts(provinces, 5);
-  const wards = await seedWards(districts, 5);
+  const provinces = await seedProvinces(Vietnam, 3);
+  const districts = await seedDistricts(provinces, 3);
+  const wards = await seedWards(districts, 3);
   
-  const hotelOwners = await seedHotelOwners(125);
+  const hotelOwners = await seedHotelOwners(27);
 
   const shuffledWards = faker.helpers.shuffle(wards);
   const hotelData = hotelOwners.map((owner, idx) => ({
@@ -33,7 +33,7 @@ async function main() {
   const hotels = await seedHotels(hotelData);
   const roomTypes = await seedRoomTypes(hotels);
   await seedRooms(roomTypes);
-  const users = await seedRegularUsers(1000);
+  const users = await seedRegularUsers(10);
   await seedConnectionHotelsOnFacilities(hotels);
   await seedConnectionRoomTypesOnFacilities(roomTypes);
   const bookingsMetadata = await seedBookingsMetadata(users, roomTypes);

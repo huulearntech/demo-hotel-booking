@@ -24,10 +24,10 @@ export default async function RoomTypesOccupancyPctBoard() {
         _sum: { numRooms: true },
         where: {
           roomTypeId: type.id,
-          checkInDate: { lt: today },
-          checkOutDate: { gt: today },
+          checkInDate: { lte: today }, // check in date is inclusive
+          checkOutDate: { gt: today }, // check out date is exclusive
           // only consider bookings that have been created as real bookings
-          booking: { is: { status: { in: ["CONFIRMED", "PENDING"] } } },
+          booking: { is: { status: { in: ["PAID", "CHECKED_IN"] } } },
         },
       });
 

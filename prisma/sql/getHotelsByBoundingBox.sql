@@ -13,7 +13,7 @@
 -- @param {Decimal}  $11:maxPrice (filter)
 -- @param {Int}      $14:numChildren (TODO: temporarily put this at the end.)
 
--- TODO: Check this
+-- TODO: gonna change a whole lot of names anyway. this file is object to change.
 WITH available AS (
   SELECT t.hotel_id, MIN(t.price) AS min_price
   FROM (
@@ -26,7 +26,7 @@ WITH available AS (
       COUNT(DISTINCT CASE
         WHEN bm.check_in_date < $2
          AND bm.check_out_date > $1
-         AND b.status IN ('CONFIRMED','PENDING')
+         AND b.status IN ('PAID','PENDING_TO_PAY')
         THEN r.id
       END) AS booked_rooms
     FROM room_types rt
@@ -41,7 +41,7 @@ WITH available AS (
     HAVING COUNT(r.id) - COUNT(DISTINCT CASE
       WHEN bm.check_in_date < $2
        AND bm.check_out_date > $1
-       AND b.status IN ('CONFIRMED','PENDING')
+       AND b.status IN ('PAID','PENDING_TO_PAY')
       THEN r.id END) >= $4
   ) AS t
   GROUP BY t.hotel_id
@@ -50,7 +50,7 @@ SELECT
   h.id,
   h.name,
   h.image_urls[1] AS "thumbnailUrl",
-  h.review_points AS "reviewPoints",
+  h.rating AS rating,
   h.number_of_reviews AS "numberOfReviews",
   available.min_price AS "price",
   h.latitude,

@@ -1,7 +1,5 @@
-// May need to denormalize hotel for better perf.
-
 model Country {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique
   provinces Province[]
 
@@ -12,9 +10,9 @@ model Country {
 }
 
 model Province {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
-  countryId String   @map("country_id")
+  countryId String   @map("country_id") @db.Uuid
   country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
   districts District[]
 
@@ -27,9 +25,9 @@ model Province {
 }
 
 model District {
-  id         String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  provinceId String   @map("province_id")
+  provinceId String   @map("province_id") @db.Uuid
   province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
   wards      Ward[]
 
@@ -42,9 +40,9 @@ model District {
 }
 
 model Ward {
-  id         String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  districtId String   @map("district_id")
+  districtId String   @map("district_id") @db.Uuid
   district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime @default(now()) @map("created_at")

@@ -11,7 +11,7 @@ type Hotel = {
   id: string
   name: string
   type: string
-  reviewPoints: number | null
+  rating: number | null
   numberOfReviews: number | null
   imageUrls: string[] | null
   wardName: string | null
@@ -38,7 +38,7 @@ export async function fetchFeed(): Promise<FeedProps> {
           id: h.id,
           name: h.name,
           imageUrls: h.imageUrls || [],
-          reviewPoints: h.reviewPoints || 0,
+          rating: h.rating || 0,
           numberOfReviews: h.numberOfReviews || 0,
           // build nested ward -> district -> province shape expected by HotelCardProps
           ward: {
@@ -47,7 +47,7 @@ export async function fetchFeed(): Promise<FeedProps> {
           },
           facilities: h.facilities,
           // roomTypes expected as array; use minPrice as single entry if available
-          roomTypes: h.minPrice ? [{ price: h.minPrice }] : [],
+          roomTypes: h.minPrice ? [{ price: h.minPrice }] : [{ price: 0 }],
           type: h.type,
         };
       }) as HotelCardProps[],

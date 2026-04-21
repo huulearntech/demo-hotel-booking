@@ -14,67 +14,67 @@ import {
   bg_vungtau,
 } from "@/public/images";
 
-
+// TODO: province id
 const top_destinations = [
   {
     name: "Đà Nẵng",
     backgroundImage: bg_danang,
-    id: "danang",  // TODO: province id
+    id: "danang",
   },
   {
     name: "Nha Trang",
     backgroundImage: bg_nhatrang,
-    id: "nhatrang",  // TODO: province id
+    id: "nhatrang",
   },
   {
     name: "Phú Quốc",
     backgroundImage: bg_phuquoc,
-    id: "phuquoc",  // TODO: province id
+    id: "phuquoc",
   },
   {
     name: "Vũng Tàu",
     backgroundImage: bg_vungtau,
-    id: "vungtau",  // TODO: province id
+    id: "vungtau",
   },
   {
     name: "Hà Nội",
     backgroundImage: bg_hanoi,
-    id: "hanoi",  // TODO: province id
+    id: "hanoi",
   },
   {
     name: "Đà Lạt",
     backgroundImage: bg_dalat,
-    id: "dalat",  // TODO: province id
+    id: "dalat",
   },
   {
     name: "Hội An",
     backgroundImage: bg_hoian,
-    id: "hoian",  // TODO: province id
+    id: "hoian",
   },
   {
     name: "Phan Thiết",
     backgroundImage: bg_phanthiet,
-    id: "phanthiet",  // TODO: province id
+    id: "phanthiet",
   },
   {
     name: "Quy Nhơn",
     backgroundImage: bg_quynhon,
-    id: "quynhon",  // TODO: province id
+    id: "quynhon",
   },
   {
     name: "Huế",
     backgroundImage: bg_hue,
-    id: "hue",  // TODO: province id
+    id: "hue",
   },
   {
     name: "Hồ Chí Minh",
     backgroundImage: bg_hochiminh,
-    id: "hochiminh",  // TODO: province id
+    id: "hochiminh",
   },
   {
     name: "Hạ Long",
     backgroundImage: bg_halong,
-    id: "halong",  // TODO: province id
+    id: "halong",
   },
 ];
 

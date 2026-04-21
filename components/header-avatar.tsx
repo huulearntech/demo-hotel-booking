@@ -23,7 +23,7 @@ import {
 
 import { PATHS } from "@/lib/constants";
 import Link from "next/link";
-import { ChevronRightIcon } from "lucide-react";
+import { HeartIcon, LogOutIcon, UserCircleIcon } from "lucide-react";
 import SignOutButton from "./button-signout";
 
 export default async function HeaderAvatar({
@@ -31,48 +31,61 @@ export default async function HeaderAvatar({
   email,
   profileImageUrl,
 }: {
-  name: string | null;
-  email: string | null;
+  name: string;
+  email: string;
   profileImageUrl: string | null;
 }) {
   return (
     <Dialog>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger>
-          <Avatar>
-            <AvatarImage src={profileImageUrl ?? undefined} alt={name || "Something is wrong"} />
+          <Avatar size="lg">
+            <AvatarImage src={profileImageUrl ?? undefined} alt={name} />
             <AvatarFallback>{name}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-fit max-w-100">
+
+        <DropdownMenuContent align="end" className="w-50">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="flex flex-col gap-1">
-              <p className="font-semibold"> Xin chào, {name} </p>
-              <p className="font-normal text-muted-foreground">{email}</p>
+              <p className="font-semibold truncate" title={name}>Xin chào, {name.split('')[-1]}</p>
+              <p className="font-normal text-muted-foreground truncate" title={email}>{email}</p>
               <Avatar className="size-16 mt-2 mx-auto">
-                <AvatarImage src={profileImageUrl ?? undefined} alt={name || "Something is wrong"} />
+                <AvatarImage src={profileImageUrl ?? undefined} alt={name} />
                 <AvatarFallback>{name}</AvatarFallback>
               </Avatar>
             </DropdownMenuLabel>
-          <DropdownMenuItem
-            asChild
-            className="flex gap-x-2"
-          >
-            <Link href={PATHS.account} className="items-start">
-              Tài khoản của tôi
-              <ChevronRightIcon className="ml-auto size-4" />
-            </Link>
-          </DropdownMenuItem>
           </DropdownMenuGroup>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuGroup>
+            <DropdownMenuItem asChild >
+              <Link href={PATHS.account}>
+                <UserCircleIcon />
+                Tài khoản của tôi
+              </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem asChild >
+              <Link href={PATHS.favorites}>
+                <HeartIcon />
+                Danh sách yêu thích
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+
           <DropdownMenuSeparator />
 
           <DialogTrigger asChild>
             <DropdownMenuItem>
+              <LogOutIcon />
               Đăng xuất
             </DropdownMenuItem>
           </DialogTrigger>
         </DropdownMenuContent>
       </DropdownMenu>
+
       <DialogContent>
         <DialogHeader>
           <DialogTitle>

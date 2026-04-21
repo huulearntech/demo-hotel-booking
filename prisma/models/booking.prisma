@@ -1,10 +1,11 @@
+// TODO: rename to booking request. but first I need to make the whole thing works.
 model BookingMetadata {
-  id                String         @id @default(cuid())
-  userId            String         @map("user_id")
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String         @map("user_id") @db.Uuid
   user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  roomType          RoomType       @relation(fields: [roomTypeId], references: [id]) // For finding rooms after user submit the info form.
-  roomTypeId        String         @map("room_type_id") // current room type id (for easier querying)
+  roomType          RoomType       @relation(fields: [roomTypeId], references: [id])
+  roomTypeId        String         @map("room_type_id") @db.Uuid
 
   checkInDate       DateTime       @db.Date @map("check_in_date")
   checkOutDate      DateTime       @db.Date @map("check_out_date")
@@ -17,33 +18,44 @@ model BookingMetadata {
   snapshotCheckInTime  DateTime    @map("snapshot_check_in_time")
   snapshotCheckOutTime DateTime    @map("snapshot_check_out_time")
   
-  booking           Booking?        // optional relation to the booking (only set when the booking is created but not yet confirmed)
+  booking           Booking?
   createdAt         DateTime       @default(now()) @map("created_at")
+  
+  status            BookingMetadataStatus @default(DRAFT)
+  // how to automatically set the status to expired after 10 minutes? We can use a database trigger to automatically set the status to expired after 10 minutes. This way, we can prevent holding a room for too long without confirming the booking. Alternatively, we can also have a background job that runs every minute to check for expired bookings and update their status accordingly.
   expiredAt         DateTime       @map("expired_at") @default(dbgenerated("NOW() + INTERVAL '10 minutes'")) // prevent holding 
-  // @@index([userId])
-  // @@index([hotelId])
-  // @@index([createdAt])
+  // TODO: what to index?
+  @@index([userId])
+  @@index([roomTypeId])
 
   @@map("booking_metadata")
 }
 
+enum BookingMetadataStatus {
+  DRAFT
+  SUCCESS
+  EXPIRED
+}
+
+// TODO: Prevent user from making a booking when he is holding another booking that is not yet expired.
+// In such case, we force the user to either complete or cancel the existing booking before making a new one.
 model Booking {
-  id                String           @id @default(cuid())
-  rooms             Room[]         
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rooms             Room[]         // TODO: Only assign when check in. Done by hotel owner.
 
-  status            BookingStatus    @default(PENDING)
+  status            BookingStatus    @default(PENDING_TO_PAY)
 
-  // All this because we allow user to book with other information than the one in their profile, and we want to keep the booking information even if the user deletes their account or changes their profile information. This also allows us to keep the booking information for guest users who don't have an account.
+  // allow user to book with other information
   customerName      String           @map("customer_name")
   customerEmail     String           @map("customer_email")
   customerPhone     String           @map("customer_phone")
   notes             String?
   
-  review            Review?          // optional review for this booking (one review per booking)
+  review            Review?
 
   // metadata is the draft step.
   metadata          BookingMetadata  @relation(fields: [metadataId], references: [id], onDelete: Cascade)
-  metadataId        String           @unique @map("metadata_id")
+  metadataId        String           @unique @map("metadata_id") @db.Uuid
 
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt      @map("updated_at")
@@ -53,25 +65,29 @@ model Booking {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  bookingId String   @unique @map("booking_id")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId String   @unique @map("booking_id") @db.Uuid
   booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
-  // TODO: rating vs reviewPoints?
   rating    Int      // 1..5
   comment   String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
   // TODO: reply logic
-  reply     String?  // optional reply from hotel owner
-  repliedAt DateTime? @map("replied_at") // timestamp of when the hotel owner replied
+  reply     String?
+  repliedAt DateTime? @map("replied_at")
 
+  @@index([bookingId])
+  @@index([createdAt])
   @@map("reviews")
 }
+
 enum BookingStatus {
-  PENDING
-  CONFIRMED
+  PENDING_TO_PAY
+  PAID
   CANCELLED
-  COMPLETED
+  CHECKED_IN
+  CHECKED_OUT
+  // REFUNDED // This is not supported yet.
 }

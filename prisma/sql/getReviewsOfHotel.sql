@@ -8,6 +8,8 @@ SELECT
   r.rating,
   r.comment,
   r.created_at,
+  r.reply,
+  r.replied_at,
   u.id AS author_id,
   u.name AS author_name,
   u.profile_image_url AS author_profile_image
@@ -19,10 +21,11 @@ JOIN users u ON bm.user_id = u.id
 WHERE rt.hotel_id = $1
   AND (
     $2::TIMESTAMP IS NULL
-    OR (r.created_at, r.id) < ($2, $3::text)
+    OR (r.created_at, r.id) < ($2, $3::uuid)
   )
 ORDER BY r.created_at DESC, r.id DESC
 LIMIT $4;
+-- TODO: rename to camelCase for consistency.
 
 -- Notes:
 -- - Use the pair (created_at, id) as the cursor to provide stable ordering and avoid duplicates when multiple reviews share the same timestamp.

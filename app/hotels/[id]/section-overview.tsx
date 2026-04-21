@@ -48,7 +48,6 @@ export default async function OverviewSection({
   return (
     <section id="overview" className="w-full flex flex-col">
       <Breadcrumb className="py-1 mb-3">
-        {/** TODO: real link to regions */}
         <BreadcrumbList className="text-xs font-semibold">
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
@@ -143,7 +142,7 @@ export default async function OverviewSection({
               <div className="flex items-center p-1">
                 <Image src={tvlk_favicon} alt="" className="mr-2" />
                 <div className="flex items-end text-primary">
-                  <div className="text-[1.625rem] font-bold">{hotel.reviewPoints.toFixed(1)}</div>
+                  <div className="text-[1.625rem] font-bold">{hotel.rating.toFixed(1)}</div>
                   <div className="text-sm font-semibold whitespace-pre">/ {MAX_REVIEW_POINTS}</div>
                 </div>
               </div>

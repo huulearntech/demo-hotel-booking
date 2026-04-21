@@ -73,7 +73,7 @@ export async function fetchSearchResult(
     id: hotel.id,
     type: hotel.type,
     name: hotel.name,
-    reviewPoints: hotel.reviewPoints,
+    rating: hotel.rating,
     numberOfReviews: hotel.numberOfReviews,
     roomTypes: [{
       price: sort === 'price_desc'
@@ -99,7 +99,7 @@ export async function fetchSearchResult(
         lastPrice: sort === 'price_desc'
           ? (lastItem.maxPrice?.toNumber() ?? FILTER_MAX_PRICE)
           : (lastItem.minPrice?.toNumber() ?? FILTER_MIN_PRICE),
-        lastReviewPoints: lastItem.reviewPoints,
+        lastReviewPoints: lastItem.rating,
         lastHotelIndex: lastItem.id,
       }
       : null

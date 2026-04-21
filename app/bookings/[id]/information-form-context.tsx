@@ -4,7 +4,7 @@ import { useForm, FormProvider, useFormContext, type DefaultValues } from "react
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   schema_bookingForm,
-  BookingFormValues,
+  type BookingFormValues,
 } from "@/lib/zod_schemas/booking";
 
 export function InformationFormProvider({
@@ -17,7 +17,7 @@ export function InformationFormProvider({
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(schema_bookingForm),
     defaultValues: defaultValues,
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   return (

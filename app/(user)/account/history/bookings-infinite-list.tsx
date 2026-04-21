@@ -1,19 +1,21 @@
-// TODO: the card component is AI-generated and ugly as fuck. Have to fix it.
+// TODO: 3 tab: upcoming, past, cancelled. or just one tab with filter? or just one list with filter buttons? (pending, confirmed, completed, cancelled). maybe just one list with status badge is enough, since the user can easily scan through the status badge to find the booking they want. and also it is less code and less state to maintain.
 "use client";
 
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, DoorOpenIcon, UserIcon } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { type RecentBookingType, user_getRecentBookingsPaginated } from "@/lib/actions/user-account";
 import { BookingStatus } from "@/lib/generated/prisma/enums";
+import { differenceInDays } from "date-fns";
 
 const map: Record<BookingStatus, { text: string; variant: string }> = {
-  PENDING: { text: "Pending", variant: "bg-yellow-100 text-yellow-800" },
-  CONFIRMED: { text: "Confirmed", variant: "bg-green-100 text-green-800" },
-  COMPLETED: { text: "Completed", variant: "bg-sky-100 text-sky-800" },
+  PENDING_TO_PAY: { text: "Pending", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Confirmed", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Checked in", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Checked out", variant: "bg-sky-100 text-sky-800" },
   CANCELLED: { text: "Cancelled", variant: "bg-red-100 text-red-800" },
 };
 
@@ -42,44 +44,87 @@ const fmtDateTime = (d?: string | Date | null) => {
 
 function BookingCard({ booking }: { booking: RecentBookingType }) {
   const {
-    roomType: { hotel: { name: hotelName } },
+    roomType: { hotel: { name: hotelName, type: hotelType } },
     checkInDate,
     checkOutDate,
     numRooms,
     numAdults,
     numChildren,
+    snapshotRoomTypeName,
   } = booking.metadata;
   const totalPrice = booking.totalPrice;
   const createdAt = booking.createdAt;
 
+  // TODO: don't be too complicated.
+  const initials =
+    (hotelName || "")
+      .split(" ")
+      .map((s) => s[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "HT";
+
+  const nights = differenceInDays(checkOutDate, checkInDate);
+
   return (
-    <Card className="rounded-lg border bg-card/50">
-      <CardHeader className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="truncate font-semibold leading-5">{hotelName}</div>
-          <div className="mt-1 text-sm text-muted-foreground truncate">Mã: {booking.id}</div>
+    <Card className="rounded-xl border bg-card/50 hover:shadow-md transition-shadow">
+      <CardHeader className="flex items-start justify-between gap-4 py-3 px-4">
+        <div className="flex items-start gap-3 min-w-0">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-sky-400 to-indigo-500 text-sm font-semibold text-white"
+            aria-hidden
+          >
+            {initials}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="truncate font-semibold leading-5">{hotelName}</div>
+              <span className="ml-1 rounded-md bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground">
+                {hotelType}
+              </span>
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground truncate">
+              <span className="truncate">Mã: {booking.id}</span>
+              <span className="hidden sm:inline">- Đặt lúc {fmtDateTime(createdAt)}</span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <div className="font-semibold">{fmtCurrency(totalPrice)}</div>
-          <div className="text-sm text-muted-foreground">Đặt lúc {fmtDateTime(createdAt)}</div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className="flex items-center gap-3">
+            <div className="text-lg font-semibold">{fmtCurrency(totalPrice)}</div>
+            <StatusBadge status={booking.status} />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {fmtDate(checkInDate)} <ArrowRightIcon className="inline h-4 w-4 align-middle" />{" "}
+            {fmtDate(checkOutDate)} {nights ? <span className="ml-2">· {nights} đêm</span> : null}
+          </div>
         </div>
       </CardHeader>
 
-      <CardContent className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="text-muted-foreground truncate">{fmtDate(checkInDate)}</div>
-            <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
-            <div className="text-muted-foreground truncate">{fmtDate(checkOutDate)}</div>
+      <CardContent className="flex items-center justify-between gap-4 py-3 px-4">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <DoorOpenIcon className="h-4 w-4 text-muted-foreground" />
+            <span>{numRooms} phòng</span>
+            <span className="ml-1 rounded-md bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground">
+              {snapshotRoomTypeName}
+            </span>
           </div>
-          <div className="hidden md:block h-5 w-px bg-muted/40" />
-          <div className="hidden md:block text-muted-foreground">{numRooms} phòng</div>
-          <div className="hidden md:block text-muted-foreground">{numAdults} người lớn + {numChildren} trẻ em</div>
+
+          <div className="flex items-center gap-2">
+            <UserIcon className="h-4 w-4 text-muted-foreground" />
+            <span>
+              {numAdults} người lớn{numChildren ? ` • ${numChildren} trẻ em` : ""}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <StatusBadge status={booking.status} />
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="text-xs text-muted-foreground">Chi tiết</div>
+          <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
         </div>
       </CardContent>
     </Card>
@@ -113,9 +158,6 @@ function SkeletonCard() {
   );
 }
 
-// This page size is repeated. TODO: cleanup.
-const PAGE_SIZE = 8;
-
 export default function BookingsInfiniteScrollList() {
   const { ref: sentinelRef, inView } = useInView({
     root: null,
@@ -135,8 +177,7 @@ export default function BookingsInfiniteScrollList() {
     queryKey: ["user_recent_bookings"],
     queryFn: async ({ pageParam }: { pageParam: string | null }) => {
       // pageParam is the lastCursor string or null
-      const res = await user_getRecentBookingsPaginated(pageParam, PAGE_SIZE);
-      return res;
+      return user_getRecentBookingsPaginated(pageParam);
     },
     initialPageParam: null,
     getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,

@@ -1,9 +1,11 @@
+import "dotenv/config";
 import { UserRole } from "@/lib/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 
 import { fakerVI as faker } from "@faker-js/faker";
 
 async function seedRegularUsers(count = 10) {
+  console.log("Seeding regular users");
   const users = Array.from({ length: count }, () => ({
     name: faker.person.fullName(),
     email: faker.internet.email(),
@@ -31,6 +33,7 @@ async function seedRegularUsers(count = 10) {
 }
 
 async function seedHotelOwners(count = 5) {
+  console.log("Seeding hotel owners");
   const users = Array.from({ length: count }, () => ({
     name: faker.person.fullName(),
     email: faker.internet.email(),
@@ -58,6 +61,7 @@ async function seedHotelOwners(count = 5) {
 }
 
 async function seedAdmin() {
+  console.log("Seeding admin user");
   if (process.env.FAKE_ADMIN_NAME && process.env.FAKE_ADMIN_EMAIL && process.env.FAKE_ADMIN_PASSWORD) {
     const admin = {
       name: process.env.FAKE_ADMIN_NAME,

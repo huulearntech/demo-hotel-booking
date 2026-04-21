@@ -25,7 +25,7 @@ export default async function Page(props: {
   if (!safeDecodedParams.success || !hotel) notFound()
 
   const {
-    reviewPoints,
+    rating,
     numberOfReviews
   } = hotel;
 
@@ -55,7 +55,7 @@ export default async function Page(props: {
         <AvailableRoomsSection hotelId={hotel.id} hotelName={hotel.name} searchBarFormData={searchBarFormData}/>
         <LocationSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <FacilitiesSection hotel={hotel} />
-        <ReviewSection hotelName={hotel.name} hotelId={hotel.id} numberOfReviews={numberOfReviews} reviewPoints={reviewPoints}/>
+        <ReviewSection hotelName={hotel.name} hotelId={hotel.id} numberOfReviews={numberOfReviews} rating={rating}/>
       </main>
     </>
   );

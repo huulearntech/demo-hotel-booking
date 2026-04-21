@@ -37,9 +37,10 @@ export async function user_getRecentBookingsPaginated(
       metadata: {
         select: {
           roomType: {
-            select: { hotel: { select: { name: true } } }
+            select: { hotel: { select: { name: true, type: true } } }
           },
           snapshotRoomPrice: true,
+          snapshotRoomTypeName: true,
           checkInDate: true,
           checkOutDate: true,
           numRooms: true,
@@ -73,8 +74,9 @@ type BookingWithMeta = Prisma.BookingGetPayload<{
   include: {
     metadata: {
       select: {
-        roomType: { select: { hotel: { select: { name: true } } } };
+        roomType: { select: { hotel: { select: { name: true, type: true } } } };
         snapshotRoomPrice: true;
+        snapshotRoomTypeName: true,
         checkInDate: true;
         checkOutDate: true;
         numRooms: true;

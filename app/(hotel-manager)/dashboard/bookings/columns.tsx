@@ -1,55 +1,35 @@
-"use client"
+"use client";
 
-import { ColumnDef } from "@tanstack/react-table"
+import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, MoreHorizontal, Copy, Phone } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, ArrowRight } from "lucide-react";
 
-import type { BookingSerialized } from "@/lib/actions/hotel-manager/bookings"
-import { BookingStatus } from "@/lib/generated/prisma/enums"
-import { formatVND } from "@/lib/utils"
+import type { UpcomingBooking } from "@/lib/actions/hotel-manager/bookings";
+import { BookingStatus } from "@/lib/generated/prisma/enums";
+import { cn, formatVND } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
 
-function formatDateShort(d?: Date | string) {
-  if (!d) return "—";
-  const date = d instanceof Date ? d : new Date(d);
-  return date.toLocaleDateString("vi-VN", { year: "numeric", month: "short", day: "numeric" });
+function formatDateShort(date: Date) {
+  return new Intl.DateTimeFormat("vi-VN", { year: "numeric", month: "short", day: "numeric" }).format(date);
 }
 
-const colorForStatus: Record<BookingStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700",
-  CONFIRMED: "bg-green-100 text-green-700",
-  COMPLETED: "bg-blue-100 text-blue-700",
-  CANCELLED: "bg-red-100 text-red-700",
-} as const;
+const map: Record<BookingStatus, { text: string; variant: string }> = {
+  PENDING_TO_PAY: { text: "Pending", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Confirmed", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Checked in", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Checked out", variant: "bg-sky-100 text-sky-800" },
+  CANCELLED: { text: "Cancelled", variant: "bg-red-100 text-red-800" },
+};
 
-const statusLabel: Record<BookingStatus, string> = {
-  PENDING: "Đang chờ",
-  CONFIRMED: "Đã xác nhận",
-  COMPLETED: "Hoàn tất",
-  CANCELLED: "Đã hủy",
-} as const;
-
-export const columns: ColumnDef<BookingSerialized>[] = [
-  {
-    id: "bookingId",
-    header: "Mã đặt phòng",
-    accessorFn: (row) => row.id,
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <div className="truncate font-mono text-xs">{row.original.id}</div>
-        <Button variant="ghost" size="icon-sm" onClick={() => navigator.clipboard.writeText(row.original.id)}>
-          <Copy className="size-4" />
-        </Button>
-      </div>
-    ),
-  },
+export const columns: ColumnDef<UpcomingBooking>[] = [
   {
     id: "customer",
     header: "Khách hàng",
@@ -79,7 +59,10 @@ export const columns: ColumnDef<BookingSerialized>[] = [
     cell: ({ row }) => (
       <div className="text-sm">
         <div>{row.original.numRooms} phòng</div>
-        <div className="text-muted-foreground text-xs">{row.original.numGuests} khách</div>
+        <div className="text-muted-foreground text-xs">{row.original.numAdults} khách người lớn</div>
+        {row.original.numChildren > 0 && (
+          <div className="text-muted-foreground text-xs">{row.original.numChildren} khách trẻ em</div>
+        )}
       </div>
     )
   },
@@ -89,11 +72,11 @@ export const columns: ColumnDef<BookingSerialized>[] = [
     cell: ({ row }) => {
       const checkIn = row.original.checkInDate;
       const checkOut = row.original.checkOutDate;
-      const nights = checkIn && checkOut ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000*60*60*24))) : null;
+      const nights = differenceInDays(checkOut, checkIn);
       return (
         <div className="min-w-0">
           <div className="truncate">{formatDateShort(checkIn)}</div>
-          <div className="text-xs text-muted-foreground">{formatDateShort(checkOut)} • {nights !== null ? `${nights} đêm` : "—"}</div>
+          <div className="text-xs text-muted-foreground">{formatDateShort(checkOut)} • {nights} đêm</div>
         </div>
       )
     }
@@ -115,10 +98,14 @@ export const columns: ColumnDef<BookingSerialized>[] = [
     accessorKey: "status",
     header: "Trạng thái",
     cell: ({ row }) => {
-      const status = row.original.status as BookingStatus;
-      const cls = colorForStatus[status] ?? "bg-gray-100 text-gray-700";
-      const label = statusLabel[status] ?? status;
-      return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${cls}`}>{label}</span>
+      return (
+        <span className={cn(
+          "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+          map[row.original.status].variant
+        )}>
+          {map[row.original.status].text}
+        </span>
+      )
     }
   },
   {
@@ -142,7 +129,10 @@ export const columns: ColumnDef<BookingSerialized>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="text-xs text-secondary-foreground">Hành động</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(booking.id)}>
-              Sao chép mã đặt phòng
+              <div className="flex flex-col gap-1">
+                Sao chép mã đặt phòng
+                <div className="truncate font-mono text-xs">{row.original.id}</div>
+              </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {/* view customer */}}>Xem khách hàng</DropdownMenuItem>
@@ -156,4 +146,4 @@ export const columns: ColumnDef<BookingSerialized>[] = [
       )
     }
   }
-]
+];

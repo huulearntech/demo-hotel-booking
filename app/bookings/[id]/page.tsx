@@ -37,7 +37,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
 
   // Handle expired booking
   const bookingMetadataAndHotel = await prisma.bookingMetadata.findUnique({
-    where: { id, userId: session.user.id },
+    where: { id, userId: session.user.id, status: "DRAFT" }, // TODO: Handle expired, or paid.
     select: {
       roomType: {
         select: {
@@ -45,7 +45,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
             select: {
               name: true,
               type: true,
-              reviewPoints: true,
+              rating: true,
               numberOfReviews: true,
               facilities: { select: { id: true, name: true, iconUrl: true } }
             }
@@ -71,7 +71,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
       hotel: {
         name: hotelName,
         type: hotelType,
-        reviewPoints,
+        rating,
         numberOfReviews,
         facilities
       },
@@ -93,7 +93,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
                 <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-primary lowercase first-letter:capitalize">{hotelType}</span>
               </div>
               <div className="flex items-center gap-x-2 text-xs">
-                <span className="text-primary font-black">{reviewPoints.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
+                <span className="text-primary font-black">{rating.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
                 <span className="text-gray-500 font-semibold">({numberOfReviews} đánh giá)</span>
               </div>
             </div>
@@ -121,6 +121,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               numRooms={bookingMetadata.numRooms}
               // FIXME: temporary total price calculation, must be calculated in Decimal on server.
               totalPrice={bookingMetadata.snapshotRoomPrice.toNumber() * bookingMetadata.numRooms * differenceInDays(bookingMetadata.checkOutDate, bookingMetadata.checkInDate)}
+              metadataId={id}
             />
           </div>
         </main>
