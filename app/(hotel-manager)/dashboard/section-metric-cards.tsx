@@ -3,70 +3,117 @@ import {
   CardHeader,
   CardDescription,
   CardTitle,
-  CardAction,
   CardFooter,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { auth } from "@/auth";
+import { differenceInDays } from "date-fns";
+import { Decimal } from "@prisma/client/runtime/client";
 
-// TODO: Cleanup
-type Trend = {
-  value: number;
-  isPercent?: boolean;
-};
 
-type MetricItem = {
-  id: string;
-  title: string;
-  value: number;
-  valueType: "integer" | "percent" | "currency";
-  trend?: Trend;
-};
-
-type MetricCardProps = {
-  title: string;
-  value: React.ReactNode;
-  trend?: Trend;
-};
-
-function formatMetricValue(value: number, type: MetricItem["valueType"]) {
-  if (type === "currency") {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(value);
+async function hotelowner_getMetrics() {
+  const session = await auth();
+  if (!session || session.user.role !== "HOTEL_OWNER") {
+    throw new Error("Unauthorized");
   }
 
-  if (type === "percent") {
-    // value is a fraction, e.g. 0.74 => 74%
-    return new Intl.NumberFormat("vi-VN", {
-      style: "percent",
-      maximumFractionDigits: 0,
-    }).format(value);
-  }
+  const result = await prisma.$transaction(async (tx) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // integer / general number
-  return new Intl.NumberFormat("vi-VN").format(value);
+    const checkinsToday = await tx.booking.count({
+      where: {
+        metadata: { 
+          roomType: {
+            hotel: {
+              ownerId: session.user.id,
+            }
+          },
+          checkInDate: today,
+        }
+      },
+    });
+
+    const bookingsToday = await tx.booking.count({
+      where: {
+        metadata: {
+          roomType: {
+            hotel: {
+              ownerId: session.user.id,
+            }
+          },
+          createdAt: today,
+        }
+      },
+    });
+
+    const revenueMTD = await tx.booking.findMany({
+      where: {
+        metadata: {
+          roomType: {
+            hotel: {
+              ownerId: session.user.id,
+            }
+          }
+        },
+        createdAt: {
+          gte: new Date(today.getFullYear(), today.getMonth(), 1),
+          lt: new Date(today.getFullYear(), today.getMonth() + 1, 1),
+        },
+      },
+      select: {
+        metadata: {
+          select: {
+            snapshotRoomPrice: true,
+            checkInDate: true,
+            checkOutDate: true,
+          }
+        }
+      }
+    }).then((bookings) => {
+      return bookings.reduce((acc, booking) => {
+        acc = acc.add(booking.metadata.snapshotRoomPrice.mul(differenceInDays(booking.metadata.checkOutDate, booking.metadata.checkInDate)));
+        return acc;
+      }, new Decimal(0));
+    });
+
+    const occupancy = await tx.room.aggregate({
+      where: {
+        type: {
+          hotel: {
+            ownerId: session.user.id,
+          }
+        },
+        status: "ACTIVE",
+      },
+      _count: true,
+    });
+
+    const occupiedRooms = await tx.room.count({
+      where: {
+        type: {
+          hotel: {
+            ownerId: session.user.id,
+          }
+        },
+        status: "ACTIVE", // TODO: ignore it for now, this is just place holder.
+      },
+    });
+
+    return {
+      checkinsToday,
+      bookingsToday,
+      revenueMTD: revenueMTD.toNumber(),
+      occupancyRate: occupancy._count > 0 ? occupiedRooms / occupancy._count : 0,
+    };
+  });
+
+  return result;
 }
 
-function MetricCard({ title, value, trend }: MetricCardProps) {
-  const trendIsIncreasing = trend ? trend.value > 0 : false;
-
-  const renderTrend = (t?: Trend) => {
-    if (!t) return null;
-    const sign = t.value > 0 ? "+" : t.value < 0 ? "-" : ""; // use proper minus sign
-    const text = t.isPercent
-      ? `${sign}${Math.round(t.value * 100)}%`
-      : `${sign}${Math.abs(t.value)}`;
-    return (
-      <Badge variant="outline" className="flex items-center gap-2">
-        {trendIsIncreasing ? <TrendingUpIcon /> : <TrendingDownIcon />}
-        {text}
-      </Badge>
-    );
-  };
-
+function MetricCard({ title, value }: { title: string; value: string | number }) {
   return (
     <Card>
       <CardHeader>
@@ -74,54 +121,44 @@ function MetricCard({ title, value, trend }: MetricCardProps) {
         <CardTitle>
           {value}
         </CardTitle>
-        <CardAction>{renderTrend(trend)}</CardAction>
       </CardHeader>
-      <CardFooter className="text-xs text-gray-500">Thông tin cập nhật theo thời gian thực</CardFooter>
+      <CardFooter className="text-sm text-muted-foreground">Thông tin cập nhật theo thời gian thực</CardFooter>
     </Card>
   );
 }
 
-const metrics: MetricItem[] = [
-  {
-    id: "checkins",
-    title: "Lượt khách check-in hôm nay",
-    value: 8,
-    valueType: "integer",
-    trend: { value: 2 },
-  },
-  {
-    id: "occupancy",
-    title: "Tỷ lệ lấp phòng",
-    value: 0.74,
-    valueType: "percent",
-    trend: { value: 0.03, isPercent: true },
-  },
-  {
-    id: "bookings",
-    title: "Lượt đặt phòng hôm nay",
-    value: 12,
-    valueType: "integer",
-    trend: { value: -1 },
-  },
-  {
-    id: "revenueMTD",
-    title: "Doanh thu (từ đầu tháng)",
-    value: 24300000,
-    valueType: "currency",
-    trend: { value: 0.12, isPercent: true },
-  },
-];
 
-export default function DashboardMetricCards() {
+
+export default async function DashboardMetricCards() {
+  const metrics = await hotelowner_getMetrics();
+
+  const items = [
+    {
+      id: "checkinsToday",
+      title: "Lượt check-in hôm nay",
+      value: metrics.checkinsToday,
+    },
+    {
+      id: "bookingsToday",
+      title: "Lượt đặt phòng hôm nay",
+      value: metrics.bookingsToday,
+    },
+    {
+      id: "revenueMTD",
+      title: "Doanh thu (từ đầu tháng)",
+      value: new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(metrics.revenueMTD ?? 0),
+    },
+    {
+      id: "occupancyRate",
+      title: "Tỷ lệ phòng có người ở",
+      value: `${Math.round((metrics.occupancyRate ?? 0) * 100)}%`,
+    },
+  ];
+
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-      {metrics.map((m) => (
-        <MetricCard
-          key={m.id}
-          title={m.title}
-          value={formatMetricValue(m.value, m.valueType)}
-          trend={m.trend}
-        />
+      {items.map((m) => (
+        <MetricCard key={m.id} title={m.title} value={m.value} />
       ))}
     </section>
   );

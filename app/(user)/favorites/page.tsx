@@ -1,28 +1,21 @@
-import HotelCard from "@/components/hotel-card";
-import { user_fetchFavoriteHotels } from "@/lib/actions/user-account/favorites";
+import FavoritesList from "./favorites-client";
 
 export default async function FavoritesPage() {
-  const favoriteHotels = await user_fetchFavoriteHotels();
-
   return (
-    <main className="content">
-      <h1 className="text-2xl font-bold mb-4">Khách sạn yêu thích</h1>
-      {favoriteHotels.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {favoriteHotels.map((hotel) => (
-            <HotelCard
-              key={hotel.id}
-              hotel={hotel}
-              href={"#"} // TODO: link to hotel detail page
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-gray-500 mt-10">
-          <p className="text-lg">Bạn chưa thêm khách sạn nào vào danh sách yêu thích.</p>
-          <p className="text-sm">Hãy bắt đầu khám phá và thêm những khách sạn mà bạn quan tâm vào danh sách yêu thích!</p>
-        </div>
-      )}
+    <main className="content py-8 gap-y-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold">Khách sạn yêu thích</h1>
+        <p className="text-sm text-muted-foreground">Các khách sạn bạn đã thêm vào danh sách yêu thích sẽ được hiển thị ở đây.</p>
+      </div>
+
+      <section className="space-y-6">
+        <FavoritesList />
+      </section>
     </main>
   );
 }
+
+export const metadata = {
+  title: "Khách sạn yêu thích",
+  description: "Xem và quản lý danh sách khách sạn yêu thích của bạn.",
+};

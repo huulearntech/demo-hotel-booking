@@ -5,6 +5,7 @@ import { hotelowner_getRoomTypes } from "@/lib/actions/hotel-manager/rooms";
 
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import RoomsGrid from "./rooms-grid";
 
 export default async function RoomsPage() {
   const result = await hotelowner_getRoomTypes();
@@ -14,7 +15,7 @@ export default async function RoomsPage() {
   const rooms = result.data;
 
   return (
-    <div className="space-y-6">
+    <div className="content gap-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Rooms</h1>
@@ -33,7 +34,8 @@ export default async function RoomsPage() {
         </div>
       </div>
 
-      <RoomTable rooms={rooms} />
+      {/* <RoomTable rooms={rooms} /> */}
+      <RoomsGrid />
     </div>
   );
 }

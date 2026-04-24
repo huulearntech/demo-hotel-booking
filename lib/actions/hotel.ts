@@ -2,8 +2,35 @@
 
 import prisma from "@/lib/prisma";
 import { getRoomTypesOfHotel } from "../generated/prisma/sql";
+import { auth } from "@/auth";
 
 export async function fetchHotel(hotelId: string) {
+  const session = await auth();
+  if (session?.user.role === "USER") {
+    // FIXME: Too many queries.
+    const exists = await prisma.recentlyViewed.findFirst({
+      where: {
+        userId: session.user.id,
+        hotelId,
+      },
+      select: { id: true },
+    });
+    if (!exists) {
+      await prisma.recentlyViewed.create({
+        data: {
+          userId: session.user.id,
+          hotelId,
+        },
+      });
+    } else {
+      await prisma.recentlyViewed.update({
+        where: { id: exists.id },
+        data: { viewedAt: new Date() },
+      });
+    }
+  }
+
+
   return prisma.hotel.findUnique({
     where: { id: hotelId },
     include: {

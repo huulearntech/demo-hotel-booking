@@ -12,6 +12,7 @@
 -- @param {Decimal}  $12:minPrice (filter)
 -- @param {Decimal}  $13:maxPrice (filter)
 -- @param {Int}      $16:numChildren (TODO: temporarily put this at the end.)
+-- @param {String}   $17:userId? (for favorite)
 WITH base AS (
   SELECT
     h.id,
@@ -24,7 +25,13 @@ WITH base AS (
     p.name AS "provinceName",
     available.min_price AS "minPrice",
     available.max_price AS "maxPrice",
-    facility_list.facility_names AS "facilityNames"
+    facility_list.facility_names AS "facilityNames",
+    ( $17::uuid IS NOT NULL AND EXISTS (
+      SELECT 1
+      FROM favorites f
+      WHERE f.user_id = $17::uuid
+        AND f.hotel_id = h.id
+    )) AS "isFavorited"
   FROM hotels h
   JOIN wards     w ON w.id = h.ward_id
   JOIN districts d ON d.id = w.district_id

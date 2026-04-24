@@ -1,3 +1,5 @@
+// TODO: type of provinces: city, province.
+// type of wards: commune, ward.
 model Country {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique

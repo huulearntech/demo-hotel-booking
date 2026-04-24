@@ -21,7 +21,7 @@ export default React.forwardRef(function PasswordInput(
       <InputGroupInput
         ref={ref as any}
         type={visible ? "text" : "password"}
-        className="text-sm md:text-base"
+        className="text-sm"
         {...props}
       />
       <InputGroupAddon align="inline-end">

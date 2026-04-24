@@ -50,14 +50,14 @@ export default function SearchBar({
   collapsible: boolean
 }) {
   const [isOpenOnMobile, setIsOpenOnMobile] = useState(false);
-  // const storedStringifiedSearchBarForm = typeof window !== "undefined" ? sessionStorage.getItem("searchBarForm") : null;
-  // const storedFormValues = storedStringifiedSearchBarForm ? SearchParamsCodec.safeDecode(JSON.parse(storedStringifiedSearchBarForm)) : null;
+  const storedStringifiedSearchBarForm = typeof window !== "undefined" ? sessionStorage.getItem("searchBarForm") : null;
+  const storedFormValues = storedStringifiedSearchBarForm ? SearchParamsCodec.safeDecode(JSON.parse(storedStringifiedSearchBarForm)) : null;
 
   const form = useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>({
     resolver: zodResolver(schema_searchBar),
     defaultValues: defaultValues ?? (
-      // storedFormValues?.success ?
-      //   storedFormValues.data :
+      storedFormValues?.success ?
+        storedFormValues.data :
         {
           location: {
             id: "",
@@ -141,7 +141,7 @@ export function SearchBarForm({
       console.warn("TODO: Invalid location, not searching");
       return;
     }
-    // sessionStorage.setItem("searchBarForm", JSON.stringify(SearchParamsCodec.encode(values)));
+    sessionStorage.setItem("searchBarForm", JSON.stringify(SearchParamsCodec.encode(values)));
 
     // TODO: rename codec and types. The amount of confusion has reached critical point.
     if (values.location.type === "hotel") {
@@ -169,7 +169,7 @@ export function SearchBarForm({
         name="location"
         render={({ field }) => (
           <FormItem className="w-full">
-            <FormLabel htmlFor="location-input" className="font-semibold">Khách sạn hoặc điểm đến</FormLabel>
+            <FormLabel htmlFor="location-input">Khách sạn hoặc điểm đến</FormLabel>
             <LocationAutocomplete
               query={locationQuery}
               setQuery={setLocationQuery}
@@ -184,10 +184,14 @@ export function SearchBarForm({
         name="inOutDates"
         render={({ field }) => (
           <FormItem className="w-full">
-            <FormLabel htmlFor="date-range-picker" className="font-semibold">Ngày nhận / trả phòng</FormLabel>
+            <FormLabel htmlFor="date-range-picker">Ngày nhận / trả phòng</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" id="date-range-picker" className="text-sm lg:text-base overflow-hidden">
+                <Button
+                  id="date-range-picker"
+                  variant="outline"
+                  className="text-sm lg:text-base overflow-hidden cursor-pointer"
+                >
                   {new Intl.DateTimeFormat("vi-VN", { month: "numeric", day: "numeric", year: "numeric" }).format(field.value.from) || "Nhận phòng"}
                   <ArrowRight />
                   {new Intl.DateTimeFormat("vi-VN", { month: "numeric", day: "numeric", year: "numeric" }).format(field.value.to) || "Trả phòng"}
@@ -223,10 +227,14 @@ export function SearchBarForm({
 
           return (
             <FormItem className="w-full">
-              <FormLabel htmlFor="guests-and-rooms" className="font-semibold">Khách và phòng </FormLabel>
+              <FormLabel htmlFor="guests-and-rooms">Khách và phòng </FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button id="guests-and-rooms" variant="outline" className="text-sm lg:text-base overflow-hidden">
+                  <Button
+                    id="guests-and-rooms"
+                    variant="outline"
+                    className="text-sm lg:text-base overflow-hidden cursor-pointer"
+                  >
                     {field.value.numAdults + " người lớn, "}
                     {field.value.numChildren + " trẻ em, "}
                     {field.value.numRooms + " phòng"}
@@ -373,7 +381,7 @@ function LocationAutocomplete({
         placeholder="Bạn muốn đi đâu?"
         showTrigger={false}
         showClear
-        className="w-full"
+        className="w-full hover:bg-accent"
       />
       <AutocompleteContent>
         {isTypingOrLoading && (

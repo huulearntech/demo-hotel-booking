@@ -135,7 +135,7 @@ import { CloudUploadIcon, Loader2Icon, PlusIcon, SaveAllIcon, SaveIcon, XIcon } 
 import Image from "next/image";
 
 // Should rename to RoomCard or something. It's not just fields.
-export function RoomFields({
+function RoomFields({
   index,
   control,
   register,

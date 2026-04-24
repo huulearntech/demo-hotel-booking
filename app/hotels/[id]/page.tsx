@@ -44,7 +44,7 @@ export default async function Page(props: {
     <>
       <div className="flex flex-col py-3 sticky top-0 shadow-lg bg-white z-20 gap-y-4">
         <SearchBar defaultValues={searchBarFormData} collapsible />
-        <Navbar />
+        <Navbar hotelId={hotel.id} />
       </div>
       <main className="flex flex-col gap-y-4 content my-4 [&>section]:scroll-mt-35">
         <OverviewSection

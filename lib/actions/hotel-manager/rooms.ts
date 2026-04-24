@@ -105,6 +105,52 @@ export async function hotelowner_getRoomById(roomId: string):
   return { ok: true, data: result };
 }
 
+
+export async function hotelowner_getRoomTypeById(roomTypeId: string):
+  Promise<OperationResult<Prisma.RoomTypeGetPayload<{
+    select: {
+      hotel: { select: { name: true, id: true } },
+      name: true,
+      adultCapacity: true,
+      childrenCapacity: true,
+      imageUrls: true,
+      bedType: true,
+      price: true,
+      description: true,
+      _count: { select: { rooms: true } },
+    }
+  }>>> {
+  const session = await auth();
+  if (!session) {
+    return { ok: false, error: "Unauthorized", status: 401 };
+  }
+  if (session.user.role !== "HOTEL_OWNER") {
+    return { ok: false, error: "Forbidden", status: 403 };
+  }
+
+  const result = await prisma.roomType.findUnique({
+    where: {
+      hotel: { ownerId: session.user.id },
+      id: roomTypeId,
+    },
+    select: {
+      hotel: { select: { name: true, id: true } },
+      name: true,
+      adultCapacity: true,
+      childrenCapacity: true,
+      imageUrls: true,
+      bedType: true,
+      price: true,
+      description: true,
+      _count: { select: { rooms: true } },
+    }
+  });
+  if (!result) {
+    return { ok: false, error: "Room Type not found", status: 404 };
+  }
+  return { ok: true, data: result };
+}
+
 export async function hotelowner_getRoomTypes():
   Promise<OperationResult<(Omit<Prisma.RoomTypeGetPayload<{
     select: {

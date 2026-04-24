@@ -3,15 +3,12 @@ import { fakerVI as faker } from "@faker-js/faker";
 import prisma from "@/lib/prisma";
 import { Country, District, Province } from "@/lib/generated/prisma/client";
 
-// Seed Vietnam as the only country for simplicity
 async function seedCountryVietnam() {
   console.log("Seeding country: Vietnam");
   return await prisma.country.upsert({
-    where: { name: "Vietnam" },
-    update: {}, // No updates needed, we just want to ensure it exists
-    create: {
-      name: "Vietnam",
-    },
+    where: { name: "Việt Nam" },
+    update: {},
+    create: { name: "Việt Nam" },
   });
 }
 
@@ -68,7 +65,7 @@ async function seedWards(districts: District[], countPerDistrict = 5) {
 
   return await prisma.ward.createManyAndReturn({
     data: wards,
-    skipDuplicates: true, // In case you run the seeding multiple times
+    skipDuplicates: true,
   });
 }
 

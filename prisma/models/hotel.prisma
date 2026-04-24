@@ -78,7 +78,7 @@ model Facility {
 model Room {
   id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String     @unique
-  typeId     String     @db.Uuid @map("type_id")
+  typeId     String     @map("type_id") @db.Uuid
   type       RoomType   @relation(fields: [typeId], references: [id], onDelete: Cascade)
   status     RoomStatus @default(ACTIVE)
 

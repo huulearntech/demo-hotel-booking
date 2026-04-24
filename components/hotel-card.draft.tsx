@@ -1,39 +1,43 @@
-// TODO: optimize onclick
 "use client";
 
 import Image from "next/image";
+import { useLayoutEffect, useRef, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 import { cn, formatVND } from "@/lib/utils";
-import { HotelCardProps } from "@/lib/types/hotel-card";
+import { draft_HotelCardProps } from "@/lib/types/hotel-card";
 
 import { hotel as hotelIcon } from "@/public/icons/index";
 import { MapPin, Heart } from "lucide-react";
 
+// TODO: how to handle isFavorited change on client when it is fetched from server.
 export default function HotelCard({
   hotel,
   href,
-  userIsAuthenticated,
   className,
-  showWardAtTopLeft = true,
-  hotelIsFavorited = true, // TODO: pass this as a prop and determine it in the parent component to avoid extra API calls inside this card
+  onFavoriteToggle,
 }: {
-  hotel: HotelCardProps;
+  hotel: draft_HotelCardProps;
   href: string;
-  userIsAuthenticated: boolean;
   className?: string
-  showWardAtTopLeft?: boolean;
-  hotelIsFavorited?: boolean;
+  onFavoriteToggle: (hotelId: string, newValue: boolean) => void;
 }) {
   const {
     id,
     name,
-    imageUrls: [thumbUrl],
+    thumbnailUrl,
     rating,
     numberOfReviews,
-    ward: { name: wardName, district: { province: { name: provinceName } } },
-    roomTypes: [{ price }],
-    facilities,
-    type
+    wardName,
+    provinceName,
+    price,
+    facilityNames,
+    type,
+    isFavorited
   } = hotel;
 
   return (
@@ -44,40 +48,27 @@ export default function HotelCard({
       className={cn("bg-white w-full min-h-106 flex flex-col rounded-lg shadow-md overflow-hidden hover:shadow-primary/50 hover:shadow-md", className)}
     >
       <div className="relative h-50 overflow-hidden">
-        <Image
-          src={thumbUrl}
-          alt={name}
-          className="absolute object-cover w-100 h-75 inset-0"
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
-        {showWardAtTopLeft &&
-          <div className="absolute top-0 left-0 bg-black/40 text-primary-foreground inline-flex rounded-br-lg items-center px-2 py-1 text-sm font-semibold">
-            <MapPin className="size-4 mr-1" />
-            {wardName}
+        {thumbnailUrl
+          ? <Image
+            src={thumbnailUrl}
+            alt={name}
+            className="absolute object-cover w-100 h-75 inset-0"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+          : <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <span className="text-sm text-gray-500">Không có hình ảnh</span>
           </div>
         }
         <button
-          className={cn("absolute top-1 right-1 p-2 rounded-full cursor-pointer",
-            hotelIsFavorited ? "bg-white/60" : "bg-black/40"
-          )}
-          onClick={async (e) => {
+          className="absolute top-1 right-1 p-2 rounded-full bg-black/40 cursor-pointer"
+          onClick={(e) => {
             e.preventDefault();
-            if (!userIsAuthenticated) {
-              toast.message("Bạn cần đăng nhập để thêm vào mục yêu thích");
-              return;
-            } else {
-              const response = await user_upsertFavoriteHotel(id);
-              if (response.ok) {
-                toast.success("Đã thêm vào mục yêu thích!");
-              } else {
-                toast.error("Có lỗi xảy ra khi thêm vào mục yêu thích. Vui lòng thử lại.");
-              }
-            }
+            onFavoriteToggle(id, !Boolean(isFavorited));
           }}
         >
-          {hotelIsFavorited
-            ? <Heart className="size-4 text-primary" fill="currentColor" />
+          {!!isFavorited
+            ? <Heart className="size-4 text-red-500" fill="currentColor" />
             : <Heart className="size-4 text-primary-foreground" />
           }
         </button>
@@ -101,12 +92,12 @@ export default function HotelCard({
           <div className='flex items-center space-x-1 ml-1'>
             <MapPin className="size-3" strokeWidth={3} />
             <span className="text-xs font-semibold whitespace-nowrap overflow-hidden overflow-ellipsis flex-1">
-              {(!showWardAtTopLeft ? (wardName + ", ") : "") + provinceName}
+              {wardName + ", " + provinceName}
             </span>
           </div>
 
           <Tooltip>
-            <FacilityBadges facilities={facilities.map(f => f.name)} />
+            <FacilityBadges facilities={facilityNames || []} />
           </Tooltip>
         </div>
 
@@ -121,22 +112,13 @@ export default function HotelCard({
   );
 };
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "./ui/tooltip";
-import { toast } from "sonner";
-import { user_upsertFavoriteHotel } from "@/lib/actions/user-account/favorites";
-
 // Use a simple estimation based on character count instead of measuring each DOM node.
 // This avoids expensive layout reads and should be much faster.
 function FacilityBadges({ facilities }: { facilities: string[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(facilities.length);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) {
       setVisibleCount(facilities.length);

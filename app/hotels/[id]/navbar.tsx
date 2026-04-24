@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Heart } from "lucide-react";
+import { draft_user_createOrDeleteFavoriteHotel, user_getIsHotelFavorited } from "@/lib/actions/user-account/favorites";
 
 const sections = {
   overview: "Tổng quan",
@@ -13,8 +15,9 @@ const sections = {
 
 type Section = keyof typeof sections;
 
-export default function Navbar() {
+export default function Navbar({ hotelId }: { hotelId: string }) {
   const [active, setActive] = useState<Section>("overview");
+  const [isFavorited, setIsFavorited] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -54,9 +57,29 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    // fetch initial favorited state
+    let mounted = true;
+    (async () => {
+      const response = await user_getIsHotelFavorited(hotelId);
+      if (mounted) {
+        setIsFavorited(response);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [hotelId]);
+
+  const handleToggleFav = async () => {
+    if (isFavorited === null) return;
+    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, !isFavorited);
+    if (response.ok) {
+      setIsFavorited(!isFavorited);
+    }
+  };
+
   return (
-    <nav className="content">
-      <ul className="w-full flex gap-x-5 font-bold text-sm">
+    <nav className="content flex justify-between items-center">
+      <ul className="flex gap-x-5 font-bold text-sm">
         {Object.entries(sections).map(([id, label]) => (
           <li key={id} className={cn(
             "pb-1 border-b-2 hover:text-primary hover:border-primary",
@@ -73,6 +96,19 @@ export default function Navbar() {
           </li>
         ))}
       </ul>
+
+      <div className="flex items-center gap-2">
+        <button
+          aria-pressed={Boolean(isFavorited)}
+          aria-label={isFavorited ? 'Đã yêu thích' : 'Thêm vào mục yêu thích'}
+          onClick={handleToggleFav}
+          className="cursor-pointer"
+        >
+          <Heart className={cn("size-5 transition-all hover:scale-110", isFavorited ? 'text-red-500 fill-current' : 'text-primary')} />
+        </button>
+        {/** NOTE: Should this be label? */}
+        <div className="text-sm text-primary hidden sm:block">{isFavorited ? 'Đã thêm vào mục Yêu thích' : 'Thêm vào mục Yêu thích'}</div>
+      </div>
     </nav>
   );
 }

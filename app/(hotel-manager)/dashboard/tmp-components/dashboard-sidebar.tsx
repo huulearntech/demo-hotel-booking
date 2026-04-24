@@ -1,7 +1,3 @@
-// Shadcn's sidebar will flicker if I call setOpenMobile(false)
-// onClick of the SidebarMenuButton. Typical cucky javashit library.
-// So don't bother do that.
-
 "use client"
 
 import { ComponentProps } from "react"

@@ -15,7 +15,7 @@ model User {
                    
   favorites        Favorite[]
   recentlyViewed   RecentlyViewed[]
-  bookingsMetadata BookingMetadata[] // bookings made by this user
+  bookingsMetadata BookingMetadata[]
 
   status           UserStatus        @default(PENDING)
 
@@ -41,11 +41,9 @@ model Favorite {
   hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
-  // meta      Json?    // optional: store snapshot like name/price for faster UI
 
   @@unique([userId, hotelId])
-  @@index([hotelId])
-  @@index([userId])
+  @@index([hotelId, userId])
   @@map("favorites")
 }
 
@@ -57,10 +55,8 @@ model RecentlyViewed {
   hotelId   String   @map("hotel_id") @db.Uuid
   hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
-  viewedAt  DateTime @default(now())
-  // meta      Json?    // optional: store snapshot like name/price for faster UI
+  viewedAt  DateTime @default(now()) @map("viewed_at")
 
-  @@index([userId, viewedAt])
-  @@index([hotelId, viewedAt])
+  @@index([userId, hotelId])
   @@map("recently_viewed")
 }

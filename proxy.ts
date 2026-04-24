@@ -34,33 +34,25 @@ const pathsRequiringRole: Record<string, (UserRole | "UNAUTH")[]> = {
   [PATHS.adminDashboard]: ['ADMIN'],
 };
 
+
+// Redirect authenticated users to a safe default based on their role to avoid redirect loops.
+const defaultRedirectByRole: Record<UserRole, string> = {
+  USER: PATHS.home,
+  HOTEL_OWNER: PATHS.hotelDashboard,
+  ADMIN: PATHS.adminDashboard,
+};
+
+// TODO: handle the case when user is pending to verify email. They should be treated as unauthenticated.
+// FIXME: when callback is dashboard but user is "USER",
+// though it stills return the correct home page, the URL in the browser is still "/dashboard", which is confusing.
 export const proxy = auth(async function handleProxy(request) {
   const { pathname, origin } = request.nextUrl;
-  const isAuthenticated = Boolean(request.auth);
   const userRole = request.auth?.user.role ?? "UNAUTH";
 
-  const isSignInOrSignUp = [PATHS.signIn, PATHS.signUp].some(
-    (p) => pathname === p || pathname.startsWith(p + '/')
-  );
-
-  // Find a matching path rule early so we can allow routes that explicitly permit "UNAUTH"
-  const matched = Object.entries(pathsRequiringRole).find(([pathKey]) => {
-    return pathname === pathKey || pathname.startsWith(pathKey + '/');
-  });
-
-  if (!isAuthenticated && !isSignInOrSignUp) {
-    const allowedRoles = matched ? matched[1] : undefined;
-    // If the route explicitly allows UNAUTH, don't force sign-in
-    if (!(allowedRoles && allowedRoles.includes("UNAUTH"))) {
-      const signInUrl = new URL(PATHS.signIn, origin);
-      signInUrl.searchParams.set('callbackUrl', pathname);
-      return NextResponse.redirect(signInUrl);
-    }
-  }
-
-  if (isAuthenticated && isSignInOrSignUp) {
-    return NextResponse.redirect(new URL(PATHS.home, origin));
-  }
+  // Prefer the most specific (longest) pathKey so "/account/history" wins over "/account"
+  const matched = Object.entries(pathsRequiringRole)
+    .sort((a, b) => b[0].length - a[0].length)
+    .find(([pathKey]) => pathname === pathKey || pathname.startsWith(pathKey + '/'));
 
   if (matched) {
     const [, allowedRoles] = matched;
@@ -68,19 +60,11 @@ export const proxy = auth(async function handleProxy(request) {
     if (!allowedRoles.includes(userRole)) {
 
       // If not authenticated, redirect to sign-in with callback
-      if (!isAuthenticated) {
+      if (userRole === "UNAUTH") {
         const signInUrl = new URL(PATHS.signIn, origin);
         signInUrl.searchParams.set('callbackUrl', pathname);
         return NextResponse.redirect(signInUrl);
       }
-
-      // Redirect authenticated users to a safe default based on their role to avoid redirect loops.
-      const defaultRedirectByRole: Record<UserRole | "UNAUTH", string> = {
-        USER: PATHS.home,
-        HOTEL_OWNER: PATHS.hotelDashboard,
-        ADMIN: PATHS.adminDashboard,
-        UNAUTH: PATHS.signIn,
-      };
 
       const targetPath = defaultRedirectByRole[userRole];
       const targetUrl = new URL(targetPath, origin);

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { user_createBookingMetadata } from "@/lib/actions/bookings";
 import { useRouter } from "next/navigation";
 import { PATHS } from "@/lib/constants";
+import { toast } from "sonner";
 
 export default function AvailableRoomTypeCard({
   roomType,
@@ -123,18 +124,20 @@ export default function AvailableRoomTypeCard({
           <Button
             // TODO: handle error.
             onClick={async () => {
-              try {
-                const id = await user_createBookingMetadata(
-                  roomType.id,
-                  searchBarFormData
-                );
-                if (!id) {
-                  throw new Error("Failed to create booking metadata");
+              const result = await user_createBookingMetadata(
+                roomType.id,
+                searchBarFormData
+              );
+              if (!result.ok) {
+                if (result.status === 400) {
+                  toast.error(result.error);
+                } else if (result.status === 401) {
+                  toast.error(result.error);
                 }
-                router.push(`${PATHS.bookings}/${id}`);
-              } catch (error) {
-                console.error("Error creating booking metadata:", error);
-                alert("Đã có lỗi xảy ra khi tạo booking. Vui lòng thử lại.");
+                return;
+              } else {
+                // toast.success("Đặt phòng thành công! Chuyển đến trang đặt phòng...");
+                router.push(`${PATHS.bookings}/${result.data}`);
               }
             }}
             className="font-bold"

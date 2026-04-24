@@ -1,19 +1,19 @@
-// TODO: rename to booking request. but first I need to make the whole thing works.
+// TODO: Consider merge this with booking.
 model BookingMetadata {
-  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String         @map("user_id") @db.Uuid
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String      @map("user_id") @db.Uuid
+  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  roomType          RoomType       @relation(fields: [roomTypeId], references: [id])
-  roomTypeId        String         @map("room_type_id") @db.Uuid
+  roomType             RoomType    @relation(fields: [roomTypeId], references: [id])
+  roomTypeId           String      @map("room_type_id") @db.Uuid
 
-  checkInDate       DateTime       @db.Date @map("check_in_date")
-  checkOutDate      DateTime       @db.Date @map("check_out_date")
+  checkInDate          DateTime    @db.Date @map("check_in_date")
+  checkOutDate         DateTime    @db.Date @map("check_out_date")
 
-  numRooms          Int            @map("num_rooms")
-  numAdults         Int            @map("num_adults")
-  numChildren       Int            @map("num_children")
-  snapshotRoomPrice Decimal        @db.Decimal(19, 4) @map("snapshot_room_price") // VND
+  numRooms             Int         @map("num_rooms")
+  numAdults            Int         @map("num_adults")
+  numChildren          Int         @map("num_children")
+  snapshotRoomPrice    Decimal     @db.Decimal(19, 4) @map("snapshot_room_price") // VND
   snapshotRoomTypeName String      @map("snapshot_room_type_name")
   snapshotCheckInTime  DateTime    @map("snapshot_check_in_time")
   snapshotCheckOutTime DateTime    @map("snapshot_check_out_time")
@@ -22,8 +22,8 @@ model BookingMetadata {
   createdAt         DateTime       @default(now()) @map("created_at")
   
   status            BookingMetadataStatus @default(DRAFT)
-  // how to automatically set the status to expired after 10 minutes? We can use a database trigger to automatically set the status to expired after 10 minutes. This way, we can prevent holding a room for too long without confirming the booking. Alternatively, we can also have a background job that runs every minute to check for expired bookings and update their status accordingly.
-  expiredAt         DateTime       @map("expired_at") @default(dbgenerated("NOW() + INTERVAL '10 minutes'")) // prevent holding 
+  // how to automatically set the status to expired after some time to prevent holding ?
+  expiredAt         DateTime       @map("expired_at") @default(dbgenerated("NOW() + INTERVAL '10 minutes'"))
   // TODO: what to index?
   @@index([userId])
   @@index([roomTypeId])
@@ -45,7 +45,7 @@ model Booking {
 
   status            BookingStatus    @default(PENDING_TO_PAY)
 
-  // allow user to book with other information
+  // allow user to book with other credentials.
   customerName      String           @map("customer_name")
   customerEmail     String           @map("customer_email")
   customerPhone     String           @map("customer_phone")

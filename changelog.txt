@@ -22,8 +22,10 @@ Date object: fix mismatch between server and client, and especially in Nextjs.
 
 review the page hotel-owner/reviews for AI - generated code.
 
-// solved: get room type of hotel: the check in date and check out date off for one day. ( it seems to be inclusive, but I have checked the query and it is half inclusive)
-// turns out it was date conversion bug.
+sign up otp: handle resend otp (limit times, after e.g. 3 mins) and expriration of OTP.
+
+after booking: block user to back to booking page (done) and the payment success (only show for a while).
+TODO: on booking: instead of joining room, go check the inventory
 
 
 // TODO: Flow
