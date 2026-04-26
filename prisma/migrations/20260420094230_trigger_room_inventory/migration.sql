@@ -126,10 +126,9 @@ DECLARE
   b RECORD;
   v_dummy INT;
 BEGIN
-  SELECT bm.room_type_id, bm.check_in_date, bm.check_out_date, bm.num_rooms
+  SELECT bk.room_type_id, bk.check_in_date, bk.check_out_date, bk.num_rooms
   INTO b
   FROM bookings bk
-  JOIN booking_metadata bm ON bk.metadata_id = bm.id
   WHERE bk.id = p_booking_id;
 
   IF NOT FOUND THEN
@@ -194,10 +193,9 @@ DECLARE
   b RECORD;
   v_dummy INT;
 BEGIN
-  SELECT bm.room_type_id, bm.check_in_date, bm.check_out_date, bm.num_rooms
+  SELECT bk.room_type_id, bk.check_in_date, bk.check_out_date, bk.num_rooms
   INTO b
   FROM bookings bk
-  JOIN booking_metadata bm ON bk.metadata_id = bm.id
   WHERE bk.id = p_booking_id;
 
   IF NOT FOUND THEN

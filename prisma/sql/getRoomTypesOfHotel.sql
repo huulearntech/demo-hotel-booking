@@ -8,35 +8,34 @@ SELECT
   rt.id,
   rt.name,
   rt.price,
-  rt.image_urls AS "imageUrls",
-  rt.area_m2 AS "areaM2",
-  rt.adult_capacity AS "adultCapacity",
+  rt.image_urls        AS "imageUrls",
+  rt.area_m2           AS "areaM2",
+  rt.adult_capacity    AS "adultCapacity",
   rt.children_capacity AS "childrenCapacity",
-  rt.bed_type AS "bedType",
+  rt.bed_type          AS "bedType",
   COALESCE(fac_list.facilities, '[]'::jsonb) AS "facilities"
 FROM room_types rt
 
 -- total rooms for this room type (count actual rooms)
-LEFT JOIN LATERAL (
+JOIN LATERAL (
   SELECT COUNT(r.id) AS total_rooms
   FROM rooms r
   WHERE r.type_id = rt.id
 ) tr ON true
 
 -- compute how many rooms are already booked for this room type in the given date range
-LEFT JOIN LATERAL (
-  SELECT COALESCE(SUM(bm.num_rooms), 0) AS booked_rooms
-  FROM booking_metadata bm
-  RIGHT JOIN bookings b ON b.metadata_id = bm.id
-  WHERE bm.room_type_id = rt.id
-    -- overlap check for [bm.check_in_date, bm.check_out_date) and [$2, $3)
-    AND bm.check_in_date < $3
-    AND bm.check_out_date > $2
-    AND b.status IN ('PAID', 'PENDING_TO_PAY')
+JOIN LATERAL (
+  SELECT COALESCE(SUM(b.num_rooms), 0) AS booked_rooms
+  FROM bookings b
+  WHERE b.room_type_id = rt.id
+    -- overlap check for [b.check_in_date, b.check_out_date) and [$2, $3)
+    AND b.check_in_date < $3
+    AND b.check_out_date > $2
+    AND b.status IN ('PAID', 'PENDING_TO_PAY', 'CHECKED_IN')
 ) b ON true
 
 -- aggregate facilities for this room type as a JSONB array of {id, name, iconUrl}
-LEFT JOIN LATERAL (
+JOIN LATERAL (
   SELECT COALESCE(jsonb_agg(jsonb_build_object('id', fac.id, 'name', fac.name, 'iconUrl', fac.icon_url) ORDER BY fac.name), '[]'::jsonb) AS facilities
   FROM "_FacilityToRoomType" f2r
   JOIN facilities fac ON fac.id = f2r."A"

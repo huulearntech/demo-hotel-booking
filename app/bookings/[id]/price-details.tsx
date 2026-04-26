@@ -9,22 +9,30 @@ import { useInformationForm  } from "./information-form-context";
 import { fake_payment_just_for_testing } from "@/lib/actions/payment";
 
 export default function PriceDetail({
-  snapshotRoomTypeName,
+  roomTypeId,
   snapshotRoomPrice,
-  nights,
+  checkInDate,
+  checkOutDate,
+  numAdults,
+  numChildren,
   numRooms,
-  totalPrice, // Must be calculated on the server and passed in, to prevent weird stuffs.
-  metadataId,  //FIXME: just temporarily put this here.
+  totalPrice, // TODO: Must be calculated on the server and passed in, to prevent weird stuffs.
+  nights,
+  snapshotRoomTypeName,
 }: {
-  snapshotRoomTypeName: string;
+  roomTypeId: string;
   snapshotRoomPrice: number;
-  nights: number;
+  checkInDate: Date;
+  checkOutDate: Date;
+  numAdults: number;
+  numChildren: number;
   numRooms: number;
   totalPrice: number;
-  metadataId: string;
+  nights: number;
+  snapshotRoomTypeName: string;
 }) {
-
   const { handleSubmit } = useInformationForm();
+
   return (
     <div className="flex flex-col rounded-4xl bg-white shadow-lg">
       <div className="flex px-4 py-2 gap-x-3 items-center">
@@ -71,9 +79,23 @@ export default function PriceDetail({
 
       <Button
         className="m-4 rounded-full h-12 font-semibold"
-        onClick={handleSubmit(value => {
-          fake_payment_just_for_testing(metadataId, value)
-        })}
+        onClick={
+          // TODO: handle errors.
+          handleSubmit((form) =>
+          fake_payment_just_for_testing(
+            roomTypeId,
+            checkInDate,
+            checkOutDate,
+            numAdults,
+            numChildren,
+            numRooms,
+            snapshotRoomPrice,
+            form.name,
+            form.phone,
+            form.email,
+            form.notes,
+          )
+        )}
       >
         Tiếp tục
       </Button>

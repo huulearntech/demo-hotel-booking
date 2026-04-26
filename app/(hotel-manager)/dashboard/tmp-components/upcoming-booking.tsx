@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/data-table";
-import { columns } from "./upcoming-booking-columns";
+import { columns } from "./booking-columns";
 import { tmp_hotelowner_getUpcomingBookings } from "@/lib/actions/hotel-manager/bookings";
 
 import { Skeleton } from "@/components/ui/skeleton";

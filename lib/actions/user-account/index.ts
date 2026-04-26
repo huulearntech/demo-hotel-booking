@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { type OperationResult } from "@/lib/types/operation-result";
 import { differenceInDays } from "date-fns";
 
-// This is paid bookings, not count the draft ones.
+// TODO: categorize by status.
 export async function user_getRecentBookingsPaginated(
   lastCursor: string | null = null,
   limit = 10
@@ -30,39 +30,45 @@ export async function user_getRecentBookingsPaginated(
   }
 
   const bookings = await prisma.booking.findMany({
-    where: { metadata: { userId: session.user.id } },
+    where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
     ...pagination,
-    include: {
-      metadata: {
+    select: {
+      id: true,
+      roomType: {
         select: {
-          roomType: {
-            select: { hotel: { select: { name: true, type: true } } }
+          name: true,
+          hotel: {
+            select: {
+              name: true,
+              type: true,
+            },
           },
-          snapshotRoomPrice: true,
-          snapshotRoomTypeName: true,
-          checkInDate: true,
-          checkOutDate: true,
-          numRooms: true,
-          numAdults: true,
-          numChildren: true,
         },
       },
-    },
+      checkInDate: true,
+      checkOutDate: true,
+      numRooms: true,
+      numAdults: true,
+      numChildren: true,
+      snapshotRoomTypeName: true,
+      snapshotRoomPrice: true,
+      status: true,
+      createdAt: true,
+    }
   });
 
   const items = bookings.map((booking) => {
-    const checkIn = booking.metadata.checkInDate;
-    const checkOut = booking.metadata.checkOutDate;
+    const checkIn = booking.checkInDate;
+    const checkOut = booking.checkOutDate;
     const days = differenceInDays(checkOut, checkIn);
-    const totalPrice = booking.metadata.snapshotRoomPrice.mul(days).toNumber();
+    const totalPrice = booking.snapshotRoomPrice.mul(days).toNumber();
 
-    const { snapshotRoomPrice, ...metadataWithoutPrice } = booking.metadata;
     return {
       ...booking,
-      metadata: metadataWithoutPrice,
       totalPrice,
-    } as RecentBookingType;
+      snapshotRoomPrice: booking.snapshotRoomPrice.toNumber(),
+    };
   });
 
   const nextCursor = bookings.length === limit ? bookings[bookings.length - 1].id : null;
@@ -70,27 +76,7 @@ export async function user_getRecentBookingsPaginated(
   return { items, nextCursor };
 }
 
-type BookingWithMeta = Prisma.BookingGetPayload<{
-  include: {
-    metadata: {
-      select: {
-        roomType: { select: { hotel: { select: { name: true, type: true } } } };
-        snapshotRoomPrice: true;
-        snapshotRoomTypeName: true,
-        checkInDate: true;
-        checkOutDate: true;
-        numRooms: true;
-        numAdults: true;
-        numChildren: true;
-      };
-    };
-  };
-}>;
-
-export type RecentBookingType = Omit<BookingWithMeta, "metadata"> & {
-  metadata: Omit<BookingWithMeta["metadata"], "snapshotRoomPrice">;
-  totalPrice: number;
-};
+export type RecentBookingType = Awaited<ReturnType<typeof user_getRecentBookingsPaginated>>["items"][number];
 
 
 import { UserUpdateNameData, userUpdateNameSchema } from "@/lib/zod_schemas/auth";
@@ -129,7 +115,6 @@ export async function user_updateName(formData_newName: UserUpdateNameData): Pro
 
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { CACHE_TAGS, PATHS } from "@/lib/constants";
-import { Prisma } from "@/lib/generated/prisma/client";
 
 // Can't use session = auth() in here.
 export const user_getInfoById = unstable_cache(

@@ -7,17 +7,17 @@ SELECT
   b.customer_name AS "customerName",
   b.customer_email AS "customerEmail",
   b.customer_phone AS "customerPhone",
-  bm.num_adults AS "numAdults",
-  bm.num_children AS "numChildren",
-  bm.num_rooms AS "numRooms",
-  bm.check_in_date AS "checkInDate",
-  bm.check_out_date AS "checkOutDate",
-  (bm.snapshot_room_price * bm.num_rooms) AS "totalPrice",
-  bm.snapshot_room_type_name AS "roomTypeName",
+  b.num_adults AS "numAdults",
+  b.num_children AS "numChildren",
+  b.num_rooms AS "numRooms",
+  b.check_in_date AS "checkInDate",
+  b.check_out_date AS "checkOutDate",
+  (b.snapshot_room_price * b.num_rooms) AS "totalPrice",
+  b.snapshot_room_type_name AS "roomTypeName",
   COUNT(*) OVER() AS "totalCount"
 FROM bookings b
-JOIN booking_metadata bm ON b.metadata_id = bm.id
-JOIN room_types rt ON bm.room_type_id = rt.id
+JOIN room_types rt ON b.room_type_id = rt.id
 WHERE rt.hotel_id = $1
   AND b.created_at >= now() - INTERVAL '90 days'
+  AND b.status IN ('PAID', 'CHECKED_IN', 'CHECKED_OUT')
 ORDER BY b.created_at DESC;

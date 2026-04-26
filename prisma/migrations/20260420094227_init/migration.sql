@@ -1,14 +1,8 @@
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "postgis";
-
--- CreateEnum
-CREATE TYPE "BookingMetadataStatus" AS ENUM ('DRAFT', 'SUCCESS', 'EXPIRED');
-
 -- CreateEnum
 CREATE TYPE "BookingStatus" AS ENUM ('PENDING_TO_PAY', 'PAID', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT');
 
 -- CreateEnum
-CREATE TYPE "HotelType" AS ENUM ('HOTEL', 'MOTEL', 'RESORT', 'APARTMENT', 'HOSTEL', 'OTHER');
+CREATE TYPE "HotelType" AS ENUM ('HOTEL', 'MOTEL', 'RESORT', 'APARTMENT', 'HOSTEL');
 
 -- CreateEnum
 CREATE TYPE "HotelStatus" AS ENUM ('PENDING_APPROVAL', 'REJECTED', 'ACTIVE', 'INACTIVE', 'SUSPENDED');
@@ -72,8 +66,9 @@ CREATE TABLE "wards" (
 );
 
 -- CreateTable
-CREATE TABLE "booking_metadata" (
+CREATE TABLE "bookings" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "status" "BookingStatus" NOT NULL DEFAULT 'PENDING_TO_PAY',
     "user_id" UUID NOT NULL,
     "room_type_id" UUID NOT NULL,
     "check_in_date" DATE NOT NULL,
@@ -83,24 +78,12 @@ CREATE TABLE "booking_metadata" (
     "num_children" INTEGER NOT NULL,
     "snapshot_room_price" DECIMAL(19,4) NOT NULL,
     "snapshot_room_type_name" TEXT NOT NULL,
-    "snapshot_check_in_time" TIMESTAMP(3) NOT NULL,
-    "snapshot_check_out_time" TIMESTAMP(3) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "status" "BookingMetadataStatus" NOT NULL DEFAULT 'DRAFT',
-    "expired_at" TIMESTAMP(3) NOT NULL DEFAULT NOW() + INTERVAL '10 minutes',
-
-    CONSTRAINT "booking_metadata_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "bookings" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "status" "BookingStatus" NOT NULL DEFAULT 'PENDING_TO_PAY',
+    "snapshot_check_in_time" TIME(0) NOT NULL,
+    "snapshot_check_out_time" TIME(0) NOT NULL,
     "customer_name" TEXT NOT NULL,
     "customer_email" TEXT NOT NULL,
     "customer_phone" TEXT NOT NULL,
     "notes" TEXT,
-    "metadata_id" UUID NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -133,8 +116,8 @@ CREATE TABLE "hotels" (
     "description" TEXT,
     "rating" DOUBLE PRECISION NOT NULL,
     "number_of_reviews" INTEGER NOT NULL,
-    "check_in_time" TIME NOT NULL,
-    "check_out_time" TIME NOT NULL,
+    "check_in_time" TIME(0) NOT NULL,
+    "check_out_time" TIME(0) NOT NULL,
     "image_urls" TEXT[],
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -228,7 +211,7 @@ CREATE TABLE "recently_viewed" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "user_id" UUID NOT NULL,
     "hotel_id" UUID NOT NULL,
-    "viewedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "viewed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "recently_viewed_pkey" PRIMARY KEY ("id")
 );
@@ -279,16 +262,7 @@ CREATE INDEX "wards_district_id_idx" ON "wards"("district_id");
 CREATE UNIQUE INDEX "wards_name_district_id_key" ON "wards"("name", "district_id");
 
 -- CreateIndex
-CREATE INDEX "booking_metadata_user_id_idx" ON "booking_metadata"("user_id");
-
--- CreateIndex
-CREATE INDEX "booking_metadata_room_type_id_idx" ON "booking_metadata"("room_type_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "bookings_metadata_id_key" ON "bookings"("metadata_id");
-
--- CreateIndex
-CREATE INDEX "bookings_metadata_id_idx" ON "bookings"("metadata_id");
+CREATE INDEX "bookings_user_id_room_type_id_idx" ON "bookings"("user_id", "room_type_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "reviews_booking_id_key" ON "reviews"("booking_id");
@@ -324,19 +298,13 @@ CREATE UNIQUE INDEX "room_type_inventories_room_type_id_date_key" ON "room_type_
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE INDEX "favorites_hotel_id_idx" ON "favorites"("hotel_id");
-
--- CreateIndex
-CREATE INDEX "favorites_user_id_idx" ON "favorites"("user_id");
+CREATE INDEX "favorites_hotel_id_user_id_idx" ON "favorites"("hotel_id", "user_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "favorites_user_id_hotel_id_key" ON "favorites"("user_id", "hotel_id");
 
 -- CreateIndex
-CREATE INDEX "recently_viewed_user_id_viewedAt_idx" ON "recently_viewed"("user_id", "viewedAt");
-
--- CreateIndex
-CREATE INDEX "recently_viewed_hotel_id_viewedAt_idx" ON "recently_viewed"("hotel_id", "viewedAt");
+CREATE INDEX "recently_viewed_user_id_hotel_id_idx" ON "recently_viewed"("user_id", "hotel_id");
 
 -- CreateIndex
 CREATE INDEX "_BookingToRoom_B_index" ON "_BookingToRoom"("B");
@@ -357,13 +325,10 @@ ALTER TABLE "districts" ADD CONSTRAINT "districts_province_id_fkey" FOREIGN KEY 
 ALTER TABLE "wards" ADD CONSTRAINT "wards_district_id_fkey" FOREIGN KEY ("district_id") REFERENCES "districts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "booking_metadata" ADD CONSTRAINT "booking_metadata_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "booking_metadata" ADD CONSTRAINT "booking_metadata_room_type_id_fkey" FOREIGN KEY ("room_type_id") REFERENCES "room_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_metadata_id_fkey" FOREIGN KEY ("metadata_id") REFERENCES "booking_metadata"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_room_type_id_fkey" FOREIGN KEY ("room_type_id") REFERENCES "room_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "reviews" ADD CONSTRAINT "reviews_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -379,6 +344,9 @@ ALTER TABLE "rooms" ADD CONSTRAINT "rooms_type_id_fkey" FOREIGN KEY ("type_id") 
 
 -- AddForeignKey
 ALTER TABLE "room_types" ADD CONSTRAINT "room_types_hotel_id_fkey" FOREIGN KEY ("hotel_id") REFERENCES "hotels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "room_type_inventories" ADD CONSTRAINT "room_type_inventories_room_type_id_fkey" FOREIGN KEY ("room_type_id") REFERENCES "room_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "favorites" ADD CONSTRAINT "favorites_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

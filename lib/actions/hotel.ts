@@ -31,43 +31,13 @@ export async function fetchHotel(hotelId: string) {
   }
 
 
+  // TODO: handle pagination or separate the query for fetching reviews
+  // FIXME: This logic is incorrect: it selects the reviews of the cheapest room type, not the whole hotel.
   return prisma.hotel.findUnique({
     where: { id: hotelId },
     include: {
       roomTypes: {
-        select: {
-          price: true,
-          // TODO: handle pagination or separate the query for fetching reviews
-          // This following is for overview section.
-          bookingsMetadata: {
-            select: {
-              booking: {
-                where: { review: { isNot: null } },
-                select: {
-                  id: true,
-                  review: {
-                    select: {
-                      rating: true,
-                      comment: true,
-                      createdAt: true,
-                    }
-                  },
-                },
-              },
-              user: {
-                select: {
-                  name: true,
-                  profileImageUrl: true,
-                }
-              }
-            },
-            take: 5,
-            orderBy: { createdAt: "desc" },
-            where: {
-              booking: { isNot: null }
-            },
-          },
-        },
+        select: { price: true },
         orderBy: { price: "asc" },
         take: 1, // only need the cheapest room for the overview section
       },
@@ -108,14 +78,13 @@ export async function user_getAvailableRoomTypeOfHotel(hotelId: string, checkInD
 
 export type UserGetAvailableRoomTypeOfHotelResult = Awaited<ReturnType<typeof user_getAvailableRoomTypeOfHotel>>;
 
-export async function getHotelReview(hotelId: string) {
+// TODO: pagination for reviews
+export async function get5ReviewsAboutHotelForOverview(hotelId: string) {
   return prisma.review.findMany({
     where: {
       booking: {
-        metadata: {
-          roomType: {
-            hotelId,
-          },
+        roomType: {
+          hotelId,
         },
       },
     },
@@ -130,28 +99,15 @@ export async function getHotelReview(hotelId: string) {
               createdAt: true,
             }
           },
-          metadata: {
+          user: {
             select: {
-              user: {
-                select: {
-                  name: true,
-                  profileImageUrl: true,
-                }
-              },
-              roomType: {
-                select: {
-                  hotel: {
-                    select: {
-                      name: true,
-                    }
-                  },
-                }
-              }
+              name: true,
+              profileImageUrl: true,
             }
-          }
+          },
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    take: 5,
   });
 }

@@ -6,9 +6,17 @@ import { headers } from "next/headers";
 import { vnpay } from "@/lib/vnpay";
 import { ProductCode, VnpLocale, VnpCurrCode, dateFormat } from "vnpay";
 
-import { schema_bookingForm, type BookingFormValues } from "../zod_schemas/booking";
+import {
+  schema_bookingForm,
+  // type BookingFormValues // TODO: Fix this
+} from "../zod_schemas/booking";
 import prisma from "../prisma";
 import { differenceInDays } from "date-fns";
+import { Prisma } from "../generated/prisma/client";
+import { auth } from "@/auth";
+import { user_getRoomTypeInventoryForUpdate } from "../generated/prisma/sql";
+
+type BookingFormValues = Prisma.BookingUncheckedCreateInput
 
 function getClientIP (headers: Headers): string {
   const forwardedFor = headers.get("x-forwarded-for");
@@ -21,103 +29,109 @@ function getClientIP (headers: Headers): string {
   return realIP || clientIP || "127.0.0.1";
 };
 
+// THIS IS JUST FOR TESTING, DO NOT USE THIS IN PRODUCTION.
 export async function fake_payment_just_for_testing(
-  metadataId: string,
-  bookingForm: BookingFormValues
+  roomTypeId: string,
+  checkInDate: Date,
+  checkOutDate: Date,
+  numAdults: number,
+  numChildren: number,
+  numRooms: number,
+  price: number,
+  customerName: string,
+  customerEmail: string,
+  customerPhone: string,
+  notes: string | undefined,
 ) {
-  // THIS IS JUST FOR TESTING, DO NOT USE THIS IN PRODUCTION.
-  const safeParsedBookingForm = schema_bookingForm.safeParse(bookingForm);
-  if (!safeParsedBookingForm.success) {
-    throw new Error("Invalid booking form data");
-  }
-
   try {
-    // TODO: handle expire.
-    const booking_draft = await prisma.bookingMetadata.findUnique({
-      where: { id: metadataId, status: "DRAFT" },
+    const session = await auth();
+    if (!session || session.user.role !== "USER") {
+      throw new Error("Unauthorized");
+    }
+
+    // Validate input
+
+
+    // // TODO: This should be done in the previous step, but just in case.
+    // const totalPrice = booking.roomType.price.mul(booking_draft.numRooms).toNumber();
+    // if (totalPrice <= 1000) {
+    //   throw new Error("Total price must be greater than 1000 VND to proceed with payment");
+    // }
+
+    const roomType = await prisma.roomType.findUnique({
+      where: { id: roomTypeId },
       select: {
-        numRooms: true,
-        roomType: {
+        id: true,
+        name: true,
+        price: true,
+        hotel: {
           select: {
-            id: true,
-            price: true,
+            checkInTime: true,
+            checkOutTime: true
           }
-        },
-        checkInDate: true,
-        checkOutDate: true,
-      },
-    });
-    
-    if (!booking_draft) {
-      throw new Error("Booking draft not found");
-    }
-
-    const totalPrice = booking_draft.roomType.price.mul(booking_draft.numRooms).toNumber();
-    if (totalPrice <= 1000) {
-      throw new Error("Total price must be greater than 1000 VND to proceed with payment");
-    }
-
-    const inventories = await prisma.roomTypeInventory.findMany({
-      where: {
-        roomTypeId: booking_draft.roomType.id,
-        date: {
-          gte: booking_draft.checkInDate,
-          lt: booking_draft.checkOutDate,
-        },
-      },
-      select: {
-        date: true,
-        totalRooms: true,
-        bookedRooms: true,
+        }
       },
     });
 
-    console.log("Inventories for selected dates:", inventories);
-
-    // compute available rooms per day and take the minimum across the date range
-    const availablePerDay = inventories.map((inv) => (inv.totalRooms ?? 0) - (inv.bookedRooms ?? 0));
-    const available_rooms_count = Math.min(...availablePerDay);
-
-    if (available_rooms_count < booking_draft.numRooms || inventories.length < differenceInDays(booking_draft.checkOutDate, booking_draft.checkInDate)) {
-      throw new Error("Not enough available rooms for the selected dates");
+    if (!roomType) {
+      throw new Error("Invalid room type");
     }
 
-    // TODO: merge booking with bookingmetadata.
+
     const result = await prisma.$transaction(async (tx) => {
-      const meta = await tx.bookingMetadata.update({
-        where: { id: metadataId, status: "DRAFT" },
-        data: { status: "SUCCESS" },
-        select: { id: true },
-      });
+      // NOTE: This will lock the relevant RoomTypeInventory rows to ensure atomicity.
+      // This may also be done by versioning the rows, but for the sake of time, we will just lock the rows here.
+      const inventories = await tx.$queryRawTyped(user_getRoomTypeInventoryForUpdate(
+        roomTypeId,
+        checkInDate,
+        checkOutDate
+      ));
 
-      const booking = await tx.booking.create({
+      // compute available rooms per day and take the minimum across the date range
+      const availablePerDay = inventories.map((inv) => (inv.totalRooms ?? 0) - (inv.bookedRooms ?? 0));
+      const available_rooms_count = Math.min(...availablePerDay);
+
+      if (
+        available_rooms_count < numRooms ||
+        inventories.length < differenceInDays(checkOutDate, checkInDate)) {
+        throw new Error("Not enough available rooms for the selected dates");
+      }
+
+      // TODO: when on production, this should be create a booking with status "PENDING_TO_PAY" and then redirect to the vnpay page, not the success page.
+      return await tx.booking.create({
         data: {
-          metadataId,
-          customerName: safeParsedBookingForm.data.name,
-          customerEmail: safeParsedBookingForm.data.email,
-          customerPhone: safeParsedBookingForm.data.phone,
-          notes: safeParsedBookingForm.data.note,
-          status: "PENDING_TO_PAY",
+          userId: session.user.id,
+          roomTypeId,
+          checkInDate,
+          checkOutDate,
+          numChildren,
+          numAdults,
+          numRooms,
+
+          snapshotCheckInTime: roomType.hotel.checkInTime,
+          snapshotCheckOutTime: roomType.hotel.checkOutTime,
+          snapshotRoomPrice: price,
+          snapshotRoomTypeName: roomType.name,
+          customerName,
+          customerEmail,
+          customerPhone,
+          notes,
+
+          status: "PAID"
         },
         select: { id: true },
       });
-
-      await tx.booking.update({
-        where: { id: booking.id },
-        data: { status: "PAID" },
-      });
-
-      return { meta, booking };
     });
 
-    redirect(`/payment/tmp/success?id=${result.booking.id}&message=${"hello"}`); // TODO: Replace with actual success page
+    // TODO: when on production, this should be redirect to the vnpay page, not the success page.
+    redirect(`/payment/tmp/success?id=${result.id}&message=${"hello"}`);
   } catch (error) {
     console.error("Error in fake payment:", error);
     throw error;
   }
 }
 
-export async function createPaymentUrlThenRedirectToVNPay(metadataId: string, bookingForm: BookingFormValues) {
+export async function createPaymentUrlThenRedirectToVNPay(bookingForm: BookingFormValues) {
   try {
     if (!process.env.VNPAY_RETURN_URL) {
       throw new Error("VNPAY_RETURN_URL is not configured");
@@ -128,37 +142,25 @@ export async function createPaymentUrlThenRedirectToVNPay(metadataId: string, bo
       throw new Error("Invalid booking form data");
     }
 
-    // TODO: handle expire.
-    const booking_draft = await prisma.bookingMetadata.findUnique({
-      where: { id: metadataId, status: "DRAFT" },
-      select: {
-        numRooms: true,
-        roomType: {
-          select: {
-            id: true,
-            price: true,
-          }
-        },
-        checkInDate: true,
-        checkOutDate: true,
-      },
-    });
-    
-    if (!booking_draft) {
-      throw new Error("Booking draft not found");
-    }
 
-    const totalPrice = booking_draft.roomType.price.mul(booking_draft.numRooms).toNumber();
+    const roomType = await prisma.roomType.findUnique({
+      where: { id: bookingForm.roomTypeId },
+      select: { id: true, price: true },
+    });
+    if (!roomType) {
+      throw new Error("Invalid room type");
+    }
+    const totalPrice = roomType.price.mul(bookingForm.numRooms).toNumber();
     if (totalPrice <= 1000) {
       throw new Error("Total price must be greater than 1000 VND to proceed with payment");
     }
 
     const inventories = await prisma.roomTypeInventory.findMany({
       where: {
-        roomTypeId: booking_draft.roomType.id,
+        roomTypeId: bookingForm.roomTypeId,
         date: {
-          gte: booking_draft.checkInDate,
-          lt: booking_draft.checkOutDate,
+          gte: bookingForm.checkInDate,
+          lt: bookingForm.checkOutDate,
         },
       },
       select: {
@@ -176,25 +178,23 @@ export async function createPaymentUrlThenRedirectToVNPay(metadataId: string, bo
     const availablePerDay = inventories.map((inv) => (inv.totalRooms ?? 0) - (inv.bookedRooms ?? 0));
     const available_rooms_count = Math.min(...availablePerDay);
 
-    if (available_rooms_count < booking_draft.numRooms) {
+    if (available_rooms_count < bookingForm.numRooms) {
       throw new Error("Not enough available rooms for the selected dates");
     }
 
-    // TODO: This is not what i want.
-    // TODO: This also should have trigger to update inventory and booking metadata status to "PENDING_TO_PAY"
     const booking = await prisma.booking.create({
       data: {
-        metadataId,
-        customerName: safeParsedBookingForm.data.name,
-        customerEmail: safeParsedBookingForm.data.email,
-        customerPhone: safeParsedBookingForm.data.phone,
-        notes: safeParsedBookingForm.data.note,
+        ...bookingForm,
         status: "PENDING_TO_PAY",
       },
       select: { id: true },
     });
 
-    const orderInfo = `Booking ID: ${booking.id}, Room Type ID: ${booking_draft.roomType.id}, Check-in: ${booking_draft.checkInDate.toISOString()}, Check-out: ${booking_draft.checkOutDate.toISOString()}, Num Rooms: ${booking_draft.numRooms}`;
+    const orderInfo = `Booking ID: ${booking.id},` +
+      ` Room Type ID: ${bookingForm.roomTypeId},` +
+      ` Check-in: ${typeof bookingForm.checkInDate === "string" ? bookingForm.checkInDate : bookingForm.checkInDate.toISOString() },` +
+      ` Check-out: ${typeof bookingForm.checkOutDate === "string" ? bookingForm.checkOutDate : bookingForm.checkOutDate.toISOString() },` +
+      ` Num Rooms: ${bookingForm.numRooms}`;
 
     // Build payment URL
     const clientIPAddr = await headers().then(getClientIP);

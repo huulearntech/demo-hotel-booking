@@ -13,6 +13,8 @@
 -- @param {Decimal}  $11:maxPrice (filter)
 -- @param {Int}      $14:numChildren (TODO: temporarily put this at the end.)
 
+-- TODO: query should change from joining rooms into inventory.
+-- TODO: This counting booked room logic is different from the one in getHotelBySearchBarForm.
 -- TODO: gonna change a whole lot of names anyway. this file is object to change.
 WITH available AS (
   SELECT t.hotel_id, MIN(t.price) AS min_price
@@ -24,24 +26,23 @@ WITH available AS (
       COUNT(r.id) AS total_rooms,
       -- count distinct rooms that are booked in the requested date window and statuses
       COUNT(DISTINCT CASE
-        WHEN bm.check_in_date < $2
-         AND bm.check_out_date > $1
-         AND b.status IN ('PAID','PENDING_TO_PAY')
+        WHEN b.check_in_date < $2
+         AND b.check_out_date > $1
+         AND b.status IN ('PAID','PENDING_TO_PAY', 'CHECKED_IN')
         THEN r.id
       END) AS booked_rooms
     FROM room_types rt
     JOIN rooms r ON r.type_id = rt.id
-    LEFT JOIN "_BookingToRoom" b2r ON b2r."B" = r.id
-    LEFT JOIN bookings b ON b.id = b2r."A"
-    LEFT JOIN booking_metadata bm ON bm.id = b.metadata_id
+    JOIN "_BookingToRoom" b2r ON b2r."B" = r.id
+    JOIN bookings b ON b.id = b2r."A"
     WHERE rt.price BETWEEN $10 AND $11
       AND rt.adult_capacity * $4 >= $3
       AND (rt.adult_capacity + rt.children_capacity) * $4 >= $3 + $14
     GROUP BY rt.hotel_id, rt.id, rt.price
     HAVING COUNT(r.id) - COUNT(DISTINCT CASE
-      WHEN bm.check_in_date < $2
-       AND bm.check_out_date > $1
-       AND b.status IN ('PAID','PENDING_TO_PAY')
+      WHEN b.check_in_date < $2
+       AND b.check_out_date > $1
+       AND b.status IN ('PAID','PENDING_TO_PAY', 'CHECKED_IN')
       THEN r.id END) >= $4
   ) AS t
   GROUP BY t.hotel_id

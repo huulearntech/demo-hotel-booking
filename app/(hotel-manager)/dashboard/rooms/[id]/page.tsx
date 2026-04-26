@@ -39,7 +39,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
 
   return (
-    <div className="content">
+    <div>
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{roomType.name}</h1>

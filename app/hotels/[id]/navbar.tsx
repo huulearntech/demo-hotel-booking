@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Heart } from "lucide-react";
-import { draft_user_createOrDeleteFavoriteHotel, user_getIsHotelFavorited } from "@/lib/actions/user-account/favorites";
+import { user_getIsHotelFavorited } from "@/lib/actions/user-account/favorites";
+import { useFavoriteToggle } from "@/components/hotel-card.draft";
 
 const sections = {
   overview: "Tổng quan",
@@ -17,7 +18,8 @@ type Section = keyof typeof sections;
 
 export default function Navbar({ hotelId }: { hotelId: string }) {
   const [active, setActive] = useState<Section>("overview");
-  const [isFavorited, setIsFavorited] = useState<boolean | null>(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const onToggleFavorite = useFavoriteToggle();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -69,14 +71,6 @@ export default function Navbar({ hotelId }: { hotelId: string }) {
     return () => { mounted = false; };
   }, [hotelId]);
 
-  const handleToggleFav = async () => {
-    if (isFavorited === null) return;
-    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, !isFavorited);
-    if (response.ok) {
-      setIsFavorited(!isFavorited);
-    }
-  };
-
   return (
     <nav className="content flex justify-between items-center">
       <ul className="flex gap-x-5 font-bold text-sm">
@@ -101,7 +95,7 @@ export default function Navbar({ hotelId }: { hotelId: string }) {
         <button
           aria-pressed={Boolean(isFavorited)}
           aria-label={isFavorited ? 'Đã yêu thích' : 'Thêm vào mục yêu thích'}
-          onClick={handleToggleFav}
+          onClick={() => onToggleFavorite(hotelId, isFavorited, setIsFavorited)}
           className="cursor-pointer"
         >
           <Heart className={cn("size-5 transition-all hover:scale-110", isFavorited ? 'text-red-500 fill-current' : 'text-primary')} />

@@ -20,14 +20,14 @@ export default async function RoomTypesOccupancyPctBoard() {
     roomTypes.map(async (type) => {
       const totalRooms = await prisma.room.count({ where: { typeId: type.id } });
 
-      const bookedAgg = await prisma.bookingMetadata.aggregate({
+      const bookedAgg = await prisma.booking.aggregate({
         _sum: { numRooms: true },
         where: {
           roomTypeId: type.id,
           checkInDate: { lte: today }, // check in date is inclusive
           checkOutDate: { gt: today }, // check out date is exclusive
           // only consider bookings that have been created as real bookings
-          booking: { is: { status: { in: ["PAID", "CHECKED_IN"] } } },
+          status: { in: ["PAID", "CHECKED_IN"] },
         },
       });
 

@@ -58,8 +58,7 @@ export async function hotelowner_getRatingDistribution() {
   >`SELECT rv.rating AS rating, COUNT(*)::bigint AS count
     FROM reviews rv
     JOIN bookings b ON b.id = rv.booking_id
-    JOIN booking_metadata bm ON bm.id = b.metadata_id
-    JOIN room_types rt ON rt.id = bm.room_type_id
+    JOIN room_types rt ON rt.id = b.room_type_id
     WHERE rt.hotel_id = ${hotel.id}
     GROUP BY rv.rating;`;
 

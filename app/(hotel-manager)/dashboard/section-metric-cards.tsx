@@ -25,38 +25,31 @@ async function hotelowner_getMetrics() {
 
     const checkinsToday = await tx.booking.count({
       where: {
-        metadata: { 
-          roomType: {
-            hotel: {
-              ownerId: session.user.id,
-            }
-          },
-          checkInDate: today,
-        }
+        roomType: {
+          hotel: {
+            ownerId: session.user.id,
+          }
+        },
+        checkInDate: today,
       },
     });
 
     const bookingsToday = await tx.booking.count({
       where: {
-        metadata: {
-          roomType: {
-            hotel: {
-              ownerId: session.user.id,
-            }
-          },
-          createdAt: today,
-        }
+        roomType: {
+          hotel: { ownerId: session.user.id }
+        },
+        createdAt: today,
       },
     });
 
     const revenueMTD = await tx.booking.findMany({
       where: {
-        metadata: {
-          roomType: {
-            hotel: {
-              ownerId: session.user.id,
-            }
-          }
+        roomType: {
+          hotel: { ownerId: session.user.id }
+        },
+        status: {
+          in: ["CHECKED_IN", "CHECKED_OUT", "PAID"],
         },
         createdAt: {
           gte: new Date(today.getFullYear(), today.getMonth(), 1),
@@ -64,17 +57,13 @@ async function hotelowner_getMetrics() {
         },
       },
       select: {
-        metadata: {
-          select: {
-            snapshotRoomPrice: true,
-            checkInDate: true,
-            checkOutDate: true,
-          }
-        }
+        snapshotRoomPrice: true,
+        checkInDate: true,
+        checkOutDate: true,
       }
     }).then((bookings) => {
       return bookings.reduce((acc, booking) => {
-        acc = acc.add(booking.metadata.snapshotRoomPrice.mul(differenceInDays(booking.metadata.checkOutDate, booking.metadata.checkInDate)));
+        acc = acc.add(booking.snapshotRoomPrice.mul(differenceInDays(booking.checkOutDate, booking.checkInDate)));
         return acc;
       }, new Decimal(0));
     });
@@ -122,7 +111,7 @@ function MetricCard({ title, value }: { title: string; value: string | number })
           {value}
         </CardTitle>
       </CardHeader>
-      <CardFooter className="text-sm text-muted-foreground">Thông tin cập nhật theo thời gian thực</CardFooter>
+      <CardFooter className="text-sm text-muted-foreground">TODO: Not this: Thông tin cập nhật theo thời gian thực</CardFooter>
     </Card>
   );
 }

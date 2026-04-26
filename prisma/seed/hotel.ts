@@ -5,6 +5,8 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { fakerVI as faker } from "@faker-js/faker";
 import { Decimal } from "@prisma/client/runtime/client";
 
+import { randomQuarterTime } from "./booking";
+
 // if Hotel model has a field of Unsupported (geolocation), Prisma will not allow to use create
 
 async function seedHotels(data: { wardId: string, ownerId: string }[]) {
@@ -15,22 +17,9 @@ async function seedHotels(data: { wardId: string, ownerId: string }[]) {
   }
 
   const hotels: Prisma.HotelUncheckedCreateInput[] = data.map(({ wardId, ownerId }) => {
-    // check-in between 10:00 and 12:00
-    const checkInMinutes = faker.number.int({ min: 10 * 60, max: 12 * 60, multipleOf: 15 });
-    // check-out at least 1 hour before check-in, at most 2 hours before
-    const checkOutMinutes = Math.max(checkInMinutes - faker.number.int({ min: 60, max: 2 * 60, multipleOf: 15 }), 0);
+    const checkInTime = randomQuarterTime({ minHour: 14, maxHour: 14 });
+    const checkOutTime = randomQuarterTime({ minHour: 10, maxHour: 12 });
 
-    // Use UTC date to avoid timezone issues; date component is arbitrary for time-only storage
-    const now = new Date();
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth(); // zero-based
-    const day = now.getUTCDate();
-
-    const checkInDate = new Date(Date.UTC(year, month, day, Math.floor(checkInMinutes / 60), checkInMinutes % 60, 0));
-    const checkOutDate = new Date(Date.UTC(year, month, day, Math.floor(checkOutMinutes / 60), checkOutMinutes % 60, 0));
-
-    const checkInTime = checkInDate;
-    const checkOutTime = checkOutDate;
     //-----------------------------------------------------
 
     return {

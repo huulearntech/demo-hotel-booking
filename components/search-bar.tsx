@@ -40,6 +40,23 @@ import useSWR, { mutate } from "swr";
 import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { user_getLocationNameOrHotelNameById, user_getLocationOrHotelByQueryString } from "@/lib/actions/search-bar";
 
+// TODO: Factor this out.
+const DEFAULT_SEARCH_BAR_VALUES: SearchBar_FormOutput = {
+  location: {
+    id: "",
+    type: "none"
+  },
+  inOutDates: {
+    from: new Date(),
+    to: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  },
+  guestsAndRooms: {
+    numAdults: 2,
+    numChildren: 0,
+    numRooms: 1
+  }
+};
+
 export default function SearchBar({
   defaultValues,
   className,
@@ -50,30 +67,27 @@ export default function SearchBar({
   collapsible: boolean
 }) {
   const [isOpenOnMobile, setIsOpenOnMobile] = useState(false);
-  const storedStringifiedSearchBarForm = typeof window !== "undefined" ? sessionStorage.getItem("searchBarForm") : null;
-  const storedFormValues = storedStringifiedSearchBarForm ? SearchParamsCodec.safeDecode(JSON.parse(storedStringifiedSearchBarForm)) : null;
 
   const form = useForm<SearchBar_FormInput, unknown, SearchBar_FormOutput>({
     resolver: zodResolver(schema_searchBar),
-    defaultValues: defaultValues ?? (
-      storedFormValues?.success ?
-        storedFormValues.data :
-        {
-          location: {
-            id: "",
-            type: "none",
-          },
-          inOutDates: {
-            from: new Date(),
-            to: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          },
-          guestsAndRooms: {
-            numAdults: 2,
-            numChildren: 0,
-            numRooms: 1,
-          }
-        })
+    defaultValues: defaultValues ?? DEFAULT_SEARCH_BAR_VALUES,
   });
+
+  // Avoid hydration mismatch.
+  useLayoutEffect(() => {
+    if (defaultValues) return;
+    try {
+      const raw = sessionStorage.getItem("searchBarForm");
+      if (!raw) return;
+      const parsed = SearchParamsCodec.safeDecode(JSON.parse(raw));
+      if (parsed.success) {
+        form.reset(parsed.data);
+      }
+    } catch (e) {
+      console.error("Failed to load search bar form data from sessionStorage:", e);
+    }
+  }, [defaultValues, form]);
+
 
   const { handleSubmit, control } = form;
   return (

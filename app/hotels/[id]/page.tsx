@@ -4,7 +4,7 @@ import LocationSection from "./section-location";
 import OverviewSection from "./section-overview";
 import ReviewSection from "./section-review";
 
-import { fetchHotel } from "@/lib/actions/hotel";
+import { fetchHotel, get5ReviewsAboutHotelForOverview, user_getAvailableRoomTypeOfHotel } from "@/lib/actions/hotel";
 import Navbar from "./navbar";
 import { notFound } from "next/navigation";
 import SearchBar from "@/components/search-bar";
@@ -20,19 +20,33 @@ export default async function Page(props: {
     props.params,
     props.searchParams
   ]);
-  const hotel = await fetchHotel(hotelId);
   const safeDecodedParams = codec_searchSpec.safeParse(awaitedSearchParams);
-  if (!safeDecodedParams.success || !hotel) notFound()
+  if (!safeDecodedParams.success) notFound()
+
+  const hotel = await fetchHotel(hotelId);
+  if (!hotel) notFound()
 
   const {
-    rating,
-    numberOfReviews
-  } = hotel;
+    inOutDates: { from: checkInDate, to: checkOutDate },
+    guestsAndRooms: { numAdults, numChildren, numRooms }
+  } = safeDecodedParams.data;
+
+  const [roomTypes, reviews] = await Promise.all([
+    user_getAvailableRoomTypeOfHotel(
+      hotelId,
+      checkInDate,
+      checkOutDate,
+      numAdults,
+      numChildren,
+      numRooms
+    ),
+    get5ReviewsAboutHotelForOverview(hotelId),
+  ]);
 
   const searchBarFormData: SearchBar_FormOutput = {
     ...safeDecodedParams.data,
     location: {
-      id: hotel.id,
+      id: hotelId,
       type: "hotel" as SearchBar_LocationType,
     },
   };
@@ -46,16 +60,26 @@ export default async function Page(props: {
         <SearchBar defaultValues={searchBarFormData} collapsible />
         <Navbar hotelId={hotel.id} />
       </div>
-      <main className="flex flex-col gap-y-4 content my-4 [&>section]:scroll-mt-35">
+      <main className="flex flex-col gap-y-4 content my-4 [&>section]:scroll-mt-32">
         <OverviewSection
           searchParams={awaitedSearchParams}
           hotel={hotel}
           poiCategoriesWithPlaces={poiCategoriesWithPlaces}
+          reviews={reviews}
         />
-        <AvailableRoomsSection hotelId={hotel.id} hotelName={hotel.name} searchBarFormData={searchBarFormData}/>
+        <AvailableRoomsSection
+          hotelName={hotel.name}
+          roomTypes={roomTypes}
+          searchSpecWithoutLocation={awaitedSearchParams}
+        />
         <LocationSection hotel={hotel} poiCategoriesWithPlaces={poiCategoriesWithPlaces}/>
         <FacilitiesSection hotel={hotel} />
-        <ReviewSection hotelName={hotel.name} hotelId={hotel.id} numberOfReviews={numberOfReviews} rating={rating}/>
+        <ReviewSection
+          hotelName={hotel.name}
+          hotelId={hotel.id}
+          numberOfReviews={hotel.numberOfReviews}
+          rating={hotel.rating}
+        />
       </main>
     </>
   );

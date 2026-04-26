@@ -1,6 +1,6 @@
 "use client"
 
-// FIXME: table.nextPage can go next even if there is no next page.
+// TODO: Serverside pagination.
 import { useState } from "react"
 
 import { Button } from "./ui/button"
@@ -71,7 +71,7 @@ export function DataTable<TData, TValue>({
     <div>
       <div className="overflow-hidden rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

@@ -1,26 +1,16 @@
 import Link from "next/link";
 
-import RoomTable from "./room-table";
-import { hotelowner_getRoomTypes } from "@/lib/actions/hotel-manager/rooms";
-
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import RoomsGrid from "./rooms-grid";
-
 export default async function RoomsPage() {
-  const result = await hotelowner_getRoomTypes();
-  if (!result.ok) {
-    return null;
-  }
-  const rooms = result.data;
-
   return (
-    <div className="content gap-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Rooms</h1>
+    <div className="flex flex-col gap-y-6">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">Quản lý phòng khách sạn</h1>
           <p className="text-sm text-muted-foreground">
-            Manage rooms for your hotel — view, edit or remove rooms.
+            Xem, chỉnh sửa hoặc xoá phân loại phòng.
           </p>
         </div>
 
@@ -28,13 +18,12 @@ export default async function RoomsPage() {
           <Link href="/dashboard/rooms/new">
             <Button variant="default" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Add room
+              Thêm loại phòng mới
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* <RoomTable rooms={rooms} /> */}
       <RoomsGrid />
     </div>
   );

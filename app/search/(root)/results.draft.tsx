@@ -70,21 +70,21 @@ export default function Results({
     threshold: 1,
   });
 
-  const onToggleFavorite = useCallback(async (hotelId: string, shouldFavorite: boolean) => {
-    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, shouldFavorite);
-    if (!response.ok) {
-      if (response.status === 401) {
-        toast.info("Bạn cần đăng nhập để thêm khách sạn vào danh sách yêu thích.");
-      } else {
-        toast.info("Đã có lỗi xảy ra khi cập nhật danh sách yêu thích. Vui lòng thử lại.");
-      }
-    } else {
-      toast.success(shouldFavorite ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
-      // Refetch the search results to update the favorite status in the UI.
-      // FIXME: NO this is not good, because it will reset the whole page.
-      refetch();
-    }
-  }, []);
+  // const onToggleFavorite = useCallback(async (hotelId: string, shouldFavorite: boolean) => {
+  //   const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, shouldFavorite);
+  //   if (!response.ok) {
+  //     if (response.status === 401) {
+  //       toast.info("Bạn cần đăng nhập để thêm khách sạn vào danh sách yêu thích.");
+  //     } else {
+  //       toast.info("Đã có lỗi xảy ra khi cập nhật danh sách yêu thích. Vui lòng thử lại.");
+  //     }
+  //   } else {
+  //     toast.success(shouldFavorite ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
+  //     // Refetch the search results to update the favorite status in the UI.
+  //     // FIXME: NO this is not good, because it will reset the whole page.
+  //     refetch();
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -118,7 +118,7 @@ export default function Results({
             <HotelCard
               hotel={hotel}
               href={`${PATHS.hotels}/${hotel.id}?${searchSpecString}`}
-              onFavoriteToggle={onToggleFavorite}
+              // onFavoriteToggle={onToggleFavorite}
             />
           </li>
         ))}

@@ -1,4 +1,5 @@
 // TODO: what to put in location id when location type is 'nearby'?
+import { differenceInDays } from "date-fns";
 import { z } from "zod";
 
 const locationTypes = ["none", "province", "district", "ward", "hotel", "nearby"] as const;
@@ -114,11 +115,28 @@ export const SearchParamsCodec = z.codec(
 
 
 
+
+const maxDays = 30;
 /// ----------- TEST -------------------
 export const schema_searchSpec = z.object({
   inOutDates: z.object({
     from: z.date(),
     to: z.date(),
+  }).superRefine(({ from, to }, ctx) => {
+    if (from >= to) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Ngày nhận phòng phải trước ngày trả phòng",
+        path: ["to"],
+      });
+      return;
+    } else if (differenceInDays(to, from) > maxDays) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Ngày trả phòng không được quá ${maxDays} ngày kể từ ngày nhận phòng`,
+        path: ["to"],
+      });
+    }
   }),
   guestsAndRooms: z.object({
     numAdults: z.number().int().min(1).max(30),
@@ -127,6 +145,9 @@ export const schema_searchSpec = z.object({
   }),
 });
 
+
+// TODO: Rename for better clarity.
+export type SearchSpecWithoutLocation = z.input<typeof schema_searchSpec>;
 
 export type SearchSpec = {
   checkInDate: string,

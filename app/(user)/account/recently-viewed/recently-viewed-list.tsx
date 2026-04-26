@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import HotelCard from '@/components/hotel-card.draft';
 import { useInView } from 'react-intersection-observer';
 import { draft_user_fetchRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
-import { draft_user_createOrDeleteFavoriteHotel } from '@/lib/actions/user-account/favorites';
-import { toast } from 'sonner';
 
 export default function RecentlyViewedList() {
   const { ref: sentinelRef, inView } = useInView({ rootMargin: '200px' });
@@ -24,30 +22,14 @@ export default function RecentlyViewedList() {
     isFetchingNextPage,
     status,
     error,
-    refetch,
   } = useInfiniteQuery({
     queryKey: ['recentlyViewed'],
     queryFn: fetchRecentlyViewed,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    refetchOnWindowFocus: false,
   });
 
-  // TODO: this is repeated with the one in search results, and this is not efficient because of the "refetch" call.
-  const onToggleFavorite = useCallback(async (hotelId: string, shouldFavorite: boolean) => {
-    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, shouldFavorite);
-    if (!response.ok) {
-      if (response.status === 401) {
-        toast.info("Bạn cần đăng nhập để thêm khách sạn vào danh sách yêu thích.");
-      } else {
-        toast.info("Đã có lỗi xảy ra khi cập nhật danh sách yêu thích. Vui lòng thử lại.");
-      }
-    } else {
-      toast.success(shouldFavorite ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
-      // Refetch the search results to update the favorite status in the UI.
-      // FIXME: NO this is not good, because it will reset the whole page.
-      refetch();
-    }
-  }, []);
 
   const items = data?.pages.flatMap(p => p.items) ?? [];
 
@@ -82,7 +64,6 @@ export default function RecentlyViewedList() {
             key={hotel.id}
             hotel={hotel}
             href="#"
-            onFavoriteToggle={onToggleFavorite}
           />
         ))}
       </div>

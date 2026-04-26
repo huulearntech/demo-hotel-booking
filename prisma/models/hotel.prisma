@@ -14,8 +14,8 @@ model Hotel {
   rating                Float       // NOTE: this is a denormalized field and must be updated via triggers.
   numberOfReviews       Int         @map("number_of_reviews") // NOTE: this is a denormalized field and must be updated via triggers. 
 
-  checkInTime           DateTime    @db.Time  @map("check_in_time")
-  checkOutTime          DateTime    @db.Time  @map("check_out_time")
+  checkInTime           DateTime    @db.Time(0)  @map("check_in_time")
+  checkOutTime          DateTime    @db.Time(0)  @map("check_out_time")
   
   imageUrls             String[]    @map("image_urls")   // TODO: should have videos
 
@@ -37,8 +37,6 @@ enum HotelType {
   RESORT
   APARTMENT
   HOSTEL
-  // TODO: Other must have name specified.
-  OTHER
 }
 
 enum HotelStatus {
@@ -125,7 +123,7 @@ model RoomType {
 
   rooms            Room[]
   facilities       Facility[]
-  bookingsMetadata BookingMetadata[]
+  bookings         Booking[]
   inventories       RoomTypeInventory[]
 
   createdAt        DateTime @default(now()) @map("created_at")

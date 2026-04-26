@@ -18,17 +18,13 @@ const reviewSelect = {
       customerName: true,
       customerEmail: true,
       customerPhone: true,
-      metadata: {
-        select: {
-          checkInDate: true,
-          checkOutDate: true,
-          numRooms: true,
-          snapshotRoomPrice: true,
-          snapshotRoomTypeName: true,
-          roomTypeId: true,
-          roomType: { select: { name: true } },
-        },
-      },
+      checkInDate: true,
+      checkOutDate: true,
+      numRooms: true,
+      snapshotRoomPrice: true,
+      snapshotRoomTypeName: true,
+      roomTypeId: true,
+      roomType: { select: { name: true } },
     },
   },
 };
@@ -36,17 +32,16 @@ const reviewSelect = {
 function baseWhere(ownerId: string) {
   return {
     booking: {
-      metadata: {
-        roomType: {
-          hotel: {
-            ownerId,
-          },
+      roomType: {
+        hotel: {
+          ownerId,
         },
       },
     },
   };
 }
 
+// TODO: Clean up
 export async function fetchUnrepliedReviews() {
   const session = await auth();
   if (session?.user.role !== "HOTEL_OWNER") return [];
@@ -66,16 +61,9 @@ export async function fetchUnrepliedReviews() {
     // Safely extract snapshotRoomPrice and convert Decimal -> number if needed
     booking: r.booking
       ? {
-          ...r.booking,
-          metadata: {
-            ...r.booking.metadata,
-            snapshotRoomPrice: r.booking.metadata?.snapshotRoomPrice
-              ? typeof r.booking.metadata.snapshotRoomPrice.toNumber === "function"
-                ? r.booking.metadata.snapshotRoomPrice.toNumber()
-                : Number(r.booking.metadata.snapshotRoomPrice)
-              : null,
-          },
-        }
+        ...r.booking,
+        snapshotRoomPrice: r.booking.snapshotRoomPrice.toNumber()
+      }
       : null,
   })));
 }
@@ -101,18 +89,11 @@ export async function fetchRepliedReviews() {
     // Safely extract snapshotRoomPrice and convert Decimal -> number if needed
     booking: r.booking
       ? {
-          ...r.booking,
-          metadata: {
-            ...r.booking.metadata,
-            snapshotRoomPrice: r.booking.metadata?.snapshotRoomPrice
-              ? typeof r.booking.metadata.snapshotRoomPrice.toNumber === "function"
-                ? r.booking.metadata.snapshotRoomPrice.toNumber()
-                : Number(r.booking.metadata.snapshotRoomPrice)
-              : null,
-          },
-        }
+        ...r.booking,
+        snapshotRoomPrice: r.booking.snapshotRoomPrice.toNumber()
+      }
       : null,
-  })));;
+  })));
 }
 
 export type UnrepliedReviewType = Awaited<ReturnType<typeof fetchUnrepliedReviews>>[number];
@@ -130,11 +111,9 @@ export async function hotelowner_replyToReview(reviewId: string, replyContent: s
     where: {
       id: reviewId,
       booking: {
-        metadata: {
-          roomType: {
-            hotel: {
-              ownerId: session.user.id,
-            },
+        roomType: {
+          hotel: {
+            ownerId: session.user.id,
           },
         },
       },

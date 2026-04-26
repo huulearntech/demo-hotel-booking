@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,18 +13,19 @@ import { draft_HotelCardProps } from "@/lib/types/hotel-card";
 
 import { hotel as hotelIcon } from "@/public/icons/index";
 import { MapPin, Heart } from "lucide-react";
+import { createContext, useContext, ReactNode } from "react";
+import { draft_user_createOrDeleteFavoriteHotel } from "@/lib/actions/user-account/favorites";
+import { toast } from "sonner";
 
 // TODO: how to handle isFavorited change on client when it is fetched from server.
 export default function HotelCard({
   hotel,
   href,
   className,
-  onFavoriteToggle,
 }: {
   hotel: draft_HotelCardProps;
   href: string;
   className?: string
-  onFavoriteToggle: (hotelId: string, newValue: boolean) => void;
 }) {
   const {
     id,
@@ -39,6 +40,13 @@ export default function HotelCard({
     type,
     isFavorited
   } = hotel;
+
+  const [localIsFavorited, setLocalIsFavorited] = useState(Boolean(isFavorited));
+  // useLayoutEffect(() => {
+  //   setLocalIsFavorited(Boolean(isFavorited));
+  // }, [isFavorited]);
+
+  const onFavoriteToggle = useFavoriteToggle();
 
   return (
     <a
@@ -62,12 +70,12 @@ export default function HotelCard({
         }
         <button
           className="absolute top-1 right-1 p-2 rounded-full bg-black/40 cursor-pointer"
-          onClick={(e) => {
+          onClick={async (e) => {
             e.preventDefault();
-            onFavoriteToggle(id, !Boolean(isFavorited));
+            onFavoriteToggle(id, localIsFavorited, setLocalIsFavorited);
           }}
         >
-          {!!isFavorited
+          {!!localIsFavorited
             ? <Heart className="size-4 text-red-500" fill="currentColor" />
             : <Heart className="size-4 text-primary-foreground" />
           }
@@ -193,4 +201,47 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
       </TooltipContent>
     </>
   );
+}
+
+
+
+type FavoriteToggleFn = (hotelId: string, currIsFavorited: boolean, setIsFavorited: (newValue: boolean) => void) => Promise<boolean>;
+
+const FavoriteToggleContext = createContext<FavoriteToggleFn | null>(null);
+
+export function FavoriteToggleProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const onToggleFavorite = useCallback(async (hotelId: string, currIsFavorited: boolean, setIsFavorited: (newValue: boolean) => void) => {
+    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, !currIsFavorited);
+    if (!response.ok) {
+      if (response.status === 401) {
+        toast.info("Bạn cần đăng nhập để thêm khách sạn vào danh sách yêu thích.");
+      } else {
+        toast.info("Đã có lỗi xảy ra khi cập nhật danh sách yêu thích. Vui lòng thử lại.");
+      }
+      return false;
+    } else {
+      toast.success(!currIsFavorited ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
+      setIsFavorited(!currIsFavorited);
+      return true;
+    }
+  }, []);
+  return (
+    <FavoriteToggleContext.Provider value={onToggleFavorite}>
+      {children}
+    </FavoriteToggleContext.Provider>
+  );
+}
+
+export function useFavoriteToggle(): FavoriteToggleFn {
+  const ctx = useContext(FavoriteToggleContext);
+  if (!ctx) {
+    throw new Error(
+      "[FavoriteToggle] useFavoriteToggle must be used within a FavoriteToggleProvider"
+    );
+  }
+  return ctx;
 }

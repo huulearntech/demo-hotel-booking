@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { fetchHotel } from "@/lib/actions/hotel";
+import { fetchHotel, get5ReviewsAboutHotelForOverview } from "@/lib/actions/hotel";
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ChevronRight, MapPin } from 'lucide-react';
@@ -17,13 +17,15 @@ export default async function OverviewSection({
   searchParams,
   hotel,
   poiCategoriesWithPlaces,
+  reviews,
 }: {
   searchParams: SearchSpec,
   hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>>
   poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>
+  reviews: Awaited<ReturnType<typeof get5ReviewsAboutHotelForOverview>>
 }) {
   const {
-    roomTypes: [{ price: minPrice, bookingsMetadata }],
+    roomTypes: [{ price: minPrice }],
     imageUrls,
     facilities,
     ward: {
@@ -154,21 +156,21 @@ export default async function OverviewSection({
             </div>
             <h2 className="font-semibold">Khách nói gì về kỳ nghỉ của họ</h2>
             <div className="flex flex-col overflow-y-auto max-h-32 space-y-2">
-              {bookingsMetadata.map(({ user, booking }) => booking && booking.review?.comment && (
-                <div key={booking.id} className="flex items-start gap-x-2">
+              {reviews.map(review => (
+                <div key={review.id} className="flex items-start gap-x-2">
                   <Image
-                    src={user.profileImageUrl ?? tvlk_favicon}
-                    alt={`Ảnh đại diện của ${user.name}`}
+                    src={review.booking.user.profileImageUrl ?? tvlk_favicon}
+                    alt={`Ảnh đại diện của ${review.booking.user.name}`}
                     className="size-6 rounded-full"
                     width={24}
                     height={24}
                   />
                   <div>
                     <div className="flex items-center gap-x-2">
-                      <div className="font-semibold">{user.name}</div>
-                      <div className="text-gray-500 text-sm">{booking.review.rating}/{MAX_REVIEW_POINTS}</div>
+                      <div className="font-semibold">{review.booking.user.name}</div>
+                      <div className="text-gray-500 text-sm">{review.rating}/{MAX_REVIEW_POINTS}</div>
                     </div>
-                    <p className="text-gray-500 text-sm max-h-12 overflow-hidden overflow-ellipsis">{booking.review.comment}</p>
+                    <p className="text-gray-500 text-sm max-h-12 overflow-hidden overflow-ellipsis">{review.comment}</p>
                   </div>
                 </div>
               ))}

@@ -21,12 +21,13 @@ function formatDateShort(date: Date) {
   return new Intl.DateTimeFormat("vi-VN", { year: "numeric", month: "short", day: "numeric" }).format(date);
 }
 
+// TODO: export this
 const map: Record<BookingStatus, { text: string; variant: string }> = {
-  PENDING_TO_PAY: { text: "Pending", variant: "bg-yellow-100 text-yellow-800" },
-  PAID: { text: "Confirmed", variant: "bg-green-100 text-green-800" },
-  CHECKED_IN: { text: "Checked in", variant: "bg-sky-100 text-sky-800" },
-  CHECKED_OUT: { text: "Checked out", variant: "bg-sky-100 text-sky-800" },
-  CANCELLED: { text: "Cancelled", variant: "bg-red-100 text-red-800" },
+  PENDING_TO_PAY: { text: "Đang chờ", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Đã thanh toán", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Đã nhận phòng", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Đã trả phòng", variant: "bg-sky-100 text-sky-800" },
+  CANCELLED: { text: "Đã huỷ", variant: "bg-red-100 text-red-800" },
 };
 
 export const columns: ColumnDef<UpcomingBooking>[] = [
@@ -75,8 +76,12 @@ export const columns: ColumnDef<UpcomingBooking>[] = [
       const nights = differenceInDays(checkOut, checkIn);
       return (
         <div className="min-w-0">
-          <div className="truncate">{formatDateShort(checkIn)}</div>
-          <div className="text-xs text-muted-foreground">{formatDateShort(checkOut)} • {nights} đêm</div>
+          <div className="inline-flex gap-1 items-center">
+            <div className="truncate">{formatDateShort(checkIn)}</div>
+            <ArrowRight className="size-4" />
+            <div className="truncate">{formatDateShort(checkOut)}</div>
+          </div>
+          <div className="text-xs text-muted-foreground">{nights} đêm</div>
         </div>
       )
     }
@@ -88,11 +93,6 @@ export const columns: ColumnDef<UpcomingBooking>[] = [
     cell: ({ row }) => {
       return <div className="text-right font-medium">{formatVND(row.original.totalPrice)}</div>
     }
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Ngày tạo",
-    cell: ({ row }) => formatDateShort(row.original.createdAt)
   },
   {
     accessorKey: "status",

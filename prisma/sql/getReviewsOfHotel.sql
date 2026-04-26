@@ -15,9 +15,8 @@ SELECT
   u.profile_image_url AS author_profile_image
 FROM reviews r
 JOIN bookings b ON r.booking_id = b.id
-JOIN booking_metadata bm ON b.metadata_id = bm.id
-JOIN room_types rt ON bm.room_type_id = rt.id
-JOIN users u ON bm.user_id = u.id
+JOIN room_types rt ON b.room_type_id = rt.id
+JOIN users u ON b.user_id = u.id
 WHERE rt.hotel_id = $1
   AND (
     $2::TIMESTAMP IS NULL

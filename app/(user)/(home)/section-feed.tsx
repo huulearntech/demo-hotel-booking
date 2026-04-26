@@ -12,7 +12,7 @@ import {
   TabsContent
 } from "@/components/ui/tabs";
 
-import HotelCard from "@/components/hotel-card";
+import HotelCard from "@/components/hotel-card.draft";
 import { fetchFeed } from "@/lib/actions/home";
 import { codec_searchSpec } from "@/lib/zod_schemas/search-bar";
 import { PATHS } from "@/lib/constants";
@@ -46,6 +46,14 @@ export default async function Feed () {
   const stringifiedSearchParams = new URLSearchParams(codec_searchSpec.encode(defaultSpec)).toString();
 
   const locations = await fetchFeed();
+  if (!locations || locations.length === 0) {
+    return (
+      <div className="py-8">
+        <p className="text-center text-sm text-gray-500">Không có địa điểm nào để hiển thị.</p>
+      </div>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-y-4">
       <div className="content">
@@ -85,8 +93,8 @@ export default async function Feed () {
                 ))}
               </CarouselContent>
 
-              <CarouselNext className="max-lg:hidden"/>
-              <CarouselPrevious className="max-lg:hidden"/>
+              <CarouselNext className="max-lg:hidden" />
+              <CarouselPrevious className="max-lg:hidden" />
             </Carousel>
           </TabsContent>
         ))}

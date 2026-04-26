@@ -8,13 +8,14 @@ FROM generate_series(
        '1 day'
      ) AS d(day)
 LEFT JOIN (
-  SELECT date_trunc('day', bm.created_at)::date AS day,
-         SUM(snapshot_room_price * num_rooms) AS total_revenue,
-         COUNT(bm.id)::int AS bookings
-  FROM booking_metadata bm
-  JOIN room_types rt ON bm.room_type_id = rt.id
+  SELECT date_trunc('day', b.created_at)::date AS day,
+         SUM(b.snapshot_room_price * b.num_rooms * (b.check_out_date::date - b.check_in_date::date)) AS total_revenue,
+         COUNT(b.id)::int AS bookings
+  FROM bookings b
+  JOIN room_types rt ON b.room_type_id = rt.id
   WHERE rt.hotel_id = $1
-  AND bm.created_at >= now() - INTERVAL '90 days'
+  AND b.status IN ('PAID', 'CHECKED_IN', 'CHECKED_OUT')
+  AND b.created_at >= now() - INTERVAL '90 days'
   GROUP BY day
 ) b USING (day)
 ORDER BY d.day ASC;

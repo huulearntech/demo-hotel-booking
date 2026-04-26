@@ -19,14 +19,10 @@ async function findBookingById(bookingId: string) {
     where: { id: bookingId },
     select: {
       id: true,
-      metadata: {
+      numRooms: true,
+      roomType: {
         select: {
-          numRooms: true,
-          roomType: {
-            select: {
-              price: true,
-            },
-          },
+          price: true,
         },
       },
       status: true,
@@ -34,7 +30,7 @@ async function findBookingById(bookingId: string) {
   }).then((booking) => {
     if (!booking) return null;
 
-    const amount = booking.metadata.numRooms * booking.metadata.roomType.price.toNumber();
+    const amount = booking.roomType.price.mul(booking.numRooms).toNumber();
     return { id: booking.id, amount, status: booking.status };
   });
 }

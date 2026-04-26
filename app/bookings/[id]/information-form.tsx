@@ -71,12 +71,12 @@ export default function InformationForm () {
         <Label htmlFor="note" className="text-xs font-semibold ml-1">Lưu ý dành cho khách sạn</Label>
         <Textarea
           id="note"
-          {...register("note")}
+          {...register("notes")}
           className={buttonVariants({ variant: "outline", size: "default", className: "h-24" })}
           placeholder="Nhập lưu ý cho khách sạn (nếu có)"
           rows={4}
         />
-        {errors.note && <div className="text-sm text-destructive ml-1">{errors.note.message}</div>}
+        {errors.notes && <div className="text-sm text-destructive ml-1">{errors.notes.message}</div>}
         <div className="text-xs text-gray-500 ml-1">
           Lưu ý: Tất cả các yêu cầu tùy thuộc vào tình trạng sẵn có và không được đảm bảo. Có thể phát sinh thêm phí. Vui lòng liên hệ trực tiếp với nhân viên khách sạn để biết thêm thông tin.
         </div>

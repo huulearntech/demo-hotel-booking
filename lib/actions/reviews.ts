@@ -5,7 +5,7 @@ import { getReviewsOfHotel } from "../generated/prisma/sql";
 
 type CreateReviewForBookingData = Prisma.ReviewUncheckedCreateInput;
 
-// TODO: handle permission more robustly.
+// TODO: handle permission and errors more robustly.
 export async function user_createReviewForBooking(
   bookingId: string,
   data: CreateReviewForBookingData
@@ -18,12 +18,12 @@ export async function user_createReviewForBooking(
   // Ensure the current user is the author of the booking
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    select: { id: true, metadata: { select: { userId: true } } },
+    select: { id: true, userId: true },
   });
   if (!booking) {
     throw new Error("Booking not found");
   }
-  if (booking.metadata.userId !== session.user.id) {
+  if (booking.userId !== session.user.id) {
     throw new Error("Forbidden");
   }
 

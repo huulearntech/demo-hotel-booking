@@ -1,14 +1,3 @@
-// User will make a new draft booking every request
-// but only when the user submits the information form,
-// the rooms must be recheck for availability. If true,
-// then hold the rooms for 15-20 minutes,
-// otherwise release the rooms and notify the user that the rooms are no longer available.
-
-
-// => thus, draft booking only needs to know the number of rooms in that roomtype,
-// and doesn't need to know which rooms, because the rooms will be rechecked for availability
-// when the user submits the information form anyway.
-
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { differenceInDays } from "date-fns";
@@ -27,58 +16,74 @@ import {
   DoorOpen,
 } from "lucide-react";
 import { tvlk_logo_text_dark } from "@/public/logos"
-import { BedType, Prisma } from "@/lib/generated/prisma/client";
+import { BedType } from "@/lib/generated/prisma/client";
+import { schema_searchSpec, SearchSpec } from "@/lib/zod_schemas/search-bar";
 
-export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+const getHHMMFromDate = (date: Date) => {
+  console.log(date);
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}
+
+export default async function BookingPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchSpec>;
+}) {
   const session = await auth();
-  if (!session) notFound();
+  if (!session || !session.user) notFound(); // already handled by proxy.
   const { email, name } = session.user;
+  
+  const { id } = await params;
+  const awaitedSearchParams = await searchParams;
+  const candidates = {
+    inOutDates: {
+      from: new Date(awaitedSearchParams.checkInDate.concat("T00:00:00Z")), // Ensure it's treated as UTC to avoid timezone issues
+      to: new Date(awaitedSearchParams.checkOutDate.concat("T00:00:00Z")),
+    },
+    guestsAndRooms: {
+      numAdults: Number(awaitedSearchParams.numAdults),
+      numChildren: Number(awaitedSearchParams.numChildren),
+      numRooms: Number(awaitedSearchParams.numRooms),
+    },
+  }
+  const searchSpec = schema_searchSpec.safeParse(candidates);
+  if (!searchSpec.success) notFound();
 
-  // Handle expired booking
-  const bookingMetadataAndHotel = await prisma.bookingMetadata.findUnique({
-    where: { id, userId: session.user.id, status: "DRAFT" }, // TODO: Handle expired, or paid.
+
+  const roomType = await prisma.roomType.findUnique({
+    where: { id },
     select: {
-      roomType: {
+      hotel: {
         select: {
-          hotel: {
-            select: {
-              name: true,
-              type: true,
-              rating: true,
-              numberOfReviews: true,
-              facilities: { select: { id: true, name: true, iconUrl: true } }
-            }
-          },
-          bedType: true,
+          name: true,
+          type: true,
+          rating: true,
+          numberOfReviews: true,
+          checkInTime: true,
+          checkOutTime: true,
         }
       },
-      numRooms: true,
-      numAdults: true,
-      numChildren: true,
-      snapshotCheckInTime: true,
-      snapshotCheckOutTime: true,
-      snapshotRoomTypeName: true,
-      snapshotRoomPrice: true,
-      checkInDate: true,
-      checkOutDate: true,
-    }
-  });
-  if (!bookingMetadataAndHotel) notFound();
-
-  const {
-    roomType: {
-      hotel: {
-        name: hotelName,
-        type: hotelType,
-        rating,
-        numberOfReviews,
-        facilities
+      facilities: {
+        select: {
+          id: true,
+          name: true,
+          iconUrl: true,
+        }
       },
-      bedType,
+      name: true,
+      price: true,
+      adultCapacity: true,
+      childrenCapacity: true,
+      bedType: true,
     },
-    ...bookingMetadata
-  } = bookingMetadataAndHotel;
+  });
+
+  if (!roomType) notFound();
+  const { hotel } = roomType;
+
+  const nights = differenceInDays(searchSpec.data.inOutDates.to, searchSpec.data.inOutDates.from);
 
   return (
     <InformationFormProvider defaultValues={{ name: name || "", email: email || "" }} >
@@ -89,12 +94,14 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
             <div className="h-10 w-px bg-gray-200 mx-3"></div>
             <div className="flex flex-col gap-y-1 p-4">
               <div className="flex items-center gap-x-2">
-                <span className="text-base text-black font-semibold"> {hotelName} </span>
-                <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-primary lowercase first-letter:capitalize">{hotelType}</span>
+                <span className="text-base text-black font-semibold"> {hotel.name} </span>
+                <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-primary lowercase first-letter:capitalize">
+                  {hotel.type}
+                </span>
               </div>
               <div className="flex items-center gap-x-2 text-xs">
-                <span className="text-primary font-black">{rating.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
-                <span className="text-gray-500 font-semibold">({numberOfReviews} đánh giá)</span>
+                <span className="text-primary font-black">{hotel.rating.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
+                <span className="text-gray-500 font-semibold">({hotel.numberOfReviews} đánh giá)</span>
               </div>
             </div>
           </div>
@@ -107,7 +114,19 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
       <div className="bg-[url('/images/bg-booking-page.webp')] bg-no-repeat bg-bottom">
         <main className="content grid gap-6 pt-6 grid-cols-1 lg:grid-cols-[1fr_25rem] lg:items-start">
           <div className="order-2 lg:col-start-2 lg:row-start-1">
-            <BookingSummary bookingMetadata={bookingMetadata} facilities={facilities} bedType={bedType} />
+            <BookingSummary
+              numRooms={searchSpec.data.guestsAndRooms.numRooms}
+              numAdults={searchSpec.data.guestsAndRooms.numAdults}
+              numChildren={searchSpec.data.guestsAndRooms.numChildren}
+              checkInDate={searchSpec.data.inOutDates.from}
+              checkOutDate={searchSpec.data.inOutDates.to}
+
+              checkInTime={roomType.hotel.checkInTime}
+              checkOutTime={roomType.hotel.checkOutTime}
+              roomTypeName={roomType.name}
+              facilities={roomType.facilities}
+              bedType={roomType.bedType}
+            />
           </div>
 
           <div className="order-3 row-span-3 lg:col-start-1 min-w-100">
@@ -115,13 +134,16 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="order-4 lg:col-start-2 lg:row-start-2">
             <PriceDetail
-              snapshotRoomTypeName={bookingMetadata.snapshotRoomTypeName}
-              snapshotRoomPrice={bookingMetadata.snapshotRoomPrice.toNumber()}
-              nights={differenceInDays(bookingMetadata.checkOutDate, bookingMetadata.checkInDate)}
-              numRooms={bookingMetadata.numRooms}
-              // FIXME: temporary total price calculation, must be calculated in Decimal on server.
-              totalPrice={bookingMetadata.snapshotRoomPrice.toNumber() * bookingMetadata.numRooms * differenceInDays(bookingMetadata.checkOutDate, bookingMetadata.checkInDate)}
-              metadataId={id}
+              roomTypeId={id}
+              checkInDate={searchSpec.data.inOutDates.from}
+              checkOutDate={searchSpec.data.inOutDates.to}
+              numAdults={searchSpec.data.guestsAndRooms.numAdults}
+              numChildren={searchSpec.data.guestsAndRooms.numChildren}
+              numRooms={searchSpec.data.guestsAndRooms.numRooms}
+              snapshotRoomTypeName={roomType.name}
+              snapshotRoomPrice={roomType.price.toNumber()}
+              nights={nights}
+              totalPrice={roomType.price.mul(searchSpec.data.guestsAndRooms.numRooms).mul(nights).toNumber()}
             />
           </div>
         </main>
@@ -131,40 +153,32 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
 };
 
 async function BookingSummary({
-  bookingMetadata,
+  numRooms,
+  numAdults,
+  numChildren,
+  checkInTime,
+  checkOutTime,
+  roomTypeName,
+  checkInDate,
+  checkOutDate,
   facilities,
   bedType,
 }: {
-  bookingMetadata: Prisma.BookingMetadataGetPayload<{
-    select: {
-      numRooms: true,
-      numAdults: true,
-      numChildren: true,
-      snapshotCheckInTime: true,
-      snapshotCheckOutTime: true,
-      snapshotRoomTypeName: true,
-      checkInDate: true,
-      checkOutDate: true,
-    }
-  }>,
+  numRooms: number;
+  numAdults: number;
+  numChildren: number;
+  checkInTime: Date;
+  checkOutTime: Date;
+  roomTypeName: string;
+  checkInDate: Date;
+  checkOutDate: Date;
   facilities: { id: string, name: string, iconUrl: string | null }[],
   bedType: BedType,
 }) {
-  const {
-    numRooms,
-    numAdults,
-    numChildren,
-    snapshotCheckInTime,
-    snapshotCheckOutTime,
-    snapshotRoomTypeName,
-    checkInDate,
-    checkOutDate,
-  } = bookingMetadata;
-
   return (
     <div className="flex flex-col rounded-4xl bg-white shadow-lg p-4 gap-y-2">
       <div className="flex flex-col gap-y-1">
-        <h2 className="text-[1.25rem] font-semibold">({numRooms}x) {snapshotRoomTypeName}</h2>
+        <h2 className="text-[1.25rem] font-semibold">({numRooms}x) {roomTypeName}</h2>
       </div>
 
       <div className="flex bg-blue-50 rounded-[10px] p-1 gap-x-1">
@@ -179,10 +193,7 @@ async function BookingSummary({
             }).format(checkInDate)}
           </div>
           <div className="text-xs">
-            Từ {new Intl.DateTimeFormat('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit'
-            }).format(snapshotCheckInTime)}
+            Từ {getHHMMFromDate(checkInTime)}
           </div>
         </div>
 
@@ -202,11 +213,7 @@ async function BookingSummary({
             }).format(checkOutDate)}
           </div>
           <div className="text-xs">
-            {/* Trước {new Intl.DateTimeFormat('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit'
-            }).format(snapshotCheckOutTime)} */}
-            {snapshotCheckOutTime.toISOString()}
+            Trước {getHHMMFromDate(checkOutTime)}
           </div>
         </div>
       </div>

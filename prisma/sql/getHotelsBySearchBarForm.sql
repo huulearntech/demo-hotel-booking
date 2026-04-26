@@ -13,6 +13,8 @@
 -- @param {Decimal}  $13:maxPrice (filter)
 -- @param {Int}      $16:numChildren (TODO: temporarily put this at the end.)
 -- @param {String}   $17:userId? (for favorite)
+
+-- TODO: should join with inventory instead of rooms.
 WITH base AS (
   SELECT
     h.id,
@@ -58,16 +60,15 @@ WITH base AS (
             FROM rooms r2
             JOIN "_BookingToRoom" b2r ON b2r."B" = r2.id
             JOIN bookings b2 ON b2.id = b2r."A"
-            LEFT JOIN booking_metadata bm2 ON b2.metadata_id = bm2.id
-            WHERE bm2.check_in_date < $3
-              AND bm2.check_out_date > $2
-              AND b2.status IN ('PAID','PENDING_TO_PAY')
+            WHERE b2.check_in_date < $3
+              AND b2.check_out_date > $2
+              AND b2.status IN ('PAID','PENDING_TO_PAY', 'CHECKED_IN')
               AND r2.type_id = rt.id
           ), 0
         )) >= $5
     ) rt_count
   ) AS available ON true
-  LEFT JOIN LATERAL (
+  JOIN LATERAL (
     SELECT COALESCE(array_agg(fac.name), ARRAY[]::text[]) AS facility_names
     FROM "_FacilityToHotel" f2h
     JOIN facilities fac ON fac.id = f2h."A"

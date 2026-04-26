@@ -1,14 +1,17 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { SearchBar_FormOutput } from "../zod_schemas/search-bar";
+import { SearchSpecWithoutLocation } from "../zod_schemas/search-bar";
 import { auth } from "@/auth";
 import type { OperationResult } from "../types/operation-result";
 
-// TODO: Don't throw error.
-export async function user_createBookingMetadata(
+// TODO: Cleanup
+export async function user_createBooking(
   roomTypeId: string,
-  searchBarFormData: SearchBar_FormOutput,
+  searchSpecWithoutLocation: SearchSpecWithoutLocation,
+  customerName: string,
+  customerEmail: string,
+  customerPhone: string,
 ): Promise<OperationResult<string>> {
   const session = await auth();
   if (!session || !session.user) {
@@ -21,15 +24,18 @@ export async function user_createBookingMetadata(
 
   const userId = session.user.id;
 
-  const mayExistedBookingMetadata = await prisma.bookingMetadata.findFirst({
-    where: { userId, status: "DRAFT" },
+  const userIsAlreadyBookingOther = await prisma.booking.findFirst({
+    where: { userId, status: "PENDING_TO_PAY" },
   });
 
-  if (mayExistedBookingMetadata) {
+  if (userIsAlreadyBookingOther) {
     return { ok: false, status: 400, error: "Bạn có một lượt đặt phòng đang chờ. Vui lòng hoàn thành hoặc hủy trước khi tạo mới." };
   }
 
-  const { inOutDates: { from: checkInDate, to: checkOutDate }, guestsAndRooms: { numAdults, numChildren, numRooms } } = searchBarFormData;
+  const {
+    inOutDates: { from: checkInDate, to: checkOutDate },
+    guestsAndRooms: { numAdults, numChildren, numRooms }
+  } = searchSpecWithoutLocation;
 
   const roomType = await prisma.roomType.findUnique({
     where: { id: roomTypeId },
@@ -46,7 +52,7 @@ export async function user_createBookingMetadata(
   });
 
   if (!roomType) {
-    return { ok: false, status: 404, error: "Room type not found" };
+    return { ok: false, status: 404, error: "Loại phòng không tồn tại." };
   }
 
   const {
@@ -58,10 +64,8 @@ export async function user_createBookingMetadata(
     }
   } = roomType;
 
-  // Temporarily ignore stricter data validation per request
-
   try {
-    const created = await prisma.bookingMetadata.create({
+    const created = await prisma.booking.create({
       data: {
         userId,
         roomTypeId,
@@ -74,13 +78,16 @@ export async function user_createBookingMetadata(
         snapshotRoomTypeName,
         snapshotCheckInTime,
         snapshotCheckOutTime,
+        customerName,
+        customerEmail,
+        customerPhone,
       },
       select: { id: true },
     });
 
     return { ok: true, data: created.id };
   } catch (err) {
-    console.error("Failed to create booking metadata", err);
-    return { ok: false, status: 500, error: "Internal Server Error: Failed to create booking metadata" };
+    console.error("Failed to create booking", err);
+    return { ok: false, status: 500, error: "Internal Server Error: Failed to create booking" };
   }
 }

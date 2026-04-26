@@ -51,7 +51,7 @@ function BookingCard({ booking }: { booking: RecentBookingType }) {
     numAdults,
     numChildren,
     snapshotRoomTypeName,
-  } = booking.metadata;
+  } = booking;
   const totalPrice = booking.totalPrice;
   const createdAt = booking.createdAt;
 

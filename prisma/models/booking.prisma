@@ -1,11 +1,17 @@
-// TODO: Consider merge this with booking.
-model BookingMetadata {
-  id                   String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId               String      @map("user_id") @db.Uuid
-  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+// TODO: when user selects room type to book, they first only sees a UI shows the form
+// to fill in the information, and a "Continue to payment" button. Only after they click the button, we create a booking with status FILLING_INFORMATION, and then redirect them to the payment page. This way, we can prevent the issue of having many "abandoned" bookings with status PENDING_TO_PAY when user just clicks the button but never completes the payment.
 
-  roomType             RoomType    @relation(fields: [roomTypeId], references: [id])
-  roomTypeId           String      @map("room_type_id") @db.Uuid
+// TODO: Prevent user from making a booking when he is holding another booking that is not yet expired.
+// In such case, we force the user to either complete or cancel the existing booking before making a new one.
+model Booking {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status       BookingStatus       @default(PENDING_TO_PAY)
+
+  userId       String              @map("user_id") @db.Uuid
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roomType     RoomType            @relation(fields: [roomTypeId], references: [id])
+  roomTypeId   String              @map("room_type_id") @db.Uuid
 
   checkInDate          DateTime    @db.Date @map("check_in_date")
   checkOutDate         DateTime    @db.Date @map("check_out_date")
@@ -15,52 +21,22 @@ model BookingMetadata {
   numChildren          Int         @map("num_children")
   snapshotRoomPrice    Decimal     @db.Decimal(19, 4) @map("snapshot_room_price") // VND
   snapshotRoomTypeName String      @map("snapshot_room_type_name")
-  snapshotCheckInTime  DateTime    @map("snapshot_check_in_time")
-  snapshotCheckOutTime DateTime    @map("snapshot_check_out_time")
-  
-  booking           Booking?
-  createdAt         DateTime       @default(now()) @map("created_at")
-  
-  status            BookingMetadataStatus @default(DRAFT)
-  // how to automatically set the status to expired after some time to prevent holding ?
-  expiredAt         DateTime       @map("expired_at") @default(dbgenerated("NOW() + INTERVAL '10 minutes'"))
-  // TODO: what to index?
-  @@index([userId])
-  @@index([roomTypeId])
+  snapshotCheckInTime  DateTime    @map("snapshot_check_in_time") @db.Time(0)
+  snapshotCheckOutTime DateTime    @map("snapshot_check_out_time") @db.Time(0)
 
-  @@map("booking_metadata")
-}
-
-enum BookingMetadataStatus {
-  DRAFT
-  SUCCESS
-  EXPIRED
-}
-
-// TODO: Prevent user from making a booking when he is holding another booking that is not yet expired.
-// In such case, we force the user to either complete or cancel the existing booking before making a new one.
-model Booking {
-  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  rooms             Room[]         // TODO: Only assign when check in. Done by hotel owner.
-
-  status            BookingStatus    @default(PENDING_TO_PAY)
-
-  // allow user to book with other credentials.
+  // TODO: allow user to book with other credentials or not? If yes, this should be called as snapshot, just like the snapshot...
   customerName      String           @map("customer_name")
   customerEmail     String           @map("customer_email")
   customerPhone     String           @map("customer_phone")
   notes             String?
   
+  rooms             Room[]         // TODO: Only assign when check in. Done by hotel owner.
   review            Review?
-
-  // metadata is the draft step.
-  metadata          BookingMetadata  @relation(fields: [metadataId], references: [id], onDelete: Cascade)
-  metadataId        String           @unique @map("metadata_id") @db.Uuid
 
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt      @map("updated_at")
 
-  @@index([metadataId])
+  @@index([userId, roomTypeId])
   @@map("bookings")
 }
 
@@ -89,5 +65,4 @@ enum BookingStatus {
   CANCELLED
   CHECKED_IN
   CHECKED_OUT
-  // REFUNDED // This is not supported yet.
 }

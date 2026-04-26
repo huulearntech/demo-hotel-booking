@@ -15,7 +15,7 @@ ranked_hotels AS (
     h.type,
     h.rating,
     h.number_of_reviews,
-    COALESCE(array_to_json(h.image_urls), '[]'::json) AS image_urls,
+    h.image_urls[1] AS thumbnail_url,
     w.name AS ward_name,
     p.id AS province_id,
     p.name AS province_name,
@@ -32,9 +32,9 @@ ranked_hotels AS (
     ) AS min_price,
     ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY h.rating DESC NULLS LAST) AS rn
   FROM hotels h
-  LEFT JOIN wards     w ON h.ward_id     = w.id
-  LEFT JOIN districts d ON w.district_id = d.id
-  LEFT JOIN provinces p ON d.province_id = p.id
+  JOIN wards     w ON h.ward_id     = w.id
+  JOIN districts d ON w.district_id = d.id
+  JOIN provinces p ON d.province_id = p.id
   WHERE p.id IN (SELECT province_id FROM top5)
 )
 SELECT
@@ -48,10 +48,10 @@ SELECT
       'rating', rh.rating,
       'numberOfReviews', rh.number_of_reviews,
       'facilities', rh.facilities,
-      'minPrice', rh.min_price,
+      'price', rh.min_price,
       'wardName', rh.ward_name,
       'provinceName', rh.province_name,
-      'imageUrls', rh.image_urls
+      'thumbnailUrl', rh.thumbnail_url
     ) ORDER BY rh.rn
   ) AS hotels
 FROM ranked_hotels rh

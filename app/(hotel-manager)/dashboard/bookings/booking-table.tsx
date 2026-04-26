@@ -1,7 +1,7 @@
 "use client";
 
 import { DataTable } from "@/components/data-table";
-import { columns } from "./columns";
+import { columns } from "../tmp-components/booking-columns";
 import { hotelowner_getBookings } from "@/lib/actions/hotel-manager/bookings";
 
 import { useQuery } from "@tanstack/react-query";
