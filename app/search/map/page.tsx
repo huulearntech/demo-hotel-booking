@@ -6,7 +6,7 @@ import FilterSheetProvider from "../filter-sheet-context";
 import { FilterFormProvider } from "../filter-form-context";
 import { FilterSheet } from "../filter";
 import SearchBar from "@/components/search-bar";
-import { SearchBar_FormInput, schema_searchBar } from "@/lib/zod_schemas/search-bar";
+import { SearchBar_FormInput, SearchBar_LocationType, schema_searchBar } from "@/lib/zod_schemas/search-bar";
 import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 
 // Need to dynamically import to turn off ssr and render on client because it relies on Leaflet
@@ -19,7 +19,7 @@ export default function SearchMapPage() {
   const searchBarValuesFromSearchParams: SearchBar_FormInput = {
     location: {
       id: searchParams.get("locationId") || "",
-      type: ((searchParams.get("locationType") || "none") as SearchBar_FormInput["location"]["type"]),
+      type: (searchParams.get("locationType") || "none") as SearchBar_LocationType,
     },
     inOutDates: {
       from: new Date(searchParams.get("checkInDate")!),

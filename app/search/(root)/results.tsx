@@ -8,7 +8,7 @@ import { useInView } from "react-intersection-observer";
 
 import { useFilterForm } from "../filter-form-context";
 import { codec_searchSpec, SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
-import { fetchSearchResult, type CursorType } from "@/lib/actions/search";
+import { draft_fetchSearchResult, type SearchResult_CursorType, type SortType } from "@/lib/actions/search";
 import { PATHS } from "@/lib/constants";
 
 import ButtonOpenFilterSheet from "../button-open-filter-sheet";
@@ -19,16 +19,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, LoaderCircleIcon } from "lucide-react";
 import noResultImage from "@/public/images/no-result.svg";
 
-// temporary. TODO: move to types
-type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
+// TODO: make this dynamic
 const sort: SortType = "price_asc";
 
 export default function Results({
   searchBarFormValues,
-  userIsAuthenticated,
 }: {
   searchBarFormValues: SearchBar_FormInput;
-  userIsAuthenticated: boolean;
 }) {
   const searchParams = useSearchParams();
   const [totalCount, setTotalCount] = useState(0);
@@ -47,10 +44,10 @@ export default function Results({
     refetch,
   } = useInfiniteQuery({
     queryKey: ["hotels", searchBarFormValues], // TODO: should also include filterFormValues and sort in the query key
-    queryFn: async ({ pageParam }: { pageParam: CursorType | null }) => {
+    queryFn: async ({ pageParam }: { pageParam: SearchResult_CursorType | null }) => {
       const filterFormValues = getValues();
 
-      const page = await fetchSearchResult(
+      const page = await draft_fetchSearchResult(
         searchBarFormValues,
         filterFormValues,
         sort,
@@ -62,13 +59,6 @@ export default function Results({
     getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,
     refetchOnWindowFocus: false,
   });
-
-  // flatten pages into a single array of hotels
-  const hotels = data?.pages.flatMap(p => p.items) ?? [];
-  useEffect(() => {
-    const total = data?.pages?.[0]?.totalCount ?? 0;
-    setTotalCount(total);
-  }, [data]);
 
   // sentinel to load next page when it comes into view
   const { ref: sentinelRef, inView } = useInView({
@@ -83,10 +73,18 @@ export default function Results({
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // flatten pages into a single array of hotels
+  const hotels = data?.pages.flatMap(p => p.items) ?? [];
+  useEffect(() => {
+    const total = data?.pages?.[0]?.totalCount ?? 0;
+    setTotalCount(total);
+  }, [data]);
+
+
   if (isLoading) return <ResultsSkeleton />;
   if (isError) return <ResultsError onRetry={() => refetch()} />;
-
   if (hotels.length === 0) return <NoResult />;
+
 
   return (
     <div className="w-full flex flex-col space-y-3">
@@ -96,13 +94,11 @@ export default function Results({
       />
 
       <ul className="w-full grid grid-cols-1 min-[512px]:grid-cols-2 md:grid-cols-3 gap-4">
-        {hotels.map((hotel: any, index: number) => (
+        {hotels.map((hotel, index) => (
           <li key={hotel.id} data-index={index}>
             <HotelCard
               hotel={hotel}
               href={`${PATHS.hotels}/${hotel.id}?${searchSpecString}`}
-              showWardAtTopLeft={false}
-              userIsAuthenticated={userIsAuthenticated}
             />
           </li>
         ))}

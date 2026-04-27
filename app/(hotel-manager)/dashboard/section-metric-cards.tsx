@@ -10,6 +10,7 @@ import { auth } from "@/auth";
 import { differenceInDays } from "date-fns";
 import { Decimal } from "@prisma/client/runtime/client";
 
+// TODO: Cleanup all this
 
 async function hotelowner_getMetrics() {
   const session = await auth();
@@ -87,7 +88,7 @@ async function hotelowner_getMetrics() {
             ownerId: session.user.id,
           }
         },
-        status: "ACTIVE", // TODO: ignore it for now, this is just place holder.
+        status: "ACTIVE", // FIXME
       },
     });
 

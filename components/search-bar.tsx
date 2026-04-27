@@ -151,10 +151,8 @@ export function SearchBarForm({
   const router = useRouter();
   const pathname = usePathname();
   const onSubmit = (values: SearchBar_FormOutput) => {
-    if (values.location.type === "none" || !values.location.id) {
-      console.warn("TODO: Invalid location, not searching");
-      return;
-    }
+    if (values.location.type === "none" || !values.location.id) return;
+
     sessionStorage.setItem("searchBarForm", JSON.stringify(SearchParamsCodec.encode(values)));
 
     // TODO: rename codec and types. The amount of confusion has reached critical point.

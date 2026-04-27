@@ -17,7 +17,7 @@ CREATE TYPE "RoomStatus" AS ENUM ('ACTIVE', 'MAINTENANCE', 'OUT_OF_SERVICE');
 CREATE TYPE "BedType" AS ENUM ('SINGLE', 'DOUBLE', 'QUEEN', 'KING', 'TWIN');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'HOTEL_OWNER', 'USER');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'HOTEL_OWNER', 'USER', 'PENDING');
 
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED', 'DELETED');
@@ -187,7 +187,7 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "role" "UserRole" NOT NULL DEFAULT 'PENDING',
     "profile_image_url" TEXT,
     "status" "UserStatus" NOT NULL DEFAULT 'PENDING',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

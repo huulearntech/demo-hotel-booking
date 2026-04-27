@@ -2,17 +2,19 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Prisma } from "../generated/prisma/client";
 import { getReviewsOfHotel } from "../generated/prisma/sql";
+import { OperationResult } from "../types/utils";
 
-type CreateReviewForBookingData = Prisma.ReviewUncheckedCreateInput;
 
-// TODO: handle permission and errors more robustly.
 export async function user_createReviewForBooking(
   bookingId: string,
-  data: CreateReviewForBookingData
-) {
+  data: Prisma.ReviewUncheckedCreateInput,
+): Promise<OperationResult<{ reviewId: string }>> {
   const session = await auth();
   if (!session) {
-    throw new Error("Unauthorized");
+    return { ok: false, status: 401, error: "Unauthenticated" };
+  }
+  if (session.user.role !== "USER") {
+    return { ok: false, status: 403, error: "Forbidden" };
   }
 
   // Ensure the current user is the author of the booking
@@ -21,21 +23,32 @@ export async function user_createReviewForBooking(
     select: { id: true, userId: true },
   });
   if (!booking) {
-    throw new Error("Booking not found");
+    return { ok: false, status: 404, error: "Booking not found" };
   }
   if (booking.userId !== session.user.id) {
-    throw new Error("Forbidden");
+    return { ok: false, status: 403, error: "Forbidden" };
   }
 
-  // Upsert the review for the booking (Review has a unique constraint on bookingId)
-  return prisma.review.upsert({
-    where: { bookingId },
-    create: {
-      ...data,
-      bookingId,
-    },
-    update: {}, // No update allowed, or you can specify fields to update if you want to allow editing the review
-  });
+  // Create the review for the booking (ensure one review per booking and user)
+  try {
+    const existing = await prisma.review.findFirst({
+      where: { booking: { id: bookingId, userId: session.user.id } },
+    });
+    if (existing) {
+      return { ok: false, status: 409, error: "Review already exists for this booking" };
+    }
+
+    const created = await prisma.review.create({
+      data: {
+        ...data,
+        bookingId,
+      },
+    });
+
+    return { ok: true, data: { reviewId: created.id } };
+  } catch (err) {
+    return { ok: false, status: 500, error: "Failed to create review" };
+  }
 }
 
 export async function user_getReviewsOfHotel(
@@ -55,15 +68,15 @@ export async function user_getReviewsOfHotel(
   // Determine next and previous cursors
   const nextCursor = reviews.length > 0
     ? {
-        createdAt: reviews[reviews.length - 1].created_at,
-        id: reviews[reviews.length - 1].review_id,
+        createdAt: reviews[reviews.length - 1].createdAt,
+        id: reviews[reviews.length - 1].reviewId,
       }
     : null;
 
   const prevCursor = reviews.length > 0
     ? {
-        createdAt: reviews[0].created_at,
-        id: reviews[0].review_id,
+        createdAt: reviews[0].createdAt,
+        id: reviews[0].reviewId,
       }
     : null;
 

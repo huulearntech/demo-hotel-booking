@@ -22,6 +22,7 @@ export const PATHS = {
   home: '/',
   signIn: '/sign-in',
   signUp: '/sign-up',
+  otp: '/sign-up/otp',
   favorites: '/favorites',
   account: '/account',
   accountHistory: '/account/history',

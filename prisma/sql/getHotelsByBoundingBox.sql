@@ -11,7 +11,7 @@
 
 -- @param {Decimal}  $10:minPrice (filter)
 -- @param {Decimal}  $11:maxPrice (filter)
--- @param {Int}      $14:numChildren (TODO: temporarily put this at the end.)
+-- @param {Int}      $14:numChildren (NOTE: temporarily put this at the end.)
 
 -- TODO: query should change from joining rooms into inventory.
 -- TODO: This counting booked room logic is different from the one in getHotelBySearchBarForm.
@@ -87,5 +87,3 @@ LIMIT $5;
 
 -- $12:facilityNames (prisma doesnot support array, so just treat it as normal sql param)
 -- $13:hotelTypes (e.g. resort, apartment, etc.) (prisma doesnot support array, so just treat it as normal sql param)
-
--- FIXME: Don't have any idea why it complains about nonexisted table???

@@ -78,7 +78,6 @@ export async function user_getAvailableRoomTypeOfHotel(hotelId: string, checkInD
 
 export type UserGetAvailableRoomTypeOfHotelResult = Awaited<ReturnType<typeof user_getAvailableRoomTypeOfHotel>>;
 
-// TODO: pagination for reviews
 export async function get5ReviewsAboutHotelForOverview(hotelId: string) {
   return prisma.review.findMany({
     where: {

@@ -17,7 +17,7 @@ model Hotel {
   checkInTime           DateTime    @db.Time(0)  @map("check_in_time")
   checkOutTime          DateTime    @db.Time(0)  @map("check_out_time")
   
-  imageUrls             String[]    @map("image_urls")   // TODO: should have videos
+  imageUrls             String[]    @map("image_urls")   // NOTE: may have videos in future.
 
   createdAt             DateTime    @default(now()) @map("created_at")
   updatedAt             DateTime    @updatedAt      @map("updated_at")
@@ -119,7 +119,7 @@ model RoomType {
   areaM2           Float    @map("area_m2")
   bedType          BedType  @map("bed_type")
 
-  imageUrls        String[] @map("image_urls")  // TODO: add videos
+  imageUrls        String[] @map("image_urls")    // NOTE: may have videos in future.
 
   rooms            Room[]
   facilities       Facility[]

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table'
 
 
-type BookingStatus = 'pending' | 'confirmed' | 'checked_in' | 'completed' | 'cancelled' | 'refunded'
+import type { BookingStatus } from '@/lib/generated/prisma/enums'
 
 type Booking = {
   id: string
@@ -65,7 +65,7 @@ const sampleBookings: Booking[] = [
     hotelName: 'Seaside Resort',
     amount: 320,
     currency: 'USD',
-    status: 'confirmed',
+    status: 'PAID',
     dateFrom: '2026-05-01',
     dateTo: '2026-05-05',
     createdAt: nowISO(),
@@ -81,7 +81,7 @@ const sampleBookings: Booking[] = [
     hotelName: 'Mountain Stay',
     amount: 150,
     currency: 'USD',
-    status: 'pending',
+    status: 'PENDING_TO_PAY',
     dateFrom: '2026-06-10',
     dateTo: '2026-06-12',
     createdAt: nowISO(),
@@ -93,7 +93,7 @@ const sampleBookings: Booking[] = [
     hotelName: 'City Center Inn',
     amount: 210,
     currency: 'USD',
-    status: 'cancelled',
+    status: 'CANCELLED',
     dateFrom: '2026-04-01',
     dateTo: '2026-04-03',
     createdAt: nowISO(),
@@ -131,14 +131,13 @@ function KPI({ title, value, delta }: { title: string; value: string | number; d
 }
 
 function StatusBadge({ status }: { status: BookingStatus }) {
-  const map: Record<BookingStatus, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-blue-100 text-blue-800',
-    checked_in: 'bg-indigo-100 text-indigo-800',
-    completed: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800',
-    refunded: 'bg-gray-100 text-gray-800',
-  }
+const map: Record<BookingStatus, { text: string; variant: string }> = {
+  PENDING_TO_PAY: { text: "Đang chờ", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Đã thanh toán", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Đã nhận phòng", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Đã trả phòng", variant: "bg-sky-100 text-sky-800" },
+  CANCELLED: { text: "Đã huỷ", variant: "bg-red-100 text-red-800" },
+};
   return <span className={`px-2 py-1 rounded text-xs ${map[status]}`}>{status.replace('_', ' ')}</span>
 }
 
@@ -198,23 +197,12 @@ export default function Page() {
   function bulkCancel() {
     const ids = Object.keys(selectedBookings).filter((k) => selectedBookings[k])
     if (!ids.length) return
-    setBookings((prev) => prev.map((b) => (ids.includes(b.id) ? { ...b, status: 'cancelled', timeline: [...b.timeline, { time: nowISO(), event: 'Cancelled by admin (bulk)' }] } : b)))
-    clearSelection()
-  }
-
-  function bulkRefund() {
-    const ids = Object.keys(selectedBookings).filter((k) => selectedBookings[k])
-    if (!ids.length) return
-    setBookings((prev) => prev.map((b) => (ids.includes(b.id) ? { ...b, status: 'refunded', timeline: [...b.timeline, { time: nowISO(), event: 'Refunded (bulk)' }] } : b)))
+    setBookings((prev) => prev.map((b) => (ids.includes(b.id) ? { ...b, status: 'CANCELLED', timeline: [...b.timeline, { time: nowISO(), event: 'Cancelled by admin (bulk)' }] } : b)))
     clearSelection()
   }
 
   function updateBookingStatus(id: string, status: BookingStatus) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status, timeline: [...b.timeline, { time: nowISO(), event: `Status changed to ${status}` }] } : b)))
-  }
-
-  function refundBooking(id: string) {
-    updateBookingStatus(id, 'refunded')
   }
 
   function openBookingDetail(b: Booking) {
@@ -299,10 +287,6 @@ export default function Page() {
             <button className="bg-red-600 text-white px-3 py-1 rounded text-sm" onClick={bulkCancel}>
               Bulk Cancel
             </button>
-            <button className="bg-yellow-600 text-white px-3 py-1 rounded text-sm" onClick={bulkRefund}>
-              Bulk Refund
-            </button>
-            <div className="text-sm text-gray-500 ml-auto">{Object.values(selectedBookings).filter(Boolean).length} selected</div>
           </div>
 
           <div className="overflow-x-auto">
@@ -355,7 +339,6 @@ export default function Page() {
                     </SelectContent>
                     </Select>
                   </div>
-                  <button className="text-sm text-red-600" onClick={() => refundBooking(b.id)}>Refund</button>
                   </div>
                 </TableCell>
                 </TableRow>
@@ -384,8 +367,7 @@ export default function Page() {
                 <div className="text-sm text-gray-500">{activeBooking.guestName} — {activeBooking.hotelName}</div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { updateBookingStatus(activeBooking.id, 'completed'); setActiveBooking({ ...activeBooking, status: 'completed' }) }}>Mark Completed</button>
-                <button className="px-3 py-1 bg-red-600 text-white rounded" onClick={() => { refundBooking(activeBooking.id); setActiveBooking({ ...activeBooking, status: 'refunded' }) }}>Refund</button>
+                <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { updateBookingStatus(activeBooking.id, 'PAID'); setActiveBooking({ ...activeBooking, status: 'PAID' }) }}>Mark Completed</button>
                 <button className="text-gray-500" onClick={closeBookingDetail}>Close</button>
               </div>
             </div>
@@ -433,7 +415,6 @@ export default function Page() {
                       <option value="cancelled">cancelled</option>
                       <option value="refunded">refunded</option>
                     </select>
-                    <button className="bg-yellow-500 text-white px-3 py-1 rounded text-sm" onClick={() => { refundBooking(activeBooking.id); setActiveBooking({ ...activeBooking, status: 'refunded' }) }}>Refund</button>
                   </div>
                 </div>
               </div>

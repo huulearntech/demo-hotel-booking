@@ -1,8 +1,3 @@
-// TODO: when user selects room type to book, they first only sees a UI shows the form
-// to fill in the information, and a "Continue to payment" button. Only after they click the button, we create a booking with status FILLING_INFORMATION, and then redirect them to the payment page. This way, we can prevent the issue of having many "abandoned" bookings with status PENDING_TO_PAY when user just clicks the button but never completes the payment.
-
-// TODO: Prevent user from making a booking when he is holding another booking that is not yet expired.
-// In such case, we force the user to either complete or cancel the existing booking before making a new one.
 model Booking {
   id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   status       BookingStatus       @default(PENDING_TO_PAY)
@@ -24,7 +19,6 @@ model Booking {
   snapshotCheckInTime  DateTime    @map("snapshot_check_in_time") @db.Time(0)
   snapshotCheckOutTime DateTime    @map("snapshot_check_out_time") @db.Time(0)
 
-  // TODO: allow user to book with other credentials or not? If yes, this should be called as snapshot, just like the snapshot...
   customerName      String           @map("customer_name")
   customerEmail     String           @map("customer_email")
   customerPhone     String           @map("customer_phone")

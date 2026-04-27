@@ -1,4 +1,4 @@
-// TODO: 3 tab: upcoming, past, cancelled. or just one tab with filter? or just one list with filter buttons? (pending, confirmed, completed, cancelled). maybe just one list with status badge is enough, since the user can easily scan through the status badge to find the booking they want. and also it is less code and less state to maintain.
+// TODO: 3 tab: upcoming, past, cancelled. with filter?
 "use client";
 
 import { useEffect } from "react";
@@ -10,13 +10,14 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { type RecentBookingType, user_getRecentBookingsPaginated } from "@/lib/actions/user-account";
 import { BookingStatus } from "@/lib/generated/prisma/enums";
 import { differenceInDays } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const map: Record<BookingStatus, { text: string; variant: string }> = {
-  PENDING_TO_PAY: { text: "Pending", variant: "bg-yellow-100 text-yellow-800" },
-  PAID: { text: "Confirmed", variant: "bg-green-100 text-green-800" },
-  CHECKED_IN: { text: "Checked in", variant: "bg-sky-100 text-sky-800" },
-  CHECKED_OUT: { text: "Checked out", variant: "bg-sky-100 text-sky-800" },
-  CANCELLED: { text: "Cancelled", variant: "bg-red-100 text-red-800" },
+  PENDING_TO_PAY: { text: "Đang chờ", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Đã thanh toán", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Đã nhận phòng", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Đã trả phòng", variant: "bg-sky-100 text-sky-800" },
+  CANCELLED: { text: "Đã huỷ", variant: "bg-red-100 text-red-800" },
 };
 
 function StatusBadge({ status }: { status: BookingStatus }) {
@@ -44,7 +45,7 @@ const fmtDateTime = (d?: string | Date | null) => {
 
 function BookingCard({ booking }: { booking: RecentBookingType }) {
   const {
-    roomType: { hotel: { name: hotelName, type: hotelType } },
+    roomType: { hotel: { name: hotelName, type: hotelType, owner: { profileImageUrl } } },
     checkInDate,
     checkOutDate,
     numRooms,
@@ -55,28 +56,23 @@ function BookingCard({ booking }: { booking: RecentBookingType }) {
   const totalPrice = booking.totalPrice;
   const createdAt = booking.createdAt;
 
-  // TODO: don't be too complicated.
-  const initials =
-    (hotelName || "")
-      .split(" ")
-      .map((s) => s[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "HT";
-
   const nights = differenceInDays(checkOutDate, checkInDate);
 
   return (
     <Card className="rounded-xl border bg-card/50 hover:shadow-md transition-shadow">
       <CardHeader className="flex items-start justify-between gap-4 py-3 px-4">
         <div className="flex items-start gap-3 min-w-0">
-          <div
-            className="flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-sky-400 to-indigo-500 text-sm font-semibold text-white"
-            aria-hidden
-          >
-            {initials}
-          </div>
+          <Avatar>
+            <AvatarImage src={profileImageUrl ?? undefined} alt={`${hotelName} owner profile`} />
+            <AvatarFallback>
+              {hotelName
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">

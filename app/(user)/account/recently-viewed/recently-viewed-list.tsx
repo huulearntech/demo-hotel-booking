@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import HotelCard from '@/components/hotel-card.draft';
+import HotelCard from '@/components/hotel-card';
 import { useInView } from 'react-intersection-observer';
 import { draft_user_fetchRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
 

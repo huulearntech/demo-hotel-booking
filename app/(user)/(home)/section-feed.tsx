@@ -12,7 +12,7 @@ import {
   TabsContent
 } from "@/components/ui/tabs";
 
-import HotelCard from "@/components/hotel-card.draft";
+import HotelCard from "@/components/hotel-card";
 import { fetchFeed } from "@/lib/actions/home";
 import { codec_searchSpec } from "@/lib/zod_schemas/search-bar";
 import { PATHS } from "@/lib/constants";

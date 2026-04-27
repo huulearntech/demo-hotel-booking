@@ -8,7 +8,6 @@ import { ProductCode, VnpLocale, VnpCurrCode, dateFormat } from "vnpay";
 
 import {
   schema_bookingForm,
-  // type BookingFormValues // TODO: Fix this
 } from "../zod_schemas/booking";
 import prisma from "../prisma";
 import { differenceInDays } from "date-fns";
@@ -16,7 +15,6 @@ import { Prisma } from "../generated/prisma/client";
 import { auth } from "@/auth";
 import { user_getRoomTypeInventoryForUpdate } from "../generated/prisma/sql";
 
-type BookingFormValues = Prisma.BookingUncheckedCreateInput
 
 function getClientIP (headers: Headers): string {
   const forwardedFor = headers.get("x-forwarded-for");
@@ -57,6 +55,18 @@ export async function fake_payment_just_for_testing(
     // if (totalPrice <= 1000) {
     //   throw new Error("Total price must be greater than 1000 VND to proceed with payment");
     // }
+
+    // Check if user has another pending booking
+    const userHasPendingBooking = await prisma.booking.findFirst({
+      where: {
+        userId: session.user.id,
+        status: "PENDING_TO_PAY",
+      },
+    });
+
+    if (userHasPendingBooking) {
+      throw new Error("You have another pending booking. Please complete or cancel it before creating a new one.");
+    }
 
     const roomType = await prisma.roomType.findUnique({
       where: { id: roomTypeId },
@@ -131,6 +141,8 @@ export async function fake_payment_just_for_testing(
   }
 }
 
+// TODO: Fix this
+type BookingFormValues = Prisma.BookingUncheckedCreateInput
 export async function createPaymentUrlThenRedirectToVNPay(bookingForm: BookingFormValues) {
   try {
     if (!process.env.VNPAY_RETURN_URL) {

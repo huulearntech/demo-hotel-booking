@@ -1,40 +1,52 @@
-// TODO: optimize onclick
 "use client";
 
 import Image from "next/image";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 import { cn, formatVND } from "@/lib/utils";
-import { HotelCardProps } from "@/lib/types/hotel-card";
+import { draft_HotelCardProps } from "@/lib/types/hotel-card";
 
 import { hotel as hotelIcon } from "@/public/icons/index";
 import { MapPin, Heart } from "lucide-react";
+import { createContext, useContext, ReactNode } from "react";
+import { draft_user_createOrDeleteFavoriteHotel } from "@/lib/actions/user-account/favorites";
+import { toast } from "sonner";
+
 
 export default function HotelCard({
   hotel,
   href,
-  userIsAuthenticated,
   className,
-  showWardAtTopLeft = true,
-  hotelIsFavorited = true, // TODO: pass this as a prop and determine it in the parent component to avoid extra API calls inside this card
 }: {
-  hotel: HotelCardProps;
+  hotel: draft_HotelCardProps;
   href: string;
-  userIsAuthenticated: boolean;
   className?: string
-  showWardAtTopLeft?: boolean;
-  hotelIsFavorited?: boolean;
 }) {
   const {
     id,
     name,
-    imageUrls: [thumbUrl],
+    thumbnailUrl,
     rating,
     numberOfReviews,
-    ward: { name: wardName, district: { province: { name: provinceName } } },
-    roomTypes: [{ price }],
-    facilities,
-    type
+    wardName,
+    provinceName,
+    price,
+    facilityNames,
+    type,
+    isFavorited
   } = hotel;
+
+  const [localIsFavorited, setLocalIsFavorited] = useState(Boolean(isFavorited));
+  useLayoutEffect(() => {
+    setLocalIsFavorited(Boolean(isFavorited));
+  }, [isFavorited]);
+
+  const onFavoriteToggle = useFavoriteToggle();
 
   return (
     <a
@@ -44,40 +56,27 @@ export default function HotelCard({
       className={cn("bg-white w-full min-h-106 flex flex-col rounded-lg shadow-md overflow-hidden hover:shadow-primary/50 hover:shadow-md", className)}
     >
       <div className="relative h-50 overflow-hidden">
-        <Image
-          src={thumbUrl}
-          alt={name}
-          className="absolute object-cover w-100 h-75 inset-0"
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
-        {showWardAtTopLeft &&
-          <div className="absolute top-0 left-0 bg-black/40 text-primary-foreground inline-flex rounded-br-lg items-center px-2 py-1 text-sm font-semibold">
-            <MapPin className="size-4 mr-1" />
-            {wardName}
+        {thumbnailUrl
+          ? <Image
+            src={thumbnailUrl}
+            alt={name}
+            className="absolute object-cover w-100 h-75 inset-0"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+          : <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <span className="text-sm text-gray-500">Không có hình ảnh</span>
           </div>
         }
         <button
-          className={cn("absolute top-1 right-1 p-2 rounded-full cursor-pointer",
-            hotelIsFavorited ? "bg-white/60" : "bg-black/40"
-          )}
+          className="absolute top-1 right-1 p-2 rounded-full bg-black/40 cursor-pointer"
           onClick={async (e) => {
             e.preventDefault();
-            if (!userIsAuthenticated) {
-              toast.message("Bạn cần đăng nhập để thêm vào mục yêu thích");
-              return;
-            } else {
-              const response = await user_upsertFavoriteHotel(id);
-              if (response.ok) {
-                toast.success("Đã thêm vào mục yêu thích!");
-              } else {
-                toast.error("Có lỗi xảy ra khi thêm vào mục yêu thích. Vui lòng thử lại.");
-              }
-            }
+            onFavoriteToggle(id, localIsFavorited, setLocalIsFavorited);
           }}
         >
-          {hotelIsFavorited
-            ? <Heart className="size-4 text-primary" fill="currentColor" />
+          {!!localIsFavorited
+            ? <Heart className="size-4 text-red-500" fill="currentColor" />
             : <Heart className="size-4 text-primary-foreground" />
           }
         </button>
@@ -101,12 +100,12 @@ export default function HotelCard({
           <div className='flex items-center space-x-1 ml-1'>
             <MapPin className="size-3" strokeWidth={3} />
             <span className="text-xs font-semibold whitespace-nowrap overflow-hidden overflow-ellipsis flex-1">
-              {(!showWardAtTopLeft ? (wardName + ", ") : "") + provinceName}
+              {wardName + ", " + provinceName}
             </span>
           </div>
 
           <Tooltip>
-            <FacilityBadges facilities={facilities.map(f => f.name)} />
+            <FacilityBadges facilities={facilityNames || []} />
           </Tooltip>
         </div>
 
@@ -121,22 +120,13 @@ export default function HotelCard({
   );
 };
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "./ui/tooltip";
-import { toast } from "sonner";
-import { user_upsertFavoriteHotel } from "@/lib/actions/user-account/favorites";
-
 // Use a simple estimation based on character count instead of measuring each DOM node.
 // This avoids expensive layout reads and should be much faster.
 function FacilityBadges({ facilities }: { facilities: string[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(facilities.length);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) {
       setVisibleCount(facilities.length);
@@ -145,36 +135,29 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
 
     const containerWidth = container.clientWidth;
 
-    // Estimation parameters (tweak if needed)
-    const charWidth = 7; // average width per character in px for the small font
-    const horizontalPadding = 8; // px for left+right padding (approx)
+    // Estimation
+    const charWidth = 7;
+    const px = 4;
     const badgeExtra = 4; // extra space for rounding/border etc.
-    const gap = 6; // gap between badges in px (matches tailwind spacing used)
-    const moreBadgePadding = 12; // px for "+X" badge padding (a bit larger)
+    const gap = 8;
 
     // precompute widths
-    const widths = facilities.map((f) => horizontalPadding + badgeExtra + f.length * charWidth);
+    const widths = facilities.map((f) => f.length * charWidth + px * 2 + badgeExtra );
 
-    // width of a potential "+N" badge (digits depend on how many remain)
-    const moreBaseWidth = (n: number) =>
-      moreBadgePadding + String(n).length * charWidth + badgeExtra;
+    // width of "+N" badge
+    const plusNBadgeWidth = (n: number) =>
+      px * 2 + String(n).length * charWidth + badgeExtra;
 
-    let used = 0;
+    let used_width = 0;
     let count = 0;
 
     for (let i = 0; i < widths.length; i++) {
-      const w = widths[i];
-      const gapBefore = i > 0 ? gap : 0;
-      const remaining = facilities.length - (i + 1);
+      if (used_width + widths[i] + plusNBadgeWidth(widths.length - i) > containerWidth) {
+        count = i;
+        break;
+      }
 
-      const moreW = remaining > 0 ? moreBaseWidth(remaining) + gap : 0;
-
-      const totalNeeded = used + gapBefore + w + moreW;
-
-      if (totalNeeded > containerWidth) break;
-
-      used += gapBefore + w;
-      count++;
+      used_width += widths[i] + gap;
     }
 
     // Ensure at least 0 and at most facilities.length
@@ -183,7 +166,7 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
 
   return (
     <>
-      <div ref={containerRef} aria-hidden className="flex items-center space-x-2 overflow-clip">
+      <div ref={containerRef} aria-hidden className="flex items-center gap-x-2 overflow-clip">
         {facilities.slice(0, visibleCount).map((facility) => (
           <span key={facility} className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-gray-50">
             {facility}
@@ -211,4 +194,47 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
       </TooltipContent>
     </>
   );
+}
+
+
+
+type FavoriteToggleFn = (hotelId: string, currIsFavorited: boolean, setIsFavorited: (newValue: boolean) => void) => Promise<boolean>;
+
+const FavoriteToggleContext = createContext<FavoriteToggleFn | null>(null);
+
+export function FavoriteToggleProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const onToggleFavorite = useCallback(async (hotelId: string, currIsFavorited: boolean, setIsFavorited: (newValue: boolean) => void) => {
+    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, !currIsFavorited);
+    if (!response.ok) {
+      if (response.status === 401) {
+        toast.info("Bạn cần đăng nhập để thêm khách sạn vào danh sách yêu thích.");
+      } else {
+        toast.info("Đã có lỗi xảy ra khi cập nhật danh sách yêu thích. Vui lòng thử lại.");
+      }
+      return false;
+    } else {
+      toast.success(!currIsFavorited ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
+      setIsFavorited(!currIsFavorited);
+      return true;
+    }
+  }, []);
+  return (
+    <FavoriteToggleContext.Provider value={onToggleFavorite}>
+      {children}
+    </FavoriteToggleContext.Provider>
+  );
+}
+
+export function useFavoriteToggle(): FavoriteToggleFn {
+  const ctx = useContext(FavoriteToggleContext);
+  if (!ctx) {
+    throw new Error(
+      "[FavoriteToggle] useFavoriteToggle must be used within a FavoriteToggleProvider"
+    );
+  }
+  return ctx;
 }

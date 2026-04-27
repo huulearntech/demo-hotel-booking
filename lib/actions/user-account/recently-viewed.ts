@@ -3,75 +3,8 @@
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 
-import { draft_HotelCardProps, HotelCardProps } from "@/lib/types/hotel-card";
-import { OperationResult } from "@/lib/types/operation-result";
-
-export async function user_getRecentlyViewedHotels() {
-  const session = await auth();
-  if (session?.user.role !== "USER") return [];
-
-  return prisma.recentlyViewed.findMany({
-    where: { userId: session.user.id },
-    orderBy: { viewedAt: "desc" },
-    select: {
-      hotel: {
-        select: {
-          id: true,
-          name: true,
-          imageUrls: true,
-          rating: true,
-          numberOfReviews: true,
-          ward: { select: { name: true, district: { select: { province: { select: { name: true } } } } } },
-          facilities: { select: { name: true } },
-          roomTypes: { select: { price: true }, orderBy: { price: "asc" }, take: 1 },
-          type: true,
-        }
-      }
-    },
-    take: 10, // TODO: pagination
-  }).then(recentlyViewedEntries => recentlyViewedEntries.map(entry => ({
-    ...entry.hotel,
-    roomTypes: entry.hotel.roomTypes.map(rt => ({ ...rt, price: rt.price.toNumber() })),
-  } as HotelCardProps)));
-}
-
-
-export async function draft_user_getRecentlyViewedHotels(): Promise<draft_HotelCardProps[]> {
-  const session = await auth();
-  if (session?.user.role !== "USER") return [];
-
-  return prisma.recentlyViewed.findMany({
-    where: { userId: session.user.id },
-    orderBy: { viewedAt: "desc" },
-    select: {
-      hotel: {
-        select: {
-          id: true,
-          name: true,
-          imageUrls: true,
-          rating: true,
-          numberOfReviews: true,
-          ward: { select: { name: true, district: { select: { province: { select: { name: true } } } } } },
-          facilities: { select: { name: true } },
-          roomTypes: { select: { price: true }, orderBy: { price: "asc" }, take: 1 },
-          type: true,
-        }
-      }
-    },
-    take: 10, // TODO: pagination and fix following "then".
-  }).then(entries => entries.map(entry => ({
-    id: entry.hotel.id,
-    name: entry.hotel.name,
-    thumbnailUrl: entry.hotel.imageUrls[0],
-    rating: entry.hotel.rating,
-    numberOfReviews: entry.hotel.numberOfReviews,
-    wardName: entry.hotel.ward.name,
-    provinceName: entry.hotel.ward.district.province.name,
-    price: entry.hotel.roomTypes.length > 0 ? entry.hotel.roomTypes[0].price.toNumber() : 0,
-    facilityNames: entry.hotel.facilities.map(f => f.name),
-    type: entry.hotel.type,
-  } as draft_HotelCardProps)));
-}
+import { draft_HotelCardProps } from "@/lib/types/hotel-card";
+import { OperationResult } from "@/lib/types/utils";
 
 
 export async function draft_user_fetchRecentlyViewedHotels(

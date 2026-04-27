@@ -17,7 +17,7 @@ export default function ReviewCard({
   const [open, setOpen] = useState(false);
 
   const today = new Date();
-  const diff = differenceInDays(today, new Date(review.created_at));
+  const diff = differenceInDays(today, new Date(review.createdAt));
   let timeAgo = "";
   if (diff < 1) {
     timeAgo = "hôm nay";
@@ -42,14 +42,14 @@ export default function ReviewCard({
         <div className="flex gap-x-12">
           <div className="flex flex-col items-center gap-y-2 shrink-0 w-1/6">
             <Image
-              src={review.author_profile_image ?? tvlk_favicon}
+              src={review.authorProfileImageUrl ?? tvlk_favicon}
               alt=""
               className="rounded-full w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24"
               width={64}
               height={64}
             />
             <div className="font-bold text-center truncate w-full">
-              {review.author_name}
+              {review.authorName}
             </div>
           </div>
 
@@ -77,9 +77,9 @@ export default function ReviewCard({
                   </div>
                   <div>{reply}</div>
 
-                  {review.replied_at && (
+                  {review.repliedAt && (
                     <div className="text-xs text-muted-foreground mt-2 hidden data-[open=true]:block">
-                      {new Date(review.replied_at).toLocaleString()}
+                      {new Date(review.repliedAt).toLocaleString()}
                     </div>
                   )}
                 </div>

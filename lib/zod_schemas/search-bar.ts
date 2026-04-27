@@ -6,7 +6,17 @@ const locationTypes = ["none", "province", "district", "ward", "hotel", "nearby"
 export type SearchBar_LocationType = typeof locationTypes[number];
 
 export const schema_searchBar = z.object({
-  location: z.object({ type: z.enum(locationTypes), id: z.string() }), // TODO: further validation.
+  location: z.object({
+    type: z.enum(locationTypes),
+    id: z.string()
+  }).superRefine(({ type, id }, ctx) => {
+    if (type === "none" || id === "") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Vui lòng chọn địa điểm",
+      });
+    }
+  }),
   inOutDates: z.object({
     from: z.date(),
     to: z.date(),
@@ -15,7 +25,6 @@ export const schema_searchBar = z.object({
       ctx.addIssue({
         code: "custom",
         message: "Ngày nhận phòng phải trước ngày trả phòng",
-        path: ["to"],
       });
     }
   }),
@@ -28,7 +37,6 @@ export const schema_searchBar = z.object({
       ctx.addIssue({
         code: "custom",
         message: "Số phòng không được nhiều hơn số khách người lớn",
-        path: ["numRooms"],
       });
     }
   }),

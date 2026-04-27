@@ -49,7 +49,7 @@ export async function tmp_getHotelsByBoundingBox(
     hotelTypes,
 
 
-    numChildren,  // TODO: move this up with the numAdults.
+    numChildren,  // NOTE: move this up with the numAdults.
   )).then(hotels => hotels.map(hotel => ({
     ...hotel,
     price: hotel.price?.toNumber() || 0, // convert Decimal to number, default to 0 if price is null

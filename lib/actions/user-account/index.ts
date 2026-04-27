@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
-import { type OperationResult } from "@/lib/types/operation-result";
+import { type OperationResult } from "@/lib/types/utils";
 import { differenceInDays } from "date-fns";
 
 // TODO: categorize by status.
@@ -42,6 +42,11 @@ export async function user_getRecentBookingsPaginated(
             select: {
               name: true,
               type: true,
+              owner: {
+                select: {
+                  profileImageUrl: true,
+                }
+              }
             },
           },
         },
@@ -92,7 +97,6 @@ export async function user_updateName(formData_newName: UserUpdateNameData): Pro
 
   const parsed = userUpdateNameSchema.safeParse(formData_newName);
   if (!parsed.success) {
-    console.log("Validation error:", parsed.error);
     return { ok: false, error: parsed.error.message, status: 400 };
   }
 
@@ -108,7 +112,6 @@ export async function user_updateName(formData_newName: UserUpdateNameData): Pro
     return { ok: true, data: user };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.log("Database error:", message);
     return { ok: false, error: message, status: 500 };
   }
 }

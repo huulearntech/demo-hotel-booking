@@ -47,14 +47,12 @@ function GalleryProvider({ children }: { children: React.ReactNode }) {
 
 function Gallery({
   imageSources,
-  children,
   className,
   title,
   description,
   footer,
 }: {
   imageSources: string[];
-  children?: React.ReactNode;
   className?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -154,7 +152,8 @@ function Gallery({
               >
                 <Image
                   src={src}
-                  alt={`Thumb ${index + 1}`} // FIXME: improve alt text
+                  // FIXME: improve alt text
+                  alt={`Thumbnail ${index + 1}`}
                   width={96}
                   height={96}
                   className="object-cover w-full h-full"

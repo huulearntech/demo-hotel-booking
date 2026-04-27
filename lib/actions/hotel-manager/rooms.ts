@@ -5,8 +5,9 @@ import { auth } from "@/auth";
 
 import { MultiRoomType_FormValues, RoomFormValues } from "@/lib/zod_schemas/create-room";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { OperationResult } from "@/lib/types/operation-result";
+import { OperationResult, Override } from "@/lib/types/utils";
 
+// TODO:
 export async function hotelowner_updateRoomById(id: string, data: RoomFormValues): Promise<OperationResult> {
   const session = await auth();
   if (session?.user.role !== "HOTEL_OWNER") {
@@ -114,6 +115,7 @@ export async function hotelowner_getRoomTypeById(roomTypeId: string):
       adultCapacity: true,
       childrenCapacity: true,
       imageUrls: true,
+      areaM2: true,
       bedType: true,
       price: true,
       description: true,
@@ -140,6 +142,7 @@ export async function hotelowner_getRoomTypeById(roomTypeId: string):
       childrenCapacity: true,
       imageUrls: true,
       bedType: true,
+      areaM2: true,
       price: true,
       description: true,
       _count: { select: { rooms: true } },
@@ -151,20 +154,23 @@ export async function hotelowner_getRoomTypeById(roomTypeId: string):
   return { ok: true, data: result };
 }
 
+// TODO: name this better
+export type RoomType = Override<Prisma.RoomTypeGetPayload<{
+  select: {
+    id: true,
+    hotelId: true,
+    name: true,
+    price: true,
+    adultCapacity: true,
+    childrenCapacity: true,
+    imageUrls: true,
+    createdAt: true,
+    bedType: true,
+  }
+}>, { price: number }>;
+
 export async function hotelowner_getRoomTypes():
-  Promise<OperationResult<(Omit<Prisma.RoomTypeGetPayload<{
-    select: {
-      id: true,
-      hotelId: true,
-      name: true,
-      price: true,
-      adultCapacity: true,
-      childrenCapacity: true,
-      imageUrls: true,
-      createdAt: true,
-      bedType: true,
-    }
-  }>, "price"> & { price: number })[]>>
+  Promise<OperationResult<RoomType[]>>
 {
   const session = await auth();
   if (!session) {
@@ -198,21 +204,25 @@ export async function hotelowner_getRoomTypes():
   return { ok: true, data: result };
 }
 
-export type RoomType = NonNullable<Extract<Awaited<ReturnType<typeof hotelowner_getRoomTypes>>, { ok: true }>["data"]>[number];
-
-export async function hotelowner_deleteRoomById(id: string) {
+export async function
+  hotelowner_deleteRoomTypeById(id: string):
+  Promise<OperationResult<{ id: string }>>
+{
   const session = await auth();
-  if (session?.user.role !== "HOTEL_OWNER") {
-    throw new Error("Unauthorized");
+  if (!session) {
+    return { ok: false, error: "Unauthorized", status: 401 };
+  }
+  if (session.user.role !== "HOTEL_OWNER") {
+    return { ok: false, error: "Forbidden", status: 403 };
   }
 
-  // TODO: handle errors properly.
-  const res = await prisma.room.delete({
-    where: { id, type: { hotel: { ownerId: session.user.id } } },
-  }).then(() => ({ ok: true, message: null })).catch((err) => ({ ok: false, message: err.message }));
-  
-  if (!res.ok) {
-    throw new Error("Failed to delete room");
+  const response = await prisma.roomType.delete({
+    where: { id, hotel: { ownerId: session.user.id } },
+    select: { id: true },
+  })
+  if (!response) {
+    return { ok: false, error: "Failed to delete room type" };
   }
-  return;
+
+  return { ok: true, data: response };
 }

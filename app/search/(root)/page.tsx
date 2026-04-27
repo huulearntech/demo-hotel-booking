@@ -3,12 +3,10 @@ import { notFound } from "next/navigation";
 import Filter from "../filter";
 import { FilterFormProvider } from "../filter-form-context";
 import FilterSheetProvider from "../filter-sheet-context";
-// import Results from "./results";
-import Results from "./results.draft";
+import Results from "./results";
 
 import SearchBar from "@/components/search-bar";
 import { SearchParams, SearchParamsCodec } from "@/lib/zod_schemas/search-bar";
-import { auth } from "@/auth";
 
 export default async function SearchPage(props: { searchParams: Promise<SearchParams> }) {
   const searchParams = await props.searchParams;
@@ -23,13 +21,7 @@ export default async function SearchPage(props: { searchParams: Promise<SearchPa
       <FilterSheetProvider>
         <main className="flex gap-x-6 content my-6">
           <Filter />
-          {/* <Results
-            searchBarFormValues={safeDecodedParams.data}
-            userIsAuthenticated={!!(session && session.user)}
-          /> */}
-          <Results
-            searchBarFormValues={safeDecodedParams.data}
-          />
+          <Results searchBarFormValues={safeDecodedParams.data} />
         </main>
       </FilterSheetProvider>
     </FilterFormProvider>

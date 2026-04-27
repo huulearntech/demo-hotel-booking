@@ -1,13 +1,6 @@
 import ReviewsClient from "./reviews-client";
-import { fetchRepliedReviews, fetchUnrepliedReviews } from "./tmp-actions";
 
 export default async function Page() {
-  // TODO: move this data fetching logic into the client component and use SWR for caching and revalidation
-  const [unreplied, replied] = await Promise.all([
-    fetchUnrepliedReviews(),
-    fetchRepliedReviews(),
-  ]);
-
   return (
     <div>
       <header className="mb-6">
@@ -17,10 +10,7 @@ export default async function Page() {
         </p>
       </header>
 
-      <ReviewsClient
-        initialUnreplied={unreplied}
-        initialReplied={replied}
-      />
+      <ReviewsClient />
     </div>
   );
 }

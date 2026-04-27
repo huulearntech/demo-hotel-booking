@@ -7,21 +7,22 @@ const pathsRequiringRole: Record<string, (UserRole | "UNAUTH")[]> = {
   // unauthenticated routes
   [PATHS.signIn]: ['UNAUTH'],
   [PATHS.signUp]: ['UNAUTH'],
+  [PATHS.otp]: ['PENDING'],
   [PATHS.forgotPassword]: ['UNAUTH'],
   [PATHS.signUpHotel]: ['UNAUTH'],
 
   // user and part of hotel owner 
-  [PATHS.home]: ['USER', 'UNAUTH'],
+  [PATHS.home]: ['USER', 'UNAUTH', 'PENDING'],
   [PATHS.account]: ['USER', 'HOTEL_OWNER', 'ADMIN'],
   [PATHS.accountHistory]: ['USER'],
   [PATHS.accountRecentlyViewed]: ['USER'],
   [PATHS.favorites]: ['USER'],
-  [PATHS.bookings]: ['USER', 'UNAUTH'],
-  [PATHS.hotels]: ['USER', 'UNAUTH'],
-  [PATHS.search]: ['USER', 'UNAUTH'],
-  [PATHS.searchMap]: ['USER', 'UNAUTH'],
-  [PATHS.unauthorized]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN'],
-  [PATHS.notFound]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN'],
+  [PATHS.bookings]: ['USER'],
+  [PATHS.hotels]: ['USER', 'UNAUTH', 'PENDING'],
+  [PATHS.search]: ['USER', 'UNAUTH', 'PENDING'],
+  [PATHS.searchMap]: ['USER', 'UNAUTH', 'PENDING'],
+  [PATHS.unauthorized]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN', 'PENDING'],
+  [PATHS.notFound]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN', 'PENDING'],
 
   // Hotel dashboard sub-routes
   [PATHS.hotelDashboard]: ['HOTEL_OWNER'],
@@ -40,9 +41,9 @@ const defaultRedirectByRole: Record<UserRole, string> = {
   USER: PATHS.home,
   HOTEL_OWNER: PATHS.hotelDashboard,
   ADMIN: PATHS.adminDashboard,
+  PENDING: PATHS.otp,
 };
 
-// TODO: handle the case when user is pending to verify email. They should be treated as unauthenticated.
 // FIXME: when callback is dashboard but user is "USER",
 // though it stills return the correct home page, the URL in the browser is still "/dashboard", which is confusing.
 export const proxy = auth(async function handleProxy(request) {

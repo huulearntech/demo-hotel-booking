@@ -20,13 +20,8 @@ import { fetchUnrepliedReviews, fetchRepliedReviews, hotelowner_replyToReview } 
 import { RepliedReviewType, UnrepliedReviewType } from "./tmp-actions";
 
 
-export default function ReviewsClient({
-  initialUnreplied,
-  initialReplied,
-}: {
-  initialUnreplied: UnrepliedReviewType[];
-  initialReplied: RepliedReviewType[];
-}) {
+// TODO: Clean up
+export default function ReviewsClient() {
   const qc = useQueryClient();
 
   // Queries with initialData from the server component
@@ -47,7 +42,8 @@ export default function ReviewsClient({
         repliedAt: item.repliedAt ? new Date(item.repliedAt).toISOString() : null,
       })) as UnrepliedReviewType[];
     },
-    initialData: initialUnreplied,
+    initialData: [],
+    refetchOnWindowFocus: false,
   });
 
   const repliedQuery = useQuery<RepliedReviewType[]>({
@@ -66,7 +62,8 @@ export default function ReviewsClient({
         repliedAt: item.repliedAt ? new Date(item.repliedAt).toISOString() : null,
       })) as RepliedReviewType[];
     },
-    initialData: initialReplied,
+    initialData: [],
+    refetchOnWindowFocus: false,
   });
 
   const replyMutation = useMutation({
@@ -120,57 +117,55 @@ export default function ReviewsClient({
   });
 
   return (
-    <div>
-      <Tabs defaultValue="unreplied" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="unreplied">Unreplied</TabsTrigger>
-          <TabsTrigger value="replied">Replied</TabsTrigger>
-        </TabsList>
+    <Tabs defaultValue="unreplied" className="w-full">
+      <TabsList className="mb-4">
+        <TabsTrigger value="unreplied">Unreplied</TabsTrigger>
+        <TabsTrigger value="replied">Replied</TabsTrigger>
+      </TabsList>
 
-        <TabsContent value="unreplied">
-          <ScrollArea className="max-h-120 pr-2">
-            {unrepliedQuery.isLoading ? (
-              <div className="space-y-3">
-                <SkeletonCard />
-                <SkeletonCard />
-              </div>
-            ) : unrepliedQuery.data && unrepliedQuery.data.length > 0 ? (
-              <div className="space-y-4">
-                {unrepliedQuery.data.map((r) => (
-                  <ReviewItem
-                    key={r.id}
-                    review={r}
-                    onReply={(reply) => replyMutation.mutate({ id: r.id, reply })}
-                    replying={replyMutation.status === "pending"}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">No unreplied reviews.</div>
-            )}
-          </ScrollArea>
-        </TabsContent>
+      <TabsContent value="unreplied">
+        <ScrollArea className="max-h-120 pr-2">
+          {unrepliedQuery.isLoading ? (
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : unrepliedQuery.data && unrepliedQuery.data.length > 0 ? (
+            <div className="space-y-4">
+              {unrepliedQuery.data.map((r) => (
+                <ReviewItem
+                  key={r.id}
+                  review={r}
+                  onReply={(reply) => replyMutation.mutate({ id: r.id, reply })}
+                  replying={replyMutation.status === "pending"}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No unreplied reviews.</div>
+          )}
+        </ScrollArea>
+      </TabsContent>
 
-        <TabsContent value="replied">
-          <ScrollArea className="max-h-120 pr-2">
-            {repliedQuery.isLoading ? (
-              <div className="space-y-3">
-                <SkeletonCard />
-                <SkeletonCard />
-              </div>
-            ) : repliedQuery.data && repliedQuery.data.length > 0 ? (
-              <div className="space-y-4">
-                {repliedQuery.data.map((r) => (
-                  <RepliedItem key={r.id} review={r} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">No replied reviews yet.</div>
-            )}
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
-    </div>
+      <TabsContent value="replied">
+        <ScrollArea className="max-h-120 pr-2">
+          {repliedQuery.isLoading ? (
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : repliedQuery.data && repliedQuery.data.length > 0 ? (
+            <div className="space-y-4">
+              {repliedQuery.data.map((r) => (
+                <RepliedItem key={r.id} review={r} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No replied reviews yet.</div>
+          )}
+        </ScrollArea>
+      </TabsContent>
+    </Tabs>
   );
 }
 

@@ -1,8 +1,6 @@
 filter: onsubmit need to somehow capture the search spec to call server action, or set searchparams
   then router.push. and also sortby
 
-filter: make it sticky on large screen.
-
 proxy: handle redirecting.
 
 types: unified them into one place, such as "types" folder.
@@ -20,12 +18,10 @@ seeding: booking: incrementally, bulk on each search.
 
 Date object: fix mismatch between server and client, and especially in Nextjs.
 
-review the page hotel-owner/reviews for AI - generated code.
-
 sign up otp: handle resend otp (limit times, after e.g. 3 mins) and expriration of OTP.
 
 after booking: block user to back to booking page (done) and the payment success (only show for a while).
-TODO: on booking: instead of joining room, go check the inventory
+TODO: on searching: instead of joining room, go check the inventory
 
 
 // TODO: Flow

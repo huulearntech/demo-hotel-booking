@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { SearchSpecWithoutLocation } from "../zod_schemas/search-bar";
 import { auth } from "@/auth";
-import type { OperationResult } from "../types/operation-result";
+import type { OperationResult } from "../types/utils";
 
 // TODO: Cleanup
 export async function user_createBooking(

@@ -1,13 +1,23 @@
 import { DataTable } from "@/components/data-table";
 import { columns } from "./booking-columns";
-import { tmp_hotelowner_getUpcomingBookings } from "@/lib/actions/hotel-manager/bookings";
+import { hotelowner_getUpcomingBookings } from "@/lib/actions/hotel-manager/bookings";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function UpcomingBooking() {
-  const upcomingBookings = await tmp_hotelowner_getUpcomingBookings();
+  const response = await hotelowner_getUpcomingBookings();
+  // TODO: More specific
+  if (!response.ok) {
+    return (
+      <div className="text-center text-destructive mt-10">
+        <p className="text-lg">Lỗi khi tải danh sách đặt phòng sắp tới.</p>
+        <p className="text-sm">{response.error ?? 'Đã có lỗi xảy ra. Vui lòng thử lại.'}</p>
+      </div>
+    );
+  }
+
   return (
-    <DataTable columns={columns} data={upcomingBookings} />
+    <DataTable columns={columns} data={response.data} />
   );
 }
 

@@ -5,7 +5,6 @@ import {
   ExternalLink,
   RulerDimensionLineIcon,
   BedDoubleIcon,
-  DoorOpenIcon,
   UserIcon,
 } from "lucide-react";
 import { formatVND } from "@/lib/utils";
@@ -14,6 +13,7 @@ import { type SearchSpec } from "@/lib/zod_schemas/search-bar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { PATHS } from "@/lib/constants";
+import { auth } from "@/auth";
 
 export default async function AvailableRoomsSection({
   hotelName,
@@ -25,6 +25,7 @@ export default async function AvailableRoomsSection({
   searchSpecWithoutLocation: SearchSpec;
 }) {
   const searchParams = new URLSearchParams(searchSpecWithoutLocation).toString();
+  const session = await auth();
 
   return (
     <section id="available_rooms" className="w-full flex flex-col">
@@ -40,6 +41,7 @@ export default async function AvailableRoomsSection({
             key={type.id}
             roomType={type}
             searchParams={searchParams}
+            userIsAuthenticated={!!session}
           />
         ))}
       </div>
@@ -47,13 +49,15 @@ export default async function AvailableRoomsSection({
   )
 };
 
-// TODO: On click room type card. -> not create a booking immediately, but just show a more detailed page and information form.
+
 function AvailableRoomTypeCard({
   roomType,
-  searchParams
+  searchParams,
+  userIsAuthenticated
 }: {
   roomType: UserGetAvailableRoomTypeOfHotelResult[number];
   searchParams: string;
+  userIsAuthenticated: boolean;
 }) {
   const {
     imageUrls,
@@ -160,14 +164,18 @@ function AvailableRoomTypeCard({
           </div>
 
           <Button
-            // TODO: this should toast if user is not logged in.
             className="font-bold"
             aria-label={`Đặt phòng ${name} với giá ${price} VND`}
             asChild
           >
-            <Link href={`${PATHS.bookings}/${roomType.id}?${searchParams}`}>
-              Chọn
-            </Link>
+            {userIsAuthenticated ?
+              <Link href={`${PATHS.bookings}/${roomType.id}?${searchParams}`}>
+                Chọn
+              </Link>
+              : <Link href={PATHS.signIn}>
+                Đăng nhập để đặt phòng
+              </Link>
+            }
           </Button>
         </footer>
       </div>

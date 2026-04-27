@@ -8,6 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash } from "lucide-react";
 import RoomEditFormClient from "../room-edit-client";
 
+// TODO: repeated. Cleanup. Fix there is no roomsname
+import type { BedType } from "@/lib/generated/prisma/enums";
+type RoomType = {
+  name: string;
+  adultCapacity: number;
+  childrenCapacity: number;
+  areaM2: number;
+  bedType: BedType;
+  price: number;
+  imageUrls: { url: string }[];
+  roomsName?: { name: string }[];
+  description: string | null;
+};
+
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id: roomTypeId } = await params;
   const result = await hotelowner_getRoomTypeById(roomTypeId);
@@ -18,23 +32,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   };
   const roomType = result.data;
 
-  const priceNumber = roomType.price && typeof (roomType as any).price?.toNumber === "function"
-    ? (roomType as any).price.toNumber()
-    : Number((roomType as any).price ?? 0);
 
-  const imageUrls = (roomType.imageUrls ?? []).map((u: any) =>
-    typeof u === "string" ? { url: u } : u
-  );
-
-  const formValues = {
-    name: roomType.name,
-    price: priceNumber,
-    adultCapacity: roomType.adultCapacity,
-    childrenCapacity: roomType.childrenCapacity,
-    areaM2: (roomType as any).areaM2 ?? 0,
-    bedType: roomType.bedType,
-    imageUrls: imageUrls,
-    description: roomType.description ?? "",
+  const formValues: RoomType = {
+    ...roomType,
+    price: roomType.price.toNumber(),
+    imageUrls: roomType.imageUrls.map(url => ({ url })),
   };
 
 

@@ -16,6 +16,7 @@ type RoomType = {
   price: number;
   imageUrls: { url: string }[];
   roomsName?: { name: string }[];
+  description: string | null;
 };
 
 type FormValues = {
@@ -24,24 +25,23 @@ type FormValues = {
 };
 
 export default function RoomEditFormClient({ defaultValues }: { defaultValues: RoomType }) {
-  const methods = useForm<FormValues>({
+  const form = useForm<FormValues>({
     // wrap the single room in an array so existing RoomFields that expect roomTypes[index] keep working
     defaultValues: { roomTypes: [defaultValues] },
     mode: "onChange",
   });
 
-  const onSubmit = methods.handleSubmit((data) => {
-    console.log("Submitting single-room edit form:", data);
-  });
-
   return (
-    <FormProvider {...methods}>
-      <form onSubmit={onSubmit}>
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit((data) => {
+        console.log("Submitting single-room edit form:", data);
+      })}>
         <RoomFields
           index={0}
-          control={methods.control as any}
-          register={methods.register as any}
-          errors={methods.formState.errors as any}
+          // TODO: fix any
+          control={form.control as any}
+          register={form.register as any}
+          errors={form.formState.errors as any}
           // no-op remove since there's only one room here
           removeRoom={() => { }}
         />

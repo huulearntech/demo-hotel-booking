@@ -3,7 +3,7 @@ import { z } from "zod";
 import { FILTER_MAX_PRICE, FILTER_MIN_PRICE } from "@/lib/constants";
 import { HotelType } from "@/lib/generated/prisma/enums";
 
-// TODO: separate the value from the label name.
+// TODO: separate the value from the option name.
 export const FILTER_CATEGORIES = {
   amenities: { label: "Tiện nghi", options: ["WiFi", "Parking", "Pool", "Gym"] },
   propertyTypes: { label: "Loại hình lưu trú", options: Object.values(HotelType) },

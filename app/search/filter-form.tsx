@@ -54,7 +54,11 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
                       setPriceRange([isNaN(newMin) ? FILTER_MIN_PRICE : newMin, priceRange[1]]);
                     }}
                     onBlur={() => {
-                      // TODO: we should also enforce that the price range values are within the allowed min and max bounds (e.g. if user enters a value less than minPrice or greater than maxPrice, we should reset it to the respective bound). For now, we just ensure that min is not greater than max.
+                      if (priceRange[0] < FILTER_MIN_PRICE) {
+                        setPriceRange([FILTER_MIN_PRICE, priceRange[1]]);
+                      } else if (priceRange[0] > FILTER_MAX_PRICE) {
+                        setPriceRange([priceRange[1], FILTER_MAX_PRICE]);
+                      }
                       if (priceRange[0] > priceRange[1]) {
                         setPriceRange([priceRange[1], priceRange[0]]);
                       }
@@ -73,6 +77,11 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
                       setPriceRange([priceRange[0], isNaN(newMax) ? FILTER_MAX_PRICE : newMax]);
                     }}
                     onBlur={() => {
+                      if (priceRange[1] < FILTER_MIN_PRICE) {
+                        setPriceRange([FILTER_MIN_PRICE, priceRange[0]]);
+                      } else if (priceRange[1] > FILTER_MAX_PRICE) {
+                        setPriceRange([priceRange[0], FILTER_MAX_PRICE]);
+                      }
                       if (priceRange[0] > priceRange[1]) {
                         setPriceRange([priceRange[1], priceRange[0]]);
                       }
@@ -170,10 +179,9 @@ export function FilterForm__Reset_and_Apply_Buttons() {
         disabled={!filterHasChanged}
         onClick={() => {
           const values = getValues();
-          console.log(values, "filter has changed: ", filterHasChanged); // call some server actions (only if filterHasChanged)
-          // FIXME: This works sometime, not work sometime.
-          queryClient.resetQueries({ queryKey: ["hotels"] });
           reset(values);
+          // FIXME: This works sometime, not work sometime. Have no idea.
+          queryClient.resetQueries({ queryKey: ["hotels"] });
         }}
       >
         Áp dụng

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Heart } from "lucide-react";
 import { user_getIsHotelFavorited } from "@/lib/actions/user-account/favorites";
-import { useFavoriteToggle } from "@/components/hotel-card.draft";
+import { useFavoriteToggle } from "@/components/hotel-card";
 
 const sections = {
   overview: "Tổng quan",

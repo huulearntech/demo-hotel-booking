@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TanstackQueryProvider } from "./tanstack-query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DisclaimerAlertDialog, { DisclaimerAlertDialogProvider } from "@/components/disclaimer-alert-dialog";
-import { FavoriteToggleProvider } from "@/components/hotel-card.draft";
+import { FavoriteToggleProvider } from "@/components/hotel-card";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import { PATHS } from "@/lib/constants";
 import { user_getInfoById } from "@/lib/actions/user-account";
+import { user_createOrUpdateAvatarUrl } from "@/lib/actions/user-account";
+import { auth } from "@/auth";
 
 import ChangeNameDialog from "./dialog-change-name";
-import AvatarWithCloudinaryUploader from "./dialog-change-image";
+import { Avatar as AvatarPrimitive } from "radix-ui"
+import { AvatarUploader } from "./button-upload-avatar-cloudinary";
 import { ChevronRightIcon } from "lucide-react";
-import { auth } from "@/auth";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -17,10 +19,23 @@ export default async function AccountPage() {
   return (
     <main>
       <div className="mx-auto flex flex-col items-center gap-y-4 mt-13 px-4 py-3">
-        <AvatarWithCloudinaryUploader
-          name={user.name}
-          profileImageUrl={user.profileImageUrl ?? undefined}
-        />
+        <AvatarPrimitive.Root
+          data-slot="avatar"
+          className="group relative flex size-25 shrink-0 rounded-full select-none"
+        >
+          <AvatarPrimitive.Image
+            data-slot="avatar-image"
+            src={user.profileImageUrl ?? undefined} alt={user.name}
+            className="aspect-square size-full rounded-full"
+          />
+          <AvatarPrimitive.Fallback
+            data-slot="avatar-fallback"
+            className="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm truncate"
+          >
+            {user.name}
+          </AvatarPrimitive.Fallback>
+          <AvatarUploader onUploadSuccess={user_createOrUpdateAvatarUrl} />
+        </AvatarPrimitive.Root>
       </div>
 
       <ul className="grid w-full max-w-xl gap-3 mx-auto mt-8 px-4">

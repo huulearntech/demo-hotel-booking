@@ -1,6 +1,5 @@
 "use server";
 
-import { PATHS } from "@/lib/constants";
 import { SignUpData, SignInData, schemaSignUp, schemaSignIn } from "@/lib/zod_schemas/auth";
 
 import { signIn } from "@/auth"
@@ -94,7 +93,7 @@ export async function signInUserWithOptionalCallback(
       email: formData.email,
       password: formData.password,
       // Auth.js sẽ xử lý redirect phía server khi có tham số này
-      redirectTo: callbackUrl || PATHS.home, 
+      redirectTo: callbackUrl, 
     })
   } catch (error) {
     if (error instanceof AuthError) {

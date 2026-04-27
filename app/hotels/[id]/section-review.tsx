@@ -1,7 +1,6 @@
 import Image from "next/image"
 import { tvlk_logo_text_dark } from "@/public/logos"
 
-import { fetchHotel } from "@/lib/actions/hotel"
 import { user_getReviewsOfHotel } from "@/lib/actions/reviews"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,8 +8,6 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import ReviewCard from "./review-card"
 
-// TODO: standardize the types inferred from server actions
-type Hotel = NonNullable<Awaited<ReturnType<typeof fetchHotel>>>;
 
 export default async function ReviewSection({
   hotelId,
@@ -22,14 +19,14 @@ export default async function ReviewSection({
   pageSize = 1,
 }: {
   hotelId: string,
-  hotelName: Hotel["name"],
+  hotelName: string,
   rating: number,
   numberOfReviews: number,
   cursorCreatedAt?: string | null,
   cursorId?: string | null,
   pageSize?: number,
 }) {
-  // fetch page server-side
+  // TODO: fix this AI bullshit pagination.
   const { reviews, nextCursor, prevCursor } = await user_getReviewsOfHotel(
     hotelId,
     cursorCreatedAt ? new Date(cursorCreatedAt) : undefined,
@@ -72,11 +69,10 @@ export default async function ReviewSection({
 
         <ul className="flex flex-col gap-y-3">
           {reviews.map((r) => (
-            <li key={r.review_id}> <ReviewCard review={r} /> </li>
+            <li key={r.reviewId}> <ReviewCard review={r} /> </li>
           ))}
         </ul>
 
-        {/** TODO: fix this AI bullshit */}
         <div className="flex items-center justify-end gap-x-4 mt-4">
           <Button asChild variant="outline" size="sm" disabled>
             <Link href={prevHref || "#"} aria-label="Previous page">

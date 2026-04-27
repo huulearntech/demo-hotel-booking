@@ -11,7 +11,7 @@
 -- @param {String}   $11:locationType (e.g. "ward", "district", "province")
 -- @param {Decimal}  $12:minPrice (filter)
 -- @param {Decimal}  $13:maxPrice (filter)
--- @param {Int}      $16:numChildren (TODO: temporarily put this at the end.)
+-- @param {Int}      $16:numChildren (NOTE: temporarily put this at the end.)
 -- @param {String}   $17:userId? (for favorite)
 
 -- TODO: should join with inventory instead of rooms.
@@ -94,8 +94,8 @@ SELECT
   b.*,
   (COUNT(*) OVER())::int AS "totalCount"
 FROM base b
--- cursor WHERE: only applied when not on first page (i.e. when lastPrice/lastReviewPoints/lastHotelId is not null).
-WHERE b."minPrice" IS NOT NULL -- available count > 0
+-- only applied when not on first page
+WHERE b."minPrice" IS NOT NULL
 AND (
   ($7 IN ('price_asc', 'price_desc') AND $8::numeric IS NULL)
   OR ($7 = 'review_points_desc' AND $9::double precision IS NULL)
