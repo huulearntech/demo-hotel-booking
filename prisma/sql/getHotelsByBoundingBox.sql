@@ -15,7 +15,6 @@
 
 -- TODO: query should change from joining rooms into inventory.
 -- TODO: This counting booked room logic is different from the one in getHotelBySearchBarForm.
--- TODO: gonna change a whole lot of names anyway. this file is object to change.
 WITH available AS (
   SELECT t.hotel_id, MIN(t.price) AS min_price
   FROM (

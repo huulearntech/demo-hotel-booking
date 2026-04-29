@@ -10,7 +10,6 @@ import { auth } from "@/auth";
 import { differenceInDays } from "date-fns";
 import { Decimal } from "@prisma/client/runtime/client";
 
-// TODO: Cleanup all this
 
 async function hotelowner_getMetrics() {
   const session = await auth();
@@ -112,7 +111,6 @@ function MetricCard({ title, value }: { title: string; value: string | number })
           {value}
         </CardTitle>
       </CardHeader>
-      <CardFooter className="text-sm text-muted-foreground">TODO: Not this: Thông tin cập nhật theo thời gian thực</CardFooter>
     </Card>
   );
 }
@@ -146,7 +144,7 @@ export default async function DashboardMetricCards() {
   ];
 
   return (
-    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {items.map((m) => (
         <MetricCard key={m.id} title={m.title} value={m.value} />
       ))}

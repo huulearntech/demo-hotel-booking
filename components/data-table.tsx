@@ -106,7 +106,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  Không có kết quả
                 </TableCell>
               </TableRow>
             )}
@@ -137,7 +137,7 @@ function DataTablePagination<TData>({ table } : { table: TableType<TData> }) {
             aria-label="Previous page"
           >
             <ChevronLeftIcon />
-            <span className="hidden sm:block">Previous</span>
+            <span className="hidden sm:block">Trang trước</span>
           </Button>
         </PaginationItem>
         {totalPages <= 5 ?
@@ -194,7 +194,7 @@ function DataTablePagination<TData>({ table } : { table: TableType<TData> }) {
             variant="ghost"
             aria-label="Next page"
           >
-            <span className="hidden sm:block">Next</span>
+            <span className="hidden sm:block">Trang sau</span>
             <ChevronRightIcon />
           </Button>
         </PaginationItem>

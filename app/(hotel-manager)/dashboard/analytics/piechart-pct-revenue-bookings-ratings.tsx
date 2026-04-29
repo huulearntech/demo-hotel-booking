@@ -29,15 +29,13 @@ import {
 import {
   fetchRevenueByRoomTypeLast90Days,
   fetchBookingsCountByRoomTypeLast90Days,
-  fetchAvgRatingByRoomTypeLast90Days,
-} from "./tmp-actions";
+} from "@/lib/actions/hotel-manager/analytics";
 
 type ServerItem = {
   id: string;
   name: string;
-  revenue?: number;
+  totalRevenue?: number;
   bookings?: number;
-  rating?: number;
 };
 
 const vndFormatter = new Intl.NumberFormat("vi-VN", {
@@ -96,65 +94,68 @@ const renderActiveShape = (props: any) => {
   );
 };
 
-type Mode = "revenue" | "bookings" | "ratings";
+type Mode = "totalRevenue" | "bookings";
 
-export default function PiechartPctRevenueBookingsRatings({
+export default function PiechartPctRevenueBookings({
   height = 260,
 }: {
   height?: number;
 }) {
   // mode toggle
-  const [mode, setMode] = useState<Mode>("revenue");
+  const [mode, setMode] = useState<Mode>("totalRevenue");
 
   // source data as returned by server actions (ServerItem[]). We normalize to RevenueItem shape
   const [sourceRoomTypes, setSourceRoomTypes] = useState<ServerItem[]>([]);
 
+  // cache all three server datasets to avoid refetching on each mode change
+  // always store arrays to avoid checking for null/map on union OperationResult types
+  const [cached, setCached] = useState<{
+    totalRevenue: any[];
+    bookings: any[];
+  }>({ totalRevenue: [], bookings: [] });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // fetch data when mode changes
+  // fetch data once on mount and cache results
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
+
+    (async () => {
       try {
-        let res: ServerItem[] = [];
-        if (mode === "revenue") {
-          const rows = await fetchRevenueByRoomTypeLast90Days();
-          res = rows.map((r: any) => ({
-            id: String(r.roomTypeName),
-            name: r.roomTypeName,
-            revenue: Number(r.totalRevenue || 0),
-          }));
-        } else if (mode === "bookings") {
-          const rows = await fetchBookingsCountByRoomTypeLast90Days();
-          res = rows.map((r: any) => ({
-            id: String(r.roomTypeName),
-            name: r.roomTypeName,
-            bookings: Number(r.bookingsCount || 0),
-          }));
-        } else if (mode === "ratings") {
-          const rows = await fetchAvgRatingByRoomTypeLast90Days();
-          res = rows.map((r: any) => ({
-            id: String(r.roomTypeName),
-            name: r.roomTypeName,
-            rating: r.avgRating !== null ? Number(r.avgRating) : 0,
-            ratingsCount: r.ratingCount,
-          }));
-        }
+        const [revRes, bookingsRes] = await Promise.all([
+          fetchRevenueByRoomTypeLast90Days(),
+          fetchBookingsCountByRoomTypeLast90Days(),
+        ]);
 
         if (!mounted) return;
 
-        setSourceRoomTypes(
-          res.map((r) => ({
-            // include all server fields first to avoid duplicate literal keys,
-            // then override/ensure the computed 'revenue' value is set from available numeric keys
-            ...r,
-            // keep all numeric fields on the server item so we can map later
-            revenue: r.revenue ?? r.bookings ?? r.rating ?? 0,
-          }))
-        );
+        // OperationResult wrappers returned by server actions use { ok, data }
+        const revRows = revRes && (revRes as any).ok ? (revRes as any).data ?? [] : [];
+        const bookingsRows = bookingsRes && (bookingsRes as any).ok ? (bookingsRes as any).data ?? [] : [];
+
+        // If any request failed, set an error but still try to show available data
+        if (revRes && !(revRes as any).ok) {
+          setError((revRes as any).error ?? 'Failed to load revenue data');
+        }
+        if (bookingsRes && !(bookingsRes as any).ok) {
+          setError((bookingsRes as any).error ?? 'Failed to load bookings data');
+        }
+
+        setCached({
+          totalRevenue: revRows.map((r: any) => ({
+            id: String(r.roomTypeName ?? r.name ?? r.id),
+            name: r.roomTypeName ?? r.name ?? String(r.id),
+            totalRevenue: Number(r.totalRevenue ?? r.total_revenue ?? 0),
+          })),
+          bookings: bookingsRows.map((r: any) => ({
+            id: String(r.roomTypeName ?? r.roomTypeName ?? r.roomTypeId ?? r.id),
+            name: r.roomTypeName ?? r.name ?? String(r.id),
+            bookings: Number(r.bookingsCount ?? r.bookings ?? 0),
+          })),
+        });
       } catch (err: any) {
         if (!mounted) return;
         setError(err?.message ?? "Failed to load data");
@@ -162,22 +163,35 @@ export default function PiechartPctRevenueBookingsRatings({
         if (!mounted) return;
         setLoading(false);
       }
-    }
-
-    load();
+    })();
 
     return () => {
       mounted = false;
     };
-  }, [mode]);
+  }, []);
+  // derive sourceRoomTypes when cached data or mode changes
+  useEffect(() => {
+    if (mode === "totalRevenue") {
+      setSourceRoomTypes(
+        cached.totalRevenue.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          totalRevenue: r.totalRevenue ?? 0,
+        }))
+      );
+    } else if (mode === "bookings") {
+      setSourceRoomTypes(
+        cached.bookings.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          bookings: r.bookings ?? 0,
+        }))
+      );
+    }
+  }, [cached, mode]);
 
   // decide which numeric key to use as chart value based on mode
-  const valueKey: keyof ServerItem =
-    mode === "revenue"
-      ? "revenue"
-      : mode === "bookings"
-      ? "bookings"
-      : "rating";
+  const valueKey = mode as keyof ServerItem;
 
   const data = useMemo(() => sourceRoomTypes, [sourceRoomTypes]);
 
@@ -203,19 +217,12 @@ export default function PiechartPctRevenueBookingsRatings({
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const formatTooltip = (value: number) => {
-    if (mode === "revenue") return vndFormatter.format(Number(value) || 0);
-    if (mode === "bookings") return `${Number(value || 0).toLocaleString()}`;
-    // ratings: show one decimal
-    return Number(value || 0).toFixed(1);
-  };
-
   return (
     <Card className="@container/card">
       <CardHeader>
         <CardTitle>Phần trăm theo loại phòng</CardTitle>
         <CardDescription>
-          {mode === "revenue"
+          {mode === "totalRevenue"
             ? "Tỷ lệ doanh thu theo loại phòng trong 90 ngày qua"
             : mode === "bookings"
             ? "Tỷ lệ lượt đặt phòng theo loại phòng trong 90 ngày qua"
@@ -230,9 +237,8 @@ export default function PiechartPctRevenueBookingsRatings({
               variant="outline"
               className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
             >
-              <ToggleGroupItem value="revenue">Revenue</ToggleGroupItem>
-              <ToggleGroupItem value="bookings">Bookings</ToggleGroupItem>
-              <ToggleGroupItem value="ratings">Ratings</ToggleGroupItem>
+              <ToggleGroupItem value="totalRevenue">Doanh thu</ToggleGroupItem>
+              <ToggleGroupItem value="bookings">Lượt đặt phòng</ToggleGroupItem>
             </ToggleGroup>
 
             <Select
@@ -247,14 +253,11 @@ export default function PiechartPctRevenueBookingsRatings({
                 <SelectValue placeholder="Revenue" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
-                <SelectItem value="revenue" className="rounded-lg">
+                <SelectItem value="totalRevenue" className="rounded-lg">
                   Doanh thu
                 </SelectItem>
                 <SelectItem value="bookings" className="rounded-lg">
                   Lượt đặt phòng
-                </SelectItem>
-                <SelectItem value="ratings" className="rounded-lg">
-                  Đánh giá
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -298,10 +301,7 @@ export default function PiechartPctRevenueBookingsRatings({
                     ))}
                   </Pie>
 
-                  <Tooltip
-                    formatter={(value: number) => formatTooltip(Number(value))}
-                    itemStyle={{ color: "#111827", fontSize: 13, fontWeight: 600 }}
-                  />
+                  <Tooltip content={<PieTooltip mode={mode} />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -333,7 +333,7 @@ export default function PiechartPctRevenueBookingsRatings({
                           {d.name}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === "revenue"
+                          {mode === "totalRevenue"
                             ? vndFormatter.format(d.value)
                             : mode === "bookings"
                             ? Number(d.value).toLocaleString()
@@ -355,5 +355,42 @@ export default function PiechartPctRevenueBookingsRatings({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Custom tooltip for pie chart (matches layout/style of ChartAreaInteractive.CustomTooltip)
+function PieTooltip({ mode, ...props }: any) {
+  const { active, payload, label } = props;
+  if (!active || !payload || !payload.length) return null;
+
+  const p = payload[0];
+  const name = p?.name ?? (p && p.payload && p.payload.name) ?? label ?? '';
+  const value = p?.value ?? 0;
+  // const color = p?.fill ?? p?.color ?? '#000';
+
+  let formattedValue = String(value);
+  if (mode === 'totalRevenue') {
+    formattedValue = vndFormatter.format(Number(value) || 0);
+  } else if (mode === 'bookings') {
+    formattedValue = `${Number(value || 0).toLocaleString()}`;
+  } else {
+    formattedValue = Number(value || 0).toFixed(1);
+  }
+
+  return (
+    <div className="bg-white/95 text-slate-900 text-sm rounded-md shadow-md p-2 min-w-40">
+      <div className="text-xs text-slate-500 mb-1">{String(name)}</div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* <span
+            aria-hidden
+            className="inline-block rounded-full"
+            style={{ width: 10, height: 10, background: color }}
+          /> */}
+          <span className="truncate text-sm text-slate-700">{mode === 'totalRevenue' ? 'Doanh thu' : mode === 'bookings' ? 'Lượt đặt' : 'Đánh giá'}</span>
+        </div>
+        <div className="text-sm font-medium text-slate-900 whitespace-nowrap">{formattedValue}</div>
+      </div>
+    </div>
   );
 }

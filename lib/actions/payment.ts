@@ -6,14 +6,14 @@ import { headers } from "next/headers";
 import { vnpay } from "@/lib/vnpay";
 import { ProductCode, VnpLocale, VnpCurrCode, dateFormat } from "vnpay";
 
-import {
-  schema_bookingForm,
-} from "../zod_schemas/booking";
+import { schema_bookingForm } from "../zod_schemas/booking";
 import prisma from "../prisma";
 import { differenceInDays } from "date-fns";
 import { Prisma } from "../generated/prisma/client";
 import { auth } from "@/auth";
 import { user_getRoomTypeInventoryForUpdate } from "../generated/prisma/sql";
+import { schema_searchSpec } from "../zod_schemas/search-bar";
+import z from "zod";
 
 
 function getClientIP (headers: Headers): string {
@@ -48,23 +48,46 @@ export async function fake_payment_just_for_testing(
     }
 
     // Validate input
+    const parse_spec_result = schema_searchSpec.safeParse({
+      inOutDates: {
+        from: checkInDate,
+        to: checkOutDate,
+      },
+      guestsAndRooms: {
+        numAdults,
+        numChildren,
+        numRooms,
+      },
+    });
+    const parse_customer_info_result = schema_bookingForm.safeParse({
+      name: customerName,
+      email: customerEmail,
+      phone: customerPhone,
+      notes,
+    } as z.infer<typeof schema_bookingForm>);
+    if (!parse_spec_result.success) {
+      throw new Error("Invalid spec: " + parse_spec_result.error.message);
+    }
+    if (!parse_customer_info_result.success) {
+      throw new Error("Invalid customer info: " + parse_customer_info_result.error.message);
+    }
 
 
     // // TODO: This should be done in the previous step, but just in case.
-    // const totalPrice = booking.roomType.price.mul(booking_draft.numRooms).toNumber();
-    // if (totalPrice <= 1000) {
-    //   throw new Error("Total price must be greater than 1000 VND to proceed with payment");
-    // }
+    const totalPrice = price * numRooms * differenceInDays(checkOutDate, checkInDate); // FIXME: this is just temporary place holder. Do NOT compute in js number.
+    if (totalPrice <= 1000) {
+      throw new Error("Total price must be greater than 1000 VND to proceed with payment");
+    }
 
     // Check if user has another pending booking
-    const userHasPendingBooking = await prisma.booking.findFirst({
+    const userHasAnotherPendingBooking = await prisma.booking.findFirst({
       where: {
         userId: session.user.id,
         status: "PENDING_TO_PAY",
       },
     });
 
-    if (userHasPendingBooking) {
+    if (userHasAnotherPendingBooking) {
       throw new Error("You have another pending booking. Please complete or cancel it before creating a new one.");
     }
 
@@ -90,7 +113,8 @@ export async function fake_payment_just_for_testing(
 
     const result = await prisma.$transaction(async (tx) => {
       // NOTE: This will lock the relevant RoomTypeInventory rows to ensure atomicity.
-      // This may also be done by versioning the rows, but for the sake of time, we will just lock the rows here.
+      // This may also be done by versioning the rows, but for the sake of time doing this project,
+      // we will just lock the rows here.
       const inventories = await tx.$queryRawTyped(user_getRoomTypeInventoryForUpdate(
         roomTypeId,
         checkInDate,

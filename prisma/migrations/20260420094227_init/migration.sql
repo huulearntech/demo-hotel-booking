@@ -198,22 +198,20 @@ CREATE TABLE "users" (
 
 -- CreateTable
 CREATE TABLE "favorites" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "user_id" UUID NOT NULL,
     "hotel_id" UUID NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "favorites_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "favorites_pkey" PRIMARY KEY ("hotel_id","user_id")
 );
 
 -- CreateTable
 CREATE TABLE "recently_viewed" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "user_id" UUID NOT NULL,
     "hotel_id" UUID NOT NULL,
     "viewed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "recently_viewed_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "recently_viewed_pkey" PRIMARY KEY ("user_id","hotel_id")
 );
 
 -- CreateTable
@@ -296,15 +294,6 @@ CREATE UNIQUE INDEX "room_type_inventories_room_type_id_date_key" ON "room_type_
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
-
--- CreateIndex
-CREATE INDEX "favorites_hotel_id_user_id_idx" ON "favorites"("hotel_id", "user_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "favorites_user_id_hotel_id_key" ON "favorites"("user_id", "hotel_id");
-
--- CreateIndex
-CREATE INDEX "recently_viewed_user_id_hotel_id_idx" ON "recently_viewed"("user_id", "hotel_id");
 
 -- CreateIndex
 CREATE INDEX "_BookingToRoom_B_index" ON "_BookingToRoom"("B");

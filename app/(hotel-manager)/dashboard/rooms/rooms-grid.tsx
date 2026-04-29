@@ -100,7 +100,7 @@ function RoomTypeCard({ roomType }: { roomType: RoomTypeRow }) {
           <div className="flex items-center justify-center h-full px-4 text-center">
             <div>
               <div className="text-lg font-semibold text-foreground">{roomType.name}</div>
-              <div className="text-sm text-muted-foreground mt-1">No image</div>
+              <div className="text-sm text-muted-foreground mt-1">Không có hình ảnh</div>
             </div>
           </div>
         )}
@@ -109,7 +109,7 @@ function RoomTypeCard({ roomType }: { roomType: RoomTypeRow }) {
       <CardHeader className="px-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{roomType.name}</CardTitle>
-          <span className="text-sm text-primary font-semibold"> {priceFormatted} </span>
+          <span className="text-primary font-semibold"> {priceFormatted} </span>
         </div>
 
         <CardDescription className="text-sm text-muted-foreground">{roomType._count.rooms} phòng</CardDescription>
@@ -147,7 +147,7 @@ function RoomTypeCard({ roomType }: { roomType: RoomTypeRow }) {
       </CardContent>
 
       <CardFooter className="px-4 pb-4 justify-end">
-        <Button size="sm" asChild className="font-semibold">
+        <Button size="sm" asChild>
           <Link href={`${PATHS.hotelRooms}/${roomType.id}`} aria-label={`Manage ${roomType.name}`}>
             Quản lý
           </Link>

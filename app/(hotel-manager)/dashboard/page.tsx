@@ -14,14 +14,14 @@ export default function DashboardPage() {
       </section>
 
       <section className="flex flex-col gap-y-4">
-        <h2>Upcoming Bookings</h2>
+        <h2 className="font-semibold"> Lượt đặt phòng sắp tới </h2>
         <Suspense fallback={<UpcomingBookingSkeleton />} >
           <UpcomingBooking />
         </Suspense>
       </section>
 
       <section className="flex flex-col gap-y-4">
-        <h2>Room Status</h2>
+        <h2 className="font-semibold"> Trạng thái các phòng </h2>
         <RoomTypesOccupancyPctBoard />
       </section>
     </main>

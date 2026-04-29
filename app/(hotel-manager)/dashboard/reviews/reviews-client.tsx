@@ -3,12 +3,12 @@
 import { formatDistanceToNow } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { ChevronDownIcon } from "lucide-react";
 
 import {
   useQuery,
@@ -18,6 +18,9 @@ import {
 
 import { fetchUnrepliedReviews, fetchRepliedReviews, hotelowner_replyToReview } from "./tmp-actions";
 import { RepliedReviewType, UnrepliedReviewType } from "./tmp-actions";
+import Image from "next/image";
+import { tvlk_favicon } from "@/public/logos";
+import { MAX_REVIEW_POINTS } from "@/lib/constants";
 
 
 // TODO: Clean up
@@ -27,41 +30,14 @@ export default function ReviewsClient() {
   // Queries with initialData from the server component
   const unrepliedQuery = useQuery<UnrepliedReviewType[]>({
     queryKey: ["reviews", "unreplied"],
-    queryFn: async () => {
-      // fetch and map backend shape to the client Review shape
-      const data = await fetchUnrepliedReviews();
-      return data.map((item: any) => ({
-        id: item.id,
-        booking: item.booking ?? null,
-        customerName: item.booking?.customerName ?? null,
-        rating: item.rating,
-        comment: item.comment ?? null,
-        createdAt: new Date(item.createdAt).toISOString(),
-        updatedAt: item.updatedAt ? new Date(item.updatedAt) : null,
-        reply: item.reply ?? null,
-        repliedAt: item.repliedAt ? new Date(item.repliedAt).toISOString() : null,
-      })) as UnrepliedReviewType[];
-    },
+    queryFn: () => fetchUnrepliedReviews(),
     initialData: [],
     refetchOnWindowFocus: false,
   });
 
   const repliedQuery = useQuery<RepliedReviewType[]>({
     queryKey: ["reviews", "replied"],
-    queryFn: async () => {
-      const data = await fetchRepliedReviews();
-      return data.map((item: any) => ({
-        id: item.id,
-        booking: item.booking ?? null,
-        customerName: item.booking?.customerName ?? null,
-        rating: item.rating,
-        comment: item.comment ?? null,
-        createdAt: new Date(item.createdAt).toISOString(),
-        updatedAt: item.updatedAt ? new Date(item.updatedAt) : null,
-        reply: item.reply ?? null,
-        repliedAt: item.repliedAt ? new Date(item.repliedAt).toISOString() : null,
-      })) as RepliedReviewType[];
-    },
+    queryFn: () => fetchRepliedReviews(),
     initialData: [],
     refetchOnWindowFocus: false,
   });
@@ -119,8 +95,8 @@ export default function ReviewsClient() {
   return (
     <Tabs defaultValue="unreplied" className="w-full">
       <TabsList className="mb-4">
-        <TabsTrigger value="unreplied">Unreplied</TabsTrigger>
-        <TabsTrigger value="replied">Replied</TabsTrigger>
+        <TabsTrigger value="unreplied">Chưa phản hồi</TabsTrigger>
+        <TabsTrigger value="replied">Đã phản hồi</TabsTrigger>
       </TabsList>
 
       <TabsContent value="unreplied">
@@ -179,49 +155,75 @@ function ReviewItem({
   replying: boolean;
 }) {
   const [text, setText] = useState("");
+
+  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true });
+
   return (
-    <div className="flex gap-4 p-4 rounded-md border bg-card">
-      <Avatar className="h-10 w-10">
-        <AvatarFallback>{(review.booking?.customerName ?? "U").slice(0, 1)}</AvatarFallback>
-      </Avatar>
+    <div className="group data-[open=true]:h-fit px-6 py-4 rounded-xl border bg-card flex flex-col md:flex-row gap-x-12 gap-y-2 md:gap-y-0">
+      <div className="flex md:flex-col items-center gap-x-4 md:gap-x-0 md:gap-y-2 shrink-0 w-full md:w-1/6">
+        <Avatar size="lg">
+          <AvatarImage src={review.booking?.user?.profileImageUrl ?? undefined} alt={review.booking?.user?.name ?? "User avatar"} />
+          <AvatarFallback>{(review.booking?.user?.name ?? "U").slice(0, 1)}</AvatarFallback>
+        </Avatar>
 
-      <div className="flex-1">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="font-medium">{review.booking?.customerName ?? "Guest"}</div>
-            <div className="text-sm text-muted-foreground">{review.comment}</div>
-          </div>
+        <div className="truncate flex flex-col gap-1">
+          <span className="font-bold">{review.booking?.user?.name ?? "Guest"}</span>
 
-          <div className="text-right">
-            <div className="text-sm">
-              <Badge variant="secondary">{review.rating} ★</Badge>
+          <div className="flex gap-x-4 items-center md:hidden">
+            <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">
+              <Image src={tvlk_favicon} alt="" aria-hidden className="size-4.5" />
+              <div className="flex items-end gap-x-0.5">
+                <div className="text-primary font-bold">{review.rating}</div>
+                <div className="text-sm font-medium">/</div>
+                <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
-            </div>
+
+            <div className="text-sm text-muted-foreground"> Đánh giá {timeAgo} </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex-1 flex flex-col">
+        <div className="hidden md:flex gap-x-4 items-center">
+          <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">
+            <Image src={tvlk_favicon} alt="" aria-hidden className="size-4.5" />
+            <div className="flex items-end gap-x-0.5">
+              <div className="text-primary font-bold">{review.rating}</div>
+              <div className="text-sm font-medium">/</div>
+              <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+            </div>
+          </div>
+
+          <div className="text-sm text-muted-foreground"> Đánh giá {timeAgo} </div>
+        </div>
+
+        <p className="text-sm font-medium mt-3 whitespace-pre-wrap">{review.comment}</p>
 
         <Separator className="my-3" />
 
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-col gap-2">
           <Textarea
-            className="flex-1"
-            placeholder="Write a polite reply..."
+            className="w-full"
+            placeholder="Viết phản hồi..."
+            aria-label="Phản hồi cho đánh giá"
             value={text}
             onChange={(e) => setText(e.currentTarget.value)}
             rows={2}
           />
-          <Button
-            onClick={() => {
-              if (!text.trim()) return;
-              onReply(text.trim());
-              setText("");
-            }}
-            disabled={replying || text.trim().length === 0}
-          >
-            Reply
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              onClick={() => {
+                if (!text.trim()) return;
+                onReply(text.trim());
+                setText("");
+              }}
+              disabled={replying || text.trim().length === 0}
+              className="w-fit"
+            >
+              Phản hồi
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -229,33 +231,74 @@ function ReviewItem({
 }
 
 function RepliedItem({ review }: { review: RepliedReviewType }) {
+  const [open, setOpen] = useState(false);
+  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true });
+
   return (
-    <div className="flex gap-4 p-4 rounded-md border bg-card">
-      <Avatar className="h-10 w-10">
-        <AvatarFallback>{(review.booking?.customerName ?? "U").slice(0, 1)}</AvatarFallback>
-      </Avatar>
+    <div className="group data-[open=false]:h-fit px-6 py-4 rounded-xl border bg-card flex flex-col md:flex-row gap-x-12 gap-y-2 md:gap-y-0" data-open={open}>
+      <div className="flex md:flex-col items-center gap-x-4 md:gap-x-0 md:gap-y-2 shrink-0 w-full md:w-1/6">
+        <Avatar size="lg">
+          <AvatarImage src={review.booking?.user?.profileImageUrl ?? undefined} alt={review.booking?.user?.name ?? "User avatar"} />
+          <AvatarFallback>{(review.booking?.user?.name ?? "U").slice(0, 1)}</AvatarFallback>
+        </Avatar>
 
-      <div className="flex-1">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="font-medium">{review.booking?.customerName ?? "Guest"}</div>
-            <div className="text-sm text-muted-foreground">{review.comment}</div>
-          </div>
+        <div className="truncate flex flex-col gap-1">
+          <span className="font-bold">{review.booking?.user?.name ?? "Guest"}</span>
 
-          <div className="text-right">
-            <div className="text-sm">
-              <Badge variant="secondary">{review.rating} ★</Badge>
+          <div className="flex gap-x-4 items-center md:hidden">
+            <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">
+              <Image src={tvlk_favicon} alt="" aria-hidden className="size-4.5" />
+              <div className="flex items-end gap-x-0.5">
+                <div className="text-primary font-bold">{review.rating}</div>
+                <div className="text-sm font-medium">/</div>
+                <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              Replied {formatDistanceToNow(new Date(review.repliedAt ?? review.createdAt), { addSuffix: true })}
-            </div>
+
+            <div className="text-sm text-muted-foreground"> Đánh giá {timeAgo} </div>
           </div>
         </div>
+      </div>
 
-        <Separator className="my-3" />
+      <div className="flex-1 flex flex-col">
+        <div className="hidden md:flex gap-x-4 items-center">
+          <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">
+            <Image src={tvlk_favicon} alt="" aria-hidden className="size-4.5" />
+            <div className="flex items-end gap-x-0.5">
+              <div className="text-primary font-bold">{review.rating}</div>
+              <div className="text-sm font-medium">/</div>
+              <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+            </div>
+          </div>
 
-        <div className="rounded-md border p-3 bg-muted text-sm">
-          {review.reply}
+          <div className="text-sm text-muted-foreground"> Đánh giá {timeAgo} </div>
+        </div>
+
+        <p className="text-sm font-medium mt-3 whitespace-pre-wrap">{review.comment}</p>
+
+        <div className="relative overflow-hidden transition-all duration-200 mt-3 h-24 group-data-[open=true]:h-fit" >
+          <div className="px-4 py-3 rounded-md bg-gray-50 border text-sm text-gray-800 whitespace-pre-wrap">
+            <div className="text-sm font-medium text-gray-600 mb-2">Phản hồi từ chủ khách sạn:</div>
+            <div>{review.reply}</div>
+
+            {review.repliedAt && (
+              <div className="text-xs text-muted-foreground mt-2 hidden data-[open=true]:block">
+                {new Date(review.repliedAt).toLocaleString()}
+              </div>
+            )}
+          </div>
+
+          <div className="group-data-[open=true]:hidden pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white to-transparent" />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => setOpen(!open)}
+            className="inline-flex items-center gap-x-1 mt-1 cursor-pointer text-sm text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {open ? "Thu gọn" : "Xem thêm"}
+            <ChevronDownIcon className="size-5 transition-transform group-data-[open=true]:-rotate-180" />
+          </button>
         </div>
       </div>
     </div>

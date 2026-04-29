@@ -6,6 +6,7 @@ import { renderToString } from "react-dom/server";
 import { type Map_HotelCardProps } from "@/lib/actions/search/map";
 import { formatVND } from "@/lib/utils";
 import { PATHS } from "@/lib/constants";
+import Image from "next/image";
 
 function createPriceIcon(price: number) {
   const PriceIcon = () => {
@@ -36,13 +37,18 @@ export default function MyMarker({
     <Marker position={[hotel.latitude, hotel.longitude]} icon={createPriceIcon(hotel.price)}>
       <Popup closeButton={false}>
         <div className="w-64 p-2 flex flex-col gap-y-2">
-          <div className="h-60 w-full overflow-hidden rounded-md bg-gray-100">
-            {hotel.thumbnailUrl ? (
-              // NOTE: use plain img inside popup to avoid Next.js image layout issues in leaflet popup
-              <img src={hotel.thumbnailUrl} alt={hotel.name} className="object-cover w-full h-full" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">No image</div>
-            )}
+          <div className="relative h-60 w-full overflow-hidden rounded-md bg-gray-100">
+            {hotel.thumbnailUrl
+              ? <Image
+                src={hotel.thumbnailUrl}
+                alt={hotel.name}
+                fill
+                className="object-cover absolute inset-0"
+              />
+              : <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                Không có hình ảnh
+              </div>
+            }
           </div>
           <div className="flex flex-col gap-y-1">
             <h3 className="text-base font-bold">{hotel.name}</h3>

@@ -9,7 +9,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 
 export async function user_upsertFavoriteHotel(
   hotelId: string
-): Promise<OperationResult<{ id: string }>> {
+): Promise<OperationResult<{ userId: string; hotelId: string; createdAt: Date }>> {
   const session = await auth();
   if (!session || !session.user) {
     return { ok: false, error: "Unauthorized", status: 401 };
@@ -20,12 +20,21 @@ export async function user_upsertFavoriteHotel(
   }
 
   try {
-    const response = await prisma.favorite.upsert({
-      where: { userId_hotelId: { userId: session.user.id, hotelId } },
-      create: { userId: session.user.id, hotelId },
-      update: { userId: session.user.id, hotelId }, // just as create.
-      select: { id: true }
+    // Prisma model uses composite keys (no single id field), so create and if unique constraint is hit, fetch the existing record.
+    const response = await prisma.favorite.create({
+      data: { userId: session.user.id, hotelId },
+      select: { userId: true, hotelId: true, createdAt: true }
+    }).catch(async (err) => {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        // already exists -> return the existing row
+        return await prisma.favorite.findFirst({
+          where: { userId: session.user.id, hotelId },
+          select: { userId: true, hotelId: true, createdAt: true }
+        });
+      }
+      throw err;
     });
+
     if (!response) {
       return { ok: false, error: "Failed to upsert favorite", status: 500 };
     }
@@ -60,7 +69,7 @@ export async function draft_user_createOrDeleteFavoriteHotel(
     if (shouldFavorite) {
       await prisma.favorite.create({
         data: { userId: session.user.id, hotelId },
-        select: { id: true }
+        select: { userId: true, hotelId: true, createdAt: true }
       });
       return { ok: true };
     } else {
@@ -185,7 +194,7 @@ export async function user_getIsHotelFavorited(hotelId: string): Promise<boolean
 
   const fav = await prisma.favorite.findFirst({
     where: { userId: session.user.id, hotelId },
-    select: { id: true },
+    select: { userId: true },
   });
   
   return !!fav;

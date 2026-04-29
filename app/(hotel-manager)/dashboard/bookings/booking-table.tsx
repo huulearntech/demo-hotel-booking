@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import type { DateRange } from "react-day-picker";
+import { vi } from "date-fns/locale";
 
 function makeRangeFromPreset(preset: "last7" | "last30"): DateRange {
   const to = new Date();
@@ -47,13 +48,38 @@ export default function BookingsTable() {
 
   const { data = [], isLoading, isError } = useQuery({
     queryKey: ["hotelowner_bookings"],
-    queryFn: async () => {
-      return hotelowner_getBookings();
-    },
+    queryFn: hotelowner_getBookings,
   });
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading bookings.</div>;
+  if (isLoading)
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-40 rounded bg-gray-200/60 animate-pulse" />
+        </div>
+
+        <div className="rounded-md border bg-white">
+          {/* table header skeleton */}
+          <div className="grid grid-cols-6 gap-4 p-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-4 rounded bg-gray-200/60 animate-pulse" />
+            ))}
+          </div>
+
+          {/* table rows skeleton */}
+          <div className="divide-y">
+            {Array.from({ length: 4 }).map((_, row) => (
+              <div key={row} className="grid grid-cols-6 gap-4 p-4">
+                {Array.from({ length: 6 }).map((_, col) => (
+                  <div key={col} className="h-5 rounded bg-gray-100 animate-pulse" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  if (isError) return <div>Có lỗi xảy ra khi tải dữ liệu.</div>;
 
   return (
     <div className="flex flex-col gap-4">
@@ -61,7 +87,7 @@ export default function BookingsTable() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
-              Select date range
+              Chọn khoảng thời gian
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="p-4">
@@ -83,14 +109,15 @@ export default function BookingsTable() {
                 aria-label="Date presets"
               >
                 <ToggleGroupItem value="last7" className="data-[state=on]:bg-primary data-[state=on]:text-white w-36 text-left">
-                  Last 7 days
+                  7 ngày qua
                 </ToggleGroupItem>
                 <ToggleGroupItem value="last30" className="data-[state=on]:bg-primary data-[state=on]:text-white w-36 text-left">
-                  Last 30 days
+                  30 ngày qua
                 </ToggleGroupItem>
               </ToggleGroup>
 
               <Calendar
+                locale={vi}
                 mode="range"
                 numberOfMonths={2}
                 selected={dateRange}

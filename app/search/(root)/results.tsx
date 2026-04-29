@@ -163,7 +163,7 @@ export function ResultsSkeleton() {
 function NoResult() {
   return (
     <div className="w-full h-[calc(100vh-15rem)] flex flex-col gap-y-2 items-center justify-center overflow-hidden">
-      <Image src={noResultImage} alt="No result found" className="w-48 h-48 object-contain" />
+      <Image src={noResultImage} alt="" className="w-48 h-48 object-contain" />
       <h2 className="text-2xl font-semibold">Không tìm thấy kết quả nào</h2>
       <p className="text-sm text-muted-foreground">
         Bạn có thể điều chỉnh bộ lọc để tìm kiếm kết quả khác.

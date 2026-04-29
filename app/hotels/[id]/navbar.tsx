@@ -93,15 +93,31 @@ export default function Navbar({ hotelId }: { hotelId: string }) {
 
       <div className="flex items-center gap-2">
         <button
-          aria-pressed={Boolean(isFavorited)}
-          aria-label={isFavorited ? 'Đã yêu thích' : 'Thêm vào mục yêu thích'}
+          type="button"
+          aria-pressed={isFavorited}
+          aria-label={isFavorited ? "Bỏ yêu thích" : "Thêm vào mục Yêu thích"}
+          aria-describedby={`fav-status-${hotelId}`}
           onClick={() => onToggleFavorite(hotelId, isFavorited, setIsFavorited)}
-          className="cursor-pointer"
+          className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
         >
-          <Heart className={cn("size-5 transition-all hover:scale-110", isFavorited ? 'text-red-500 fill-current' : 'text-primary')} />
+          <Heart
+        aria-hidden="true"
+        className={cn(
+          "size-5 transition-all hover:scale-110",
+          isFavorited ? "text-red-500 fill-current" : "text-primary"
+        )}
+          />
         </button>
-        {/** NOTE: Should this be label? */}
-        <div className="text-sm text-primary hidden sm:block">{isFavorited ? 'Đã thêm vào mục Yêu thích' : 'Thêm vào mục Yêu thích'}</div>
+
+        {/* Live region for screen readers to announce state changes */}
+        <span id={`fav-status-${hotelId}`} className="sr-only" aria-live="polite">
+          {isFavorited ? "Đã thêm vào mục Yêu thích" : "Đã bỏ khỏi mục Yêu thích"}
+        </span>
+
+        {/* Visible label for sighted users */}
+        <span className="text-sm text-primary hidden sm:block">
+          {isFavorited ? "Đã thêm vào mục Yêu thích" : "Thêm vào mục Yêu thích"}
+        </span>
       </div>
     </nav>
   );

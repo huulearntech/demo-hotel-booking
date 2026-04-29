@@ -7,7 +7,7 @@ import { fakerVI as faker } from "@faker-js/faker";
 async function seedRegularUsers(count = 10) {
   console.log("Seeding regular users");
   const users = Array.from({ length: count }, () => ({
-    name: faker.person.fullName(),
+    name: `${faker.person.lastName()} ${faker.person.firstName()}`, // Vietnamese name order
     email: faker.internet.email(),
     password: faker.internet.password(),
     role: UserRole.USER,
@@ -35,7 +35,7 @@ async function seedRegularUsers(count = 10) {
 async function seedHotelOwners(count = 5) {
   console.log("Seeding hotel owners");
   const users = Array.from({ length: count }, () => ({
-    name: faker.person.fullName(),
+    name: `${faker.person.lastName()} ${faker.person.firstName()}`, // Vietnamese name order
     email: faker.internet.email(),
     password: faker.internet.password(),
     role: UserRole.HOTEL_OWNER,

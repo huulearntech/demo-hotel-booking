@@ -8,20 +8,14 @@ import { ArrowRightIcon, DoorOpenIcon, UserIcon } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { type RecentBookingType, user_getRecentBookingsPaginated } from "@/lib/actions/user-account";
-import { BookingStatus } from "@/lib/generated/prisma/enums";
+import { type BookingStatus } from "@/lib/generated/prisma/enums";
 import { differenceInDays } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BOOKING_STATUS_BADGE_COLORS } from "@/lib/constants";
 
-const map: Record<BookingStatus, { text: string; variant: string }> = {
-  PENDING_TO_PAY: { text: "Đang chờ", variant: "bg-yellow-100 text-yellow-800" },
-  PAID: { text: "Đã thanh toán", variant: "bg-green-100 text-green-800" },
-  CHECKED_IN: { text: "Đã nhận phòng", variant: "bg-sky-100 text-sky-800" },
-  CHECKED_OUT: { text: "Đã trả phòng", variant: "bg-sky-100 text-sky-800" },
-  CANCELLED: { text: "Đã huỷ", variant: "bg-red-100 text-red-800" },
-};
 
 function StatusBadge({ status }: { status: BookingStatus }) {
-  const s = map[status] ?? { text: status, variant: "bg-gray-100 text-gray-800" };
+  const s = BOOKING_STATUS_BADGE_COLORS[status];
   return <span className={`px-2 py-1 rounded-md text-xs font-medium ${s.variant}`}>{s.text}</span>;
 }
 // cleanup - compact card variants

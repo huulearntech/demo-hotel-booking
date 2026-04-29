@@ -1,12 +1,10 @@
 import { ChartAreaInteractive } from "../tmp-components/chart-area-interactive";
 import PiechartPctRevenueBookingsRatings from "./piechart-pct-revenue-bookings-ratings";
 import RatingDistribution from "./rating-distribution";
-
 import { hotelowner_getRatingDistribution } from "@/lib/actions/hotel-manager/analytics";
 
 export default async function HotelManagerStatisticsPage() {
-  const dist = await hotelowner_getRatingDistribution();
-  const data = [1, 2, 3, 4, 5].map((r) => ({ rating: String(r), count: dist[r] ?? 0 }));
+  const data = await hotelowner_getRatingDistribution();
 
   return (
     <main className="flex flex-col gap-y-6">

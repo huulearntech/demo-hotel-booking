@@ -7,31 +7,22 @@ import { auth } from "@/auth";
 export async function fetchHotel(hotelId: string) {
   const session = await auth();
   if (session?.user.role === "USER") {
-    // FIXME: Too many queries.
-    const exists = await prisma.recentlyViewed.findFirst({
+    await prisma.recentlyViewed.upsert({
       where: {
-        userId: session.user.id,
-        hotelId,
-      },
-      select: { id: true },
-    });
-    if (!exists) {
-      await prisma.recentlyViewed.create({
-        data: {
+        userId_hotelId: {
           userId: session.user.id,
           hotelId,
         },
-      });
-    } else {
-      await prisma.recentlyViewed.update({
-        where: { id: exists.id },
-        data: { viewedAt: new Date() },
-      });
-    }
+      },
+      create: {
+        userId: session.user.id,
+        hotelId,
+      },
+      update: {},
+    });
   }
 
 
-  // TODO: handle pagination or separate the query for fetching reviews
   // FIXME: This logic is incorrect: it selects the reviews of the cheapest room type, not the whole hotel.
   return prisma.hotel.findUnique({
     where: { id: hotelId },
@@ -39,7 +30,7 @@ export async function fetchHotel(hotelId: string) {
       roomTypes: {
         select: { price: true },
         orderBy: { price: "asc" },
-        take: 1, // only need the cheapest room for the overview section
+        take: 1,
       },
       ward: {
         select: {

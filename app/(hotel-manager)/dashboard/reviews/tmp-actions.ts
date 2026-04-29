@@ -3,6 +3,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import { Prisma } from "@/lib/generated/prisma/client";
 
 const reviewSelect = {
   id: true,
@@ -15,9 +16,7 @@ const reviewSelect = {
   booking: {
     select: {
       id: true,
-      customerName: true,
-      customerEmail: true,
-      customerPhone: true,
+      user: { select: { name: true, email: true, profileImageUrl: true } },
       checkInDate: true,
       checkOutDate: true,
       numRooms: true,
@@ -27,7 +26,7 @@ const reviewSelect = {
       roomType: { select: { name: true } },
     },
   },
-};
+} satisfies Prisma.ReviewSelect;
 
 function baseWhere(ownerId: string) {
   return {

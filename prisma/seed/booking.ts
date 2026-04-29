@@ -66,7 +66,7 @@ async function seedBookings(users: User[], roomTypes: RoomType[]) {
         snapshotCheckOutTime: randomQuarterTime({ minHour: 11, maxHour: 12 }),
         customerName: `${faker.person.lastName()} ${faker.person.firstName()}`, // Vietnamese name order
         customerEmail: faker.internet.email(),
-        customerPhone: faker.phone.number().slice(0, 10), // Limit to 10 digits for phone number
+        customerPhone: faker.phone.number().replaceAll(' ', '').slice(0, 10), // Limit to 10 digits for phone number
         status: "CHECKED_OUT",
       };
     });
@@ -94,7 +94,7 @@ async function seedBookings(users: User[], roomTypes: RoomType[]) {
         snapshotCheckOutTime: randomQuarterTime({ minHour: 11, maxHour: 12 }),
         customerName: `${faker.person.lastName()} ${faker.person.firstName()}`, // Vietnamese name order
         customerEmail: faker.internet.email(),
-        customerPhone: faker.phone.number().slice(0, 10), // Limit to 10 digits for phone number
+        customerPhone: faker.phone.number().replaceAll(' ', '').padEnd(10, '0'), // Limit to 10 digits for phone number
         status: "CHECKED_IN"
       };
     });

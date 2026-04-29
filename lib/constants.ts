@@ -1,3 +1,5 @@
+import { type BookingStatus } from "./generated/prisma/enums";
+
 export const MIN_ADULTS = 1;
 export const MIN_CHILDREN = 0;
 export const MIN_ROOMS = 1;
@@ -45,4 +47,13 @@ export const PATHS = {
 
   unauthorized: '/unauthorized',
   notFound: '/notfound'
+};
+
+
+export const BOOKING_STATUS_BADGE_COLORS: Record<BookingStatus, { text: string; variant: string }> = {
+  PENDING_TO_PAY: { text: "Đang chờ", variant: "bg-yellow-100 text-yellow-800" },
+  PAID: { text: "Đã thanh toán", variant: "bg-green-100 text-green-800" },
+  CHECKED_IN: { text: "Đã nhận phòng", variant: "bg-sky-100 text-sky-800" },
+  CHECKED_OUT: { text: "Đã trả phòng", variant: "bg-sky-100 text-sky-800" },
+  CANCELLED: { text: "Đã huỷ", variant: "bg-red-100 text-red-800" },
 };

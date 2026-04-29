@@ -71,32 +71,35 @@ function AvailableRoomTypeCard({
   } = roomType;
 
   return (
-    <div
-      className="flex flex-col md:flex-row lg:flex-row bg-white rounded-xl p-4 shadow-md overflow-hidden bg-linear-to-b from-primary/15 to-transparent to-80%"
+    <div className="w-full h-fit flex flex-col md:flex-row
+      gap-y-4 md:gap-y-0 md:gap-x-6
+     bg-white rounded-xl p-4 shadow-md overflow-hidden
+      bg-linear-to-b from-primary/15 to-transparent to-80%"
     >
-      <div className="w-full md:w-2/5 lg:w-1/3 shrink-0">
+      <div className="w-full md:w-2/5 lg:w-1/3 h-48 md:h-full shrink-0">
         {imageUrls && imageUrls.length > 0
           ? <Image
             src={imageUrls[0]}
             alt={name}
             width={400}
             height={300}
-            className="w-full h-64 lg:h-full rounded-lg object-cover"
+            className="w-full h-48 sm:h-64 rounded-lg object-cover"
             loading="lazy"
           />
-          : <div className="w-full h-64 lg:h-full bg-muted rounded-lg flex items-center justify-center">
+          : <div className="w-full h-48 sm:h-full bg-muted rounded-lg flex items-center justify-center">
             <span className="text-sm text-muted-foreground">Không có hình ảnh cho phòng này</span>
           </div>
         }
       </div>
 
-      <div className="w-full md:w-3/5 lg:w-2/3 flex flex-col justify-between gap-y-4 mt-4 md:mt-0 md:ml-4 lg:ml-6">
+      <div className="w-full md:w-3/5 lg:w-2/3 flex flex-col justify-between gap-y-4
+        [&>section]:flex [&>section]:flex-col [&>section]:gap-y-2 [&>section]:text-sm
+        [&>section>ul]:grid [&>section>ul]:grid-cols-2 [&>section>ul]:sm:grid-cols-3 [&>section>ul]:md:grid-cols-3 [&>section>ul]:lg:grid-cols-4 [&>section>ul]:gap-3
+        [&>section>ul>li]:flex [&>section>ul>li]:items-center [&>section>ul>li]:gap-x-2
+        [&>section>h3]:font-semibold
+      ">
         <header className="flex items-start justify-between gap-x-4">
-          <div className="min-w-0">
-            <h2 className="text-lg lg:text-xl font-bold line-clamp-2">
-              {name}
-            </h2>
-          </div>
+          <h2 className="text-lg font-bold line-clamp-2"> {name} </h2>
 
           <div className="flex items-center gap-x-2 text-sm text-primary font-bold">
             <ExternalLink className="size-4 shrink-0" aria-hidden />
@@ -104,39 +107,39 @@ function AvailableRoomTypeCard({
           </div>
         </header>
 
-        <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-2">
-          <div className="flex items-center gap-x-2 text-sm">
-            <RulerDimensionLineIcon className="size-4" />
-            <span>{areaM2} m²</span>
-          </div>
+        <section>
+          <h3>Thông tin chung</h3>
+          <ul>
+            <li>
+              <RulerDimensionLineIcon className="size-4" />
+              <span>{areaM2} m²</span>
+            </li>
 
-          <div className="flex items-center gap-x-2 text-sm">
-            <BedDoubleIcon className="size-4" />
-            <span className="lowercase first-letter:capitalize">Giường {bedType}</span>
-          </div>
+            <li>
+              <BedDoubleIcon className="size-4" />
+              <span className="lowercase first-letter:capitalize">Giường {bedType}</span>
+            </li>
 
-          <div className="flex items-center gap-x-2 text-sm">
-            <UserIcon className="size-4" />
-            <span>{adultCapacity} người lớn</span>
-          </div>
-
-          {childrenCapacity > 0 && (
-            <div className="flex items-center gap-x-2 text-sm">
+            <li>
               <UserIcon className="size-4" />
-              <span>{childrenCapacity} trẻ em</span>
-            </div>
-          )}
+              <span>{adultCapacity} người lớn</span>
+            </li>
+
+            {childrenCapacity > 0 && (
+              <li>
+                <UserIcon className="size-4" />
+                <span>{childrenCapacity} trẻ em</span>
+              </li>
+            )}
+          </ul>
         </section>
 
-        <section className="mt-3">
-          <h3 className="text-sm font-semibold mb-2">Tiện nghi</h3>
-          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-2">
+        <section>
+          <h3>Tiện nghi</h3>
+          <ul>
             {Array.isArray(facilities) ? (
               (facilities as { id: string; iconUrl?: string; name: string }[]).map((facility) => (
-              <li
-                key={facility.id}
-                className="flex items-center gap-x-2 text-sm"
-              >
+              <li key={facility.id}>
                 {facility.iconUrl ? (
                   <Image
                     src={facility.iconUrl}
@@ -153,7 +156,7 @@ function AvailableRoomTypeCard({
           </ul>
         </section>
 
-        <footer className="mt-4 flex items-center justify-end gap-x-4">
+        <footer className="flex items-center justify-end gap-x-4">
           <div className="text-primary inline-flex gap-x-1 items-baseline">
             <span className="text-base lg:text-lg font-extrabold" >
               {formatVND(price)}

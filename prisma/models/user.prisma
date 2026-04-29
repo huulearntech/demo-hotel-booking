@@ -3,6 +3,8 @@ enum UserRole {
   HOTEL_OWNER
   USER
   PENDING      // just registered, email not verified yet
+  // TODO: There is problem with this: a hotel owner can also be in pending
+  // and what to call when they send verification?
 }
 
 model User {
@@ -34,7 +36,6 @@ enum UserStatus {
 }
 
 model Favorite {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -43,13 +44,11 @@ model Favorite {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@unique([userId, hotelId])
-  @@index([hotelId, userId])
+  @@id([hotelId, userId])
   @@map("favorites")
 }
 
 model RecentlyViewed {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -58,6 +57,6 @@ model RecentlyViewed {
 
   viewedAt  DateTime @default(now()) @map("viewed_at")
 
-  @@index([userId, hotelId])
+  @@id([userId, hotelId])
   @@map("recently_viewed")
 }

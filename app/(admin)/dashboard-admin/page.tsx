@@ -25,6 +25,7 @@ import {
 
 
 import type { BookingStatus } from '@/lib/generated/prisma/enums'
+import { BOOKING_STATUS_BADGE_COLORS } from '@/lib/constants'
 
 type Booking = {
   id: string
@@ -131,14 +132,7 @@ function KPI({ title, value, delta }: { title: string; value: string | number; d
 }
 
 function StatusBadge({ status }: { status: BookingStatus }) {
-const map: Record<BookingStatus, { text: string; variant: string }> = {
-  PENDING_TO_PAY: { text: "Đang chờ", variant: "bg-yellow-100 text-yellow-800" },
-  PAID: { text: "Đã thanh toán", variant: "bg-green-100 text-green-800" },
-  CHECKED_IN: { text: "Đã nhận phòng", variant: "bg-sky-100 text-sky-800" },
-  CHECKED_OUT: { text: "Đã trả phòng", variant: "bg-sky-100 text-sky-800" },
-  CANCELLED: { text: "Đã huỷ", variant: "bg-red-100 text-red-800" },
-};
-  return <span className={`px-2 py-1 rounded text-xs ${map[status]}`}>{status.replace('_', ' ')}</span>
+  return <span className={`px-2 py-1 rounded text-xs ${BOOKING_STATUS_BADGE_COLORS[status]}`}>{status.replace('_', ' ')}</span>
 }
 
 export default function Page() {

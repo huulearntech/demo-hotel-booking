@@ -14,8 +14,7 @@ type HotelRow = {
 }
 
 export async function fetchFeed(): Promise<FeedProps> {
-  const rows = await prisma
-    .$queryRawTyped(get10HotelsOf5Provinces());
+  const rows = await prisma.$queryRawTyped(get10HotelsOf5Provinces());
 
   return rows
     .filter((item: HotelRow) => item.hotels != null)

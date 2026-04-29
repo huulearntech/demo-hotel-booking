@@ -47,11 +47,18 @@ export default async function ReviewSection({
       <div className="rounded-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
         <h2 className="font-bold text-[1.25rem]">Những review của khách về {hotelName}</h2>
         <div className="flex flex-col lg:flex-row lg:items-center gap-y-6 lg:gap-y-0 lg:gap-x-12">
-          <div className="flex space-x-12 flex-1">
+          <div className="flex gap-x-6 md:gap-x-12 flex-1">
             {numberOfReviews > 0 &&
-              <div className="flex shrink-0 items-center justify-center size-32 rounded-4xl bg-linear-[137deg] from-[rgb(245,251,255)] from-0% via-[rgb(209,240,255)] via-[46.1%] to-[rgb(245,251,255)] to-[96.84%]">
-                <div className="flex items-center justify-center size-24 border-4 border-white rounded-3xl">
-                  <div className="text-center text-[3rem] font-bold text-primary">{rating.toFixed(1)}</div>
+              <div className="flex shrink-0 items-center justify-center
+                size-24 rounded-2xl
+                md:size-32 md:rounded-4xl
+                bg-linear-[137deg] from-[rgb(245,251,255)] from-0% via-[rgb(209,240,255)] via-[46.1%] to-[rgb(245,251,255)] to-[96.84%]"
+              >
+                <div className="flex items-center justify-center border-white
+                  size-18 border-3 rounded-2xl
+                  md:size-24 md:border-4 md:rounded-3xl"
+                >
+                  <div className="text-center text-[2rem] md:text-[3rem] font-bold text-primary">{rating.toFixed(1)}</div>
                 </div>
               </div>
             }

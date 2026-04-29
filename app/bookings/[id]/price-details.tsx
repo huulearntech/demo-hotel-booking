@@ -82,7 +82,7 @@ export default function PriceDetail({
         onClick={
           // TODO: handle errors.
           handleSubmit((form) =>
-          fake_payment_just_for_testing(
+          fake_payment_just_for_testing( // TODO: put this in an object to avoid mistake
             roomTypeId,
             checkInDate,
             checkOutDate,
@@ -91,8 +91,8 @@ export default function PriceDetail({
             numRooms,
             snapshotRoomPrice,
             form.name,
-            form.phone,
             form.email,
+            form.phone,
             form.notes,
           )
         )}
