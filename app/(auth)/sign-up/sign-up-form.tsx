@@ -31,7 +31,7 @@ export default function SignUpForm() {
     startTransition(async () => {
       const { success, errors } = await signUpUser(data);
       if (success) {
-        router.push(PATHS.signIn);
+        router.push(PATHS.otp);
       } else {
         const { fieldErrors, formErrors } = errors;
         Object.entries(fieldErrors).forEach(([fieldName, errorMessages]) => {

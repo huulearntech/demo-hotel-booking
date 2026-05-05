@@ -4,13 +4,13 @@ import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import HotelCard from '@/components/hotel-card';
 import { useInView } from 'react-intersection-observer';
-import { draft_user_fetchRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
+import { user_fetchRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
 
 export default function RecentlyViewedList() {
   const { ref: sentinelRef, inView } = useInView({ rootMargin: '200px' });
 
   const fetchRecentlyViewed = async ({ pageParam }: { pageParam?: string | null }) => {
-    const res = await draft_user_fetchRecentlyViewedHotels({ limit: 12, cursor: pageParam ?? undefined });
+    const res = await user_fetchRecentlyViewedHotels({ limit: 12, cursor: pageParam ?? undefined });
     if (!res.ok) throw new Error(res.error || 'Failed to fetch');
     return res.data; // { items, nextCursor }
   };

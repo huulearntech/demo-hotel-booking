@@ -6,11 +6,11 @@ import FilterSheetProvider from "../filter-sheet-context";
 import Results from "./results";
 
 import SearchBar from "@/components/search-bar";
-import { SearchParams, SearchParamsCodec } from "@/lib/zod_schemas/search-bar";
+import { SearchSpec_Params, codec_SearchSpec_Params } from "@/lib/zod_schemas/search-bar";
 
-export default async function SearchPage(props: { searchParams: Promise<SearchParams> }) {
+export default async function SearchPage(props: { searchParams: Promise<SearchSpec_Params> }) {
   const searchParams = await props.searchParams;
-  const safeDecodedParams = SearchParamsCodec.safeDecode(searchParams);
+  const safeDecodedParams = codec_SearchSpec_Params.safeDecode(searchParams);
   if (!safeDecodedParams.success) notFound();
   
   return (

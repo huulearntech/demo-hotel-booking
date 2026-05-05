@@ -2,31 +2,21 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { differenceInDays } from "date-fns";
-import { user_getReviewsOfHotel } from "@/lib/actions/reviews";
+import { formatDistanceToNow } from "date-fns";
 import { tvlk_favicon } from "@/public/logos";
 import { MAX_REVIEW_POINTS } from "@/lib/constants";
 import { ChevronDownIcon } from "lucide-react";
+import { vi } from "date-fns/locale";
+import { getReviewsOfHotel } from "@/lib/generated/prisma/sql";
 
 export default function ReviewCard({
   review,
 }: {
-  review: Awaited<ReturnType<typeof user_getReviewsOfHotel>>["reviews"][number];
+  review: getReviewsOfHotel.Result;
 }) {
   const [open, setOpen] = useState(false);
 
-  const today = new Date();
-  const diff = differenceInDays(today, new Date(review.createdAt));
-  let timeAgo = "";
-  if (diff < 1) {
-    timeAgo = "hôm nay";
-  } else if (diff < 7) {
-    timeAgo = `cách đây ${diff} ngày`;
-  } else if (diff < 30) {
-    timeAgo = `cách đây ${Math.floor(diff / 7)} tuần`;
-  } else {
-    timeAgo = `cách đây ${Math.floor(diff / 30)} tháng`;
-  }
+  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true, locale: vi });
 
   const reply = review.reply ?? null;
   const hasReply = !!reply;

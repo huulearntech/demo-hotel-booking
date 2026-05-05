@@ -9,26 +9,13 @@ import { ProductCode, VnpLocale, VnpCurrCode, dateFormat } from "vnpay";
 import { schema_bookingForm } from "../zod_schemas/booking";
 import prisma from "../prisma";
 import { differenceInDays } from "date-fns";
-import { Prisma } from "../generated/prisma/client";
 import { auth } from "@/auth";
 import { user_getRoomTypeInventoryForUpdate } from "../generated/prisma/sql";
-import { schema_searchSpec } from "../zod_schemas/search-bar";
+import { schema_searchSpecWithoutLocation, toYYYY_MM_DD } from "../zod_schemas/search-bar";
 import z from "zod";
 
 
-function getClientIP (headers: Headers): string {
-  const forwardedFor = headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
-  const realIP = headers.get("x-real-ip");
-  const clientIP = headers.get("x-client-ip");
-  return realIP || clientIP || "127.0.0.1";
-};
-
-// THIS IS JUST FOR TESTING, DO NOT USE THIS IN PRODUCTION.
-export async function fake_payment_just_for_testing(
+export async function createBookingThenRedirectToVNPay(
   roomTypeId: string,
   checkInDate: Date,
   checkOutDate: Date,
@@ -47,8 +34,12 @@ export async function fake_payment_just_for_testing(
       throw new Error("Unauthorized");
     }
 
+    if (!process.env.VNPAY_RETURN_URL) {
+      throw new Error("VNPAY_RETURN_URL is not configured");
+    }
+
     // Validate input
-    const parse_spec_result = schema_searchSpec.safeParse({
+    const parse_spec_result = schema_searchSpecWithoutLocation.safeParse({
       inOutDates: {
         from: checkInDate,
         to: checkOutDate,
@@ -73,7 +64,7 @@ export async function fake_payment_just_for_testing(
     }
 
 
-    // // TODO: This should be done in the previous step, but just in case.
+    // NOTE: This should be done in the previous step, but just in case.
     const totalPrice = price * numRooms * differenceInDays(checkOutDate, checkInDate); // FIXME: this is just temporary place holder. Do NOT compute in js number.
     if (totalPrice <= 1000) {
       throw new Error("Total price must be greater than 1000 VND to proceed with payment");
@@ -111,7 +102,7 @@ export async function fake_payment_just_for_testing(
     }
 
 
-    const result = await prisma.$transaction(async (tx) => {
+    const createdBooking = await prisma.$transaction(async (tx) => {
       // NOTE: This will lock the relevant RoomTypeInventory rows to ensure atomicity.
       // This may also be done by versioning the rows, but for the sake of time doing this project,
       // we will just lock the rows here.
@@ -151,86 +142,14 @@ export async function fake_payment_just_for_testing(
           customerPhone,
           notes,
 
-          status: "PAID"
+          status: "PENDING_TO_PAY"
         },
         select: { id: true },
       });
     });
+    
 
-    // TODO: when on production, this should be redirect to the vnpay page, not the success page.
-    redirect(`/payment/tmp/success?id=${result.id}&message=${"hello"}`);
-  } catch (error) {
-    console.error("Error in fake payment:", error);
-    throw error;
-  }
-}
-
-// TODO: Fix this
-type BookingFormValues = Prisma.BookingUncheckedCreateInput
-export async function createPaymentUrlThenRedirectToVNPay(bookingForm: BookingFormValues) {
-  try {
-    if (!process.env.VNPAY_RETURN_URL) {
-      throw new Error("VNPAY_RETURN_URL is not configured");
-    }
-
-    const safeParsedBookingForm = schema_bookingForm.safeParse(bookingForm);
-    if (!safeParsedBookingForm.success) {
-      throw new Error("Invalid booking form data");
-    }
-
-
-    const roomType = await prisma.roomType.findUnique({
-      where: { id: bookingForm.roomTypeId },
-      select: { id: true, price: true },
-    });
-    if (!roomType) {
-      throw new Error("Invalid room type");
-    }
-    const totalPrice = roomType.price.mul(bookingForm.numRooms).toNumber();
-    if (totalPrice <= 1000) {
-      throw new Error("Total price must be greater than 1000 VND to proceed with payment");
-    }
-
-    const inventories = await prisma.roomTypeInventory.findMany({
-      where: {
-        roomTypeId: bookingForm.roomTypeId,
-        date: {
-          gte: bookingForm.checkInDate,
-          lt: bookingForm.checkOutDate,
-        },
-      },
-      select: {
-        date: true,
-        totalRooms: true,
-        bookedRooms: true,
-      },
-    });
-
-    if (inventories.length === 0) {
-      throw new Error("No inventory data for the selected dates");
-    }
-
-    // compute available rooms per day and take the minimum across the date range
-    const availablePerDay = inventories.map((inv) => (inv.totalRooms ?? 0) - (inv.bookedRooms ?? 0));
-    const available_rooms_count = Math.min(...availablePerDay);
-
-    if (available_rooms_count < bookingForm.numRooms) {
-      throw new Error("Not enough available rooms for the selected dates");
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        ...bookingForm,
-        status: "PENDING_TO_PAY",
-      },
-      select: { id: true },
-    });
-
-    const orderInfo = `Booking ID: ${booking.id},` +
-      ` Room Type ID: ${bookingForm.roomTypeId},` +
-      ` Check-in: ${typeof bookingForm.checkInDate === "string" ? bookingForm.checkInDate : bookingForm.checkInDate.toISOString() },` +
-      ` Check-out: ${typeof bookingForm.checkOutDate === "string" ? bookingForm.checkOutDate : bookingForm.checkOutDate.toISOString() },` +
-      ` Num Rooms: ${bookingForm.numRooms}`;
+    const orderInfo = `Order ${createdBooking.id}: ${numRooms}x room(s) (${roomTypeId}) from ${toYYYY_MM_DD(checkInDate)} to ${toYYYY_MM_DD(checkOutDate)}, total ${totalPrice} VND`;
 
     // Build payment URL
     const clientIPAddr = await headers().then(getClientIP);
@@ -243,7 +162,7 @@ export async function createPaymentUrlThenRedirectToVNPay(bookingForm: BookingFo
       vnp_OrderInfo: orderInfo,
       vnp_OrderType: ProductCode.Hotel_Tourism,
       vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
-      vnp_TxnRef: booking.id,
+      vnp_TxnRef: createdBooking.id,
     });
 
     // Redirect to VNPay
@@ -267,3 +186,15 @@ export async function createPaymentUrlThenRedirectToVNPay(bookingForm: BookingFo
     throw error;
   }
 }
+
+
+function getClientIP (headers: Headers): string {
+  const forwardedFor = headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  const realIP = headers.get("x-real-ip");
+  const clientIP = headers.get("x-client-ip");
+  return realIP || clientIP || "127.0.0.1";
+};

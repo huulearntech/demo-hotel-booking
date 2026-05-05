@@ -7,8 +7,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 
 import { useFilterForm } from "../filter-form-context";
-import { codec_searchSpec, SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
-import { draft_fetchSearchResult, type SearchResult_CursorType, type SortType } from "@/lib/actions/search";
+import { codec_SearchSpecWithoutLocation_Params, SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
+import { user_getSearchResult, type SearchResult_CursorType, type SortType } from "@/lib/actions/search";
 import { PATHS } from "@/lib/constants";
 
 import ButtonOpenFilterSheet from "../button-open-filter-sheet";
@@ -19,9 +19,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, LoaderCircleIcon } from "lucide-react";
 import noResultImage from "@/public/images/no-result.svg";
 
-// TODO: make this dynamic
-const sort: SortType = "price_asc";
-
 export default function Results({
   searchBarFormValues,
 }: {
@@ -29,10 +26,18 @@ export default function Results({
 }) {
   const searchParams = useSearchParams();
   const [totalCount, setTotalCount] = useState(0);
+  const [sortedBy, setSortedBy] = useState<SortType>("price_asc");
   const { getValues } = useFilterForm();
 
+  // sentinel to load next page when it comes into view
+  const { ref: sentinelRef, inView } = useInView({
+    root: null,
+    rootMargin: "0px",
+    threshold: 1,
+  });
+
   const { location, ...searchSpecWithoutLocation } = searchBarFormValues;
-  const searchSpecString = new URLSearchParams(codec_searchSpec.encode(searchSpecWithoutLocation)).toString();
+  const searchSpecString = new URLSearchParams(codec_SearchSpecWithoutLocation_Params.encode(searchSpecWithoutLocation)).toString();
 
   const {
     data,
@@ -43,14 +48,14 @@ export default function Results({
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["hotels", searchBarFormValues], // TODO: should also include filterFormValues and sort in the query key
+    queryKey: ["hotels", searchBarFormValues, sortedBy],
     queryFn: async ({ pageParam }: { pageParam: SearchResult_CursorType | null }) => {
-      const filterFormValues = getValues();
+      const filterFormValues = getValues(); // NOTE: if put this outside and put into queryKey, it will fetch immediately when filter change, not when user clicks on "Apply"
 
-      const page = await draft_fetchSearchResult(
+      const page = await user_getSearchResult(
         searchBarFormValues,
         filterFormValues,
-        sort,
+        sortedBy,
         pageParam,
       );
       return page;
@@ -59,13 +64,11 @@ export default function Results({
     getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,
     refetchOnWindowFocus: false,
   });
-
-  // sentinel to load next page when it comes into view
-  const { ref: sentinelRef, inView } = useInView({
-    root: null,
-    rootMargin: "0px",
-    threshold: 1,
-  });
+  
+  useEffect(() => {
+    const total = data?.pages?.[0]?.totalCount ?? 0;
+    setTotalCount(total);
+  }, [data]);
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -75,10 +78,6 @@ export default function Results({
 
   // flatten pages into a single array of hotels
   const hotels = data?.pages.flatMap(p => p.items) ?? [];
-  useEffect(() => {
-    const total = data?.pages?.[0]?.totalCount ?? 0;
-    setTotalCount(total);
-  }, [data]);
 
 
   if (isLoading) return <ResultsSkeleton />;
@@ -91,6 +90,8 @@ export default function Results({
       <SearchStatusBar
         total={totalCount}
         searchParams={searchParams}
+        sortedBy={sortedBy}
+        onSortChange={setSortedBy}
       />
 
       <ul className="w-full grid grid-cols-1 min-[512px]:grid-cols-2 md:grid-cols-3 gap-4">

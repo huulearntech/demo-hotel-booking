@@ -4,7 +4,8 @@ import Credentials from "next-auth/providers/credentials";
 import { schemaSignIn } from "@/lib/zod_schemas/auth";
 import { PATHS } from './lib/constants';
 
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import { type NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
 
 export const nextAuthConfig = {
   session: { strategy: "jwt" },

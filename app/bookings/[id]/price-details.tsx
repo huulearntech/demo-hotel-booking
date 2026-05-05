@@ -4,9 +4,9 @@ import Link from "next/link";
 import { TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInformationForm  } from "./information-form-context";
+import { createBookingThenRedirectToVNPay } from "@/lib/actions/payment";
+import { toast } from "sonner";
 
-// TODO: remove this.
-import { fake_payment_just_for_testing } from "@/lib/actions/payment";
 
 export default function PriceDetail({
   roomTypeId,
@@ -79,23 +79,25 @@ export default function PriceDetail({
 
       <Button
         className="m-4 rounded-full h-12 font-semibold"
-        onClick={
-          // TODO: handle errors.
-          handleSubmit((form) =>
-          fake_payment_just_for_testing( // TODO: put this in an object to avoid mistake
-            roomTypeId,
-            checkInDate,
-            checkOutDate,
-            numAdults,
-            numChildren,
-            numRooms,
-            snapshotRoomPrice,
-            form.name,
-            form.email,
-            form.phone,
-            form.notes,
-          )
-        )}
+        onClick={() => {
+          try {
+            handleSubmit((form) => createBookingThenRedirectToVNPay(
+              roomTypeId,
+              checkInDate,
+              checkOutDate,
+              numAdults,
+              numChildren,
+              numRooms,
+              snapshotRoomPrice,
+              form.name,
+              form.email,
+              form.phone,
+              form.notes,
+            ));
+          } catch (error) {
+            toast.error((error as Error).message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
+          }
+        }}
       >
         Tiếp tục
       </Button>

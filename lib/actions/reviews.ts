@@ -1,9 +1,12 @@
+"use server";
+
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Prisma } from "../generated/prisma/client";
 import { getReviewsOfHotel } from "../generated/prisma/sql";
 import { OperationResult } from "../types/utils";
 
+export type ReviewCursor = { createdAt: Date; id: string };
 
 export async function user_createReviewForBooking(
   bookingId: string,
@@ -53,35 +56,54 @@ export async function user_createReviewForBooking(
 
 export async function user_getReviewsOfHotel(
   hotelId: string,
-  cursorCreatedAt?: Date,
-  cursorId?: string,
-  limit: number = 1
+  limit: number = 10,
+  queryPrevCursor: ReviewCursor | null = null,
+  queryNextCursor: ReviewCursor | null = null,
+  directionIsNext: boolean = true,
 ) {
-  
-  const reviews = await prisma.$queryRawTyped(getReviewsOfHotel(
+  const fetchedReviews = await prisma.$queryRawTyped(getReviewsOfHotel(
     hotelId,
-    cursorCreatedAt ?? null,
-    cursorId ?? null,
-    limit
+    queryPrevCursor?.createdAt ?? null,
+    queryPrevCursor?.id ?? null,
+    queryNextCursor?.createdAt ?? null,
+    queryNextCursor?.id ?? null,
+    directionIsNext,
+    limit + 1,
   ));
 
-  // Determine next and previous cursors
-  const nextCursor = reviews.length > 0
-    ? {
-        createdAt: reviews[reviews.length - 1].createdAt,
-        id: reviews[reviews.length - 1].reviewId,
-      }
-    : null;
+  const hasMore = fetchedReviews.length === limit + 1;
+  const reviews = hasMore ? fetchedReviews.slice(0, limit) : fetchedReviews;
 
-  const prevCursor = reviews.length > 0
-    ? {
-        createdAt: reviews[0].createdAt,
-        id: reviews[0].reviewId,
+  const first = reviews[0];
+  const last = reviews[reviews.length - 1];
+
+  let nextCursor: ReviewCursor | null = null;
+  let prevCursor: ReviewCursor | null = null;
+
+  if (reviews.length > 0) {
+    if (directionIsNext) {
+      // When moving forward: hasMore means there's a next page.
+      if (hasMore && last) {
+        nextCursor = { createdAt: last.createdAt, id: last.id };
       }
-    : null;
+      // prevCursor exists if this is not the very first page (we had a queryNextCursor)
+      if (queryNextCursor && first) {
+        prevCursor = { createdAt: first.createdAt, id: first.id };
+      }
+    } else {
+      // When moving backward: hasMore means there's a previous page.
+      if (hasMore && first) {
+        prevCursor = { createdAt: first.createdAt, id: first.id };
+      }
+      // nextCursor exists if this is not the very last page (we had a queryPrevCursor)
+      if (queryPrevCursor && last) {
+        nextCursor = { createdAt: last.createdAt, id: last.id };
+      }
+    }
+  }
 
   return {
-    reviews,
+    items: reviews,
     nextCursor,
     prevCursor,
   };

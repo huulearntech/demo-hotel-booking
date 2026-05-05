@@ -88,7 +88,6 @@ export async function fetchRevenueByRoomTypeLast90Days():
 
 
 // TODO: Cleanup
-const DAYS = 90;
 export async function fetchBookingsCountByRoomTypeLast90Days(): Promise<OperationResult<{ roomTypeName: string; bookingsCount: number }[]>> {
   const session = await auth();
   if (!session) return { ok: false, error: 'Unauthorized', status: 401 };

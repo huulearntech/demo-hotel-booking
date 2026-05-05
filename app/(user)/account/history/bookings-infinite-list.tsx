@@ -1,7 +1,7 @@
-// TODO: 3 tab: upcoming, past, cancelled. with filter?
+// TODO: 5 tab: pending, upcoming, staying, past, cancelled. with filter? This covers all cases of enum, so it should use the enum itself.
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRightIcon, DoorOpenIcon, UserIcon } from "lucide-react";
@@ -13,12 +13,23 @@ import { differenceInDays } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BOOKING_STATUS_BADGE_COLORS } from "@/lib/constants";
 
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+} from "@/components/ui/select";
+
+type BookingTimeRangeOptions = "past" | "current" | "upcoming";
+
 
 function StatusBadge({ status }: { status: BookingStatus }) {
   const s = BOOKING_STATUS_BADGE_COLORS[status];
   return <span className={`px-2 py-1 rounded-md text-xs font-medium ${s.variant}`}>{s.text}</span>;
 }
-// cleanup - compact card variants
+
 const fmtCurrency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format;
 const fmtDate = (d?: string | Date | null) => {
   if (!d) return "—";
@@ -155,6 +166,8 @@ export default function BookingsInfiniteScrollList() {
     threshold: 0.1,
   });
 
+  const [timeRange, setTimeRange] = useState<BookingTimeRangeOptions>("upcoming");
+
   const {
     data,
     fetchNextPage,
@@ -186,32 +199,90 @@ export default function BookingsInfiniteScrollList() {
   }, [inView, hasNextPage, loading, fetchNextPage]);
 
   return (
-    <div>
-      {bookings.length === 0 && !loading ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          Bạn chưa có đơn đặt phòng nào. Hãy khám phá các khách sạn và đặt phòng đầu tiên của bạn!
+    <div className="content flex flex-col gap-y-6 py-6">
+      <div className="flex justify-between items-center gap-2">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-semibold">
+            Lịch sử đặt phòng
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Tất cả các đơn đặt phòng bạn đã thực hiện sẽ được hiển thị ở đây.
+          </p>
         </div>
-      ) : (
-        <>
-          <div className="space-y-4">
-            {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} />
-            ))}
+        <div className="flex items-center justify-between">
+          <ToggleGroup
+            type="single"
+            value={timeRange}
+            onValueChange={(value) => setTimeRange(value as BookingTimeRangeOptions)}
+            variant="outline"
+            className="hidden *:data-[slot=toggle-group-item]:px-4! md:flex"
+          >
+            <ToggleGroupItem value="upcoming">
+              Chưa nhận phòng
+            </ToggleGroupItem>
+            <ToggleGroupItem value="current">
+              Đang lưu trú
+            </ToggleGroupItem>
+            <ToggleGroupItem value="past">
+              Đã trả phòng
+            </ToggleGroupItem>
+          </ToggleGroup>
 
-            {loading && <SkeletonCard />}
-          </div>
+          <Select
+            value={timeRange}
+            onValueChange={(value) => {
+              setTimeRange(value as BookingTimeRangeOptions);
+            }}
+          >
+            <SelectTrigger
+              className="flex **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate md:hidden"
+              size="sm"
+              aria-label="Chọn khoảng thời gian hiển thị đặt phòng"
+            >
+              <SelectValue placeholder="Chọn khoảng thời gian" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="upcoming" className="rounded-lg">
+                Chưa nhận phòng
+              </SelectItem>
+              <SelectItem value="current" className="rounded-lg">
+                Đang lưu trú
+              </SelectItem>
+              <SelectItem value="past" className="rounded-lg">
+                Đã trả phòng
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          <div ref={sentinelRef} aria-hidden className="h-8" />
+      <main>
+          {bookings.length === 0 && !loading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              Bạn chưa có đơn đặt phòng nào. Hãy khám phá các khách sạn và đặt phòng đầu tiên của bạn!
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {bookings.map((b) => (
+                  <BookingCard key={b.id} booking={b} />
+                ))}
 
-          <div className="flex items-center justify-center gap-3 mt-4">
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Đang tải...</div>
-            ) : !hasNextPage ? (
-              <div className="text-sm text-muted-foreground">Đã tải toàn bộ kết quả</div>
-            ) : null}
-          </div>
-        </>
-      )}
+                {loading && <SkeletonCard />}
+              </div>
+
+              <div ref={sentinelRef} aria-hidden className="h-8" />
+
+              <div className="flex items-center justify-center gap-3 mt-4">
+                {loading ? (
+                  <div className="text-sm text-muted-foreground">Đang tải...</div>
+                ) : !hasNextPage ? (
+                  <div className="text-sm text-muted-foreground">Đã tải toàn bộ kết quả</div>
+                ) : null}
+              </div>
+            </>
+          )}
+      </main>
     </div>
   );
 }

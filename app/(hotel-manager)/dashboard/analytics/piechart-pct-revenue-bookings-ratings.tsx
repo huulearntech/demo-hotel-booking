@@ -1,6 +1,7 @@
+// TODO: Cleanup AI shit
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -25,6 +26,8 @@ import {
   Tooltip,
   Sector,
 } from "recharts";
+
+import { useQuery } from "@tanstack/react-query";
 
 import {
   fetchRevenueByRoomTypeLast90Days,
@@ -103,91 +106,81 @@ export default function PiechartPctRevenueBookings({
 }) {
   // mode toggle
   const [mode, setMode] = useState<Mode>("totalRevenue");
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  // source data as returned by server actions (ServerItem[]). We normalize to RevenueItem shape
-  const [sourceRoomTypes, setSourceRoomTypes] = useState<ServerItem[]>([]);
+  // Fetch + cache using React Query (v5) — use `select` to normalize and throw on server-side errors
+  const {
+    data: revRows = [],
+    isLoading: loadingRev,
+    isError: isErrorRev,
+    error: errorRev,
+  } = useQuery({
+    queryKey: ["analytics", "revenue90"],
+    queryFn: fetchRevenueByRoomTypeLast90Days,
+    select: (res: any) => {
+      if (!res?.ok) throw new Error(res?.error ?? "Failed to load revenue data");
+      return res.data ?? [];
+    },
+  });
 
-  // cache all three server datasets to avoid refetching on each mode change
-  // always store arrays to avoid checking for null/map on union OperationResult types
-  const [cached, setCached] = useState<{
-    totalRevenue: any[];
-    bookings: any[];
-  }>({ totalRevenue: [], bookings: [] });
+  const {
+    data: bookingsRows = [],
+    isLoading: loadingBookings,
+    isError: isErrorBookings,
+    error: errorBookings,
+  } = useQuery({
+    queryKey: ["analytics", "bookings90"],
+    queryFn: fetchBookingsCountByRoomTypeLast90Days,
+    select: (res: any) => {
+      if (!res?.ok) throw new Error(res?.error ?? "Failed to load bookings data");
+      return res.data ?? [];
+    },
+  });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const loading = loadingRev || loadingBookings;
 
-  // fetch data once on mount and cache results
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
+  // compose error message from react-query error states
+  let error: string | null = null;
+  if (isErrorRev && errorRev) {
+    error = (errorRev as any)?.message ?? String(errorRev);
+  }
+  if (isErrorBookings && errorBookings) {
+    error = error ?? (errorBookings as any)?.message ?? String(errorBookings);
+  }
 
-    (async () => {
-      try {
-        const [revRes, bookingsRes] = await Promise.all([
-          fetchRevenueByRoomTypeLast90Days(),
-          fetchBookingsCountByRoomTypeLast90Days(),
-        ]);
+  // cached shape (derived from queries)
+  const cached = useMemo(
+    () => ({
+      totalRevenue: (revRows as any[]).map((r: any) => ({
+        id: String(r.roomTypeName ?? r.name ?? r.id),
+        name: r.roomTypeName ?? r.name ?? String(r.id),
+        totalRevenue: Number(r.totalRevenue ?? r.total_revenue ?? 0),
+      })),
+      bookings: (bookingsRows as any[]).map((r: any) => ({
+        id: String(r.roomTypeName ?? r.roomTypeName ?? r.roomTypeId ?? r.id),
+        name: r.roomTypeName ?? r.name ?? String(r.id),
+        bookings: Number(r.bookingsCount ?? r.bookings ?? 0),
+      })),
+    }),
+    [revRows, bookingsRows]
+  );
 
-        if (!mounted) return;
-
-        // OperationResult wrappers returned by server actions use { ok, data }
-        const revRows = revRes && (revRes as any).ok ? (revRes as any).data ?? [] : [];
-        const bookingsRows = bookingsRes && (bookingsRes as any).ok ? (bookingsRes as any).data ?? [] : [];
-
-        // If any request failed, set an error but still try to show available data
-        if (revRes && !(revRes as any).ok) {
-          setError((revRes as any).error ?? 'Failed to load revenue data');
-        }
-        if (bookingsRes && !(bookingsRes as any).ok) {
-          setError((bookingsRes as any).error ?? 'Failed to load bookings data');
-        }
-
-        setCached({
-          totalRevenue: revRows.map((r: any) => ({
-            id: String(r.roomTypeName ?? r.name ?? r.id),
-            name: r.roomTypeName ?? r.name ?? String(r.id),
-            totalRevenue: Number(r.totalRevenue ?? r.total_revenue ?? 0),
-          })),
-          bookings: bookingsRows.map((r: any) => ({
-            id: String(r.roomTypeName ?? r.roomTypeName ?? r.roomTypeId ?? r.id),
-            name: r.roomTypeName ?? r.name ?? String(r.id),
-            bookings: Number(r.bookingsCount ?? r.bookings ?? 0),
-          })),
-        });
-      } catch (err: any) {
-        if (!mounted) return;
-        setError(err?.message ?? "Failed to load data");
-      } finally {
-        if (!mounted) return;
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
   // derive sourceRoomTypes when cached data or mode changes
-  useEffect(() => {
+  const sourceRoomTypes = useMemo(() => {
     if (mode === "totalRevenue") {
-      setSourceRoomTypes(
-        cached.totalRevenue.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          totalRevenue: r.totalRevenue ?? 0,
-        }))
-      );
+      return cached.totalRevenue.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        totalRevenue: r.totalRevenue ?? 0,
+      }));
     } else if (mode === "bookings") {
-      setSourceRoomTypes(
-        cached.bookings.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          bookings: r.bookings ?? 0,
-        }))
-      );
+      return cached.bookings.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        bookings: r.bookings ?? 0,
+      }));
     }
+    return [];
   }, [cached, mode]);
 
   // decide which numeric key to use as chart value based on mode
@@ -215,8 +208,6 @@ export default function PiechartPctRevenueBookings({
     [data, total, valueKey]
   );
 
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
   return (
     <Card className="@container/card">
       <CardHeader>
@@ -224,9 +215,7 @@ export default function PiechartPctRevenueBookings({
         <CardDescription>
           {mode === "totalRevenue"
             ? "Tỷ lệ doanh thu theo loại phòng trong 90 ngày qua"
-            : mode === "bookings"
-            ? "Tỷ lệ lượt đặt phòng theo loại phòng trong 90 ngày qua"
-            : "Tỷ lệ đánh giá trung bình theo loại phòng trong 90 ngày qua"}
+            : "Tỷ lệ lượt đặt phòng theo loại phòng trong 90 ngày qua"}
         </CardDescription>
         <CardAction>
           <div className="flex items-center gap-3">
@@ -241,10 +230,7 @@ export default function PiechartPctRevenueBookings({
               <ToggleGroupItem value="bookings">Lượt đặt phòng</ToggleGroupItem>
             </ToggleGroup>
 
-            <Select
-              value={mode}
-              onValueChange={(value) => setMode(value as Mode)}
-            >
+            <Select value={mode} onValueChange={(value) => setMode(value as Mode)}>
               <SelectTrigger
                 className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
                 size="sm"
@@ -301,57 +287,74 @@ export default function PiechartPctRevenueBookings({
                     ))}
                   </Pie>
 
-                  <Tooltip content={<PieTooltip mode={mode} />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+                  <Tooltip
+                    content={<PieTooltip mode={mode} />}
+                    cursor={{ fill: "rgba(0,0,0,0.03)" }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
           </div>
 
-          {/* Sidebar: Legend */}
-          <div className="flex flex-col gap-4 @container/card w-full">
-              <div className="flex flex-col gap-2">
-                {chartData.map((d, i) => (
-                  <div
-                    key={d.id}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        style={{
-                          width: 12,
-                          height: 12,
-                          background: `var(--chart-${i % 5 + 1})`,
-                          borderRadius: 4,
-                          display: "inline-block",
-                        }}
-                      />
-                      <div className="text-sm">
-                        <div
-                          className="font-medium"
-                          style={{ fontSize: 13, fontWeight: 600 }}
-                        >
-                          {d.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {mode === "totalRevenue"
-                            ? vndFormatter.format(d.value)
-                            : mode === "bookings"
-                            ? Number(d.value).toLocaleString()
-                            : Number(d.value).toFixed(1)}
+          {/* Sidebar: Legend (only top 5 items) */}
+          {(() => {
+            const topItems = chartData
+              .map((d, i) => ({ ...d, _i: i }))
+              .sort((a, b) => b.value - a.value)
+              .slice(0, 5);
+            const remaining = Math.max(0, chartData.length - topItems.length);
+
+            return (
+              <div className="flex flex-col gap-4 @container/card w-full">
+                <div className="flex flex-col gap-2">
+                  {topItems.map((d) => (
+                    <div
+                      key={d.id}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          style={{
+                            width: 12,
+                            height: 12,
+                            background: `var(--chart-${(d as any)._i % 5 + 1})`,
+                            borderRadius: 4,
+                            display: "inline-block",
+                          }}
+                        />
+                        <div className="text-sm">
+                          <div
+                            className="font-medium"
+                            style={{ fontSize: 13, fontWeight: 600 }}
+                          >
+                            {d.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {mode === "totalRevenue"
+                              ? vndFormatter.format(d.value)
+                              : mode === "bookings"
+                              ? Number(d.value).toLocaleString()
+                              : Number(d.value).toFixed(1)}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div
-                      className="text-sm font-medium"
-                      style={{ fontSize: 13, fontWeight: 600 }}
-                    >
-                      {d.percent ? `${d.percent.toFixed(1)}%` : "0%"}
+                      <div
+                        className="text-sm font-medium"
+                        style={{ fontSize: 13, fontWeight: 600 }}
+                      >
+                        {d.percent ? `${d.percent.toFixed(1)}%` : "0%"}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {remaining > 0 && (
+                  <div className="text-xs text-muted-foreground">+{remaining} more</div>
+                )}
               </div>
-          </div>
+            );
+          })()}
         </div>
       </CardContent>
     </Card>

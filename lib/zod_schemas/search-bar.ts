@@ -1,4 +1,4 @@
-// TODO: what to put in location id when location type is 'nearby'?
+// NOTE: Not implement "nearby" yet. To busy man.
 import { differenceInDays } from "date-fns";
 import { z } from "zod";
 
@@ -47,7 +47,7 @@ export type SearchBar_FormInput = z.input<typeof schema_searchBar>;
 export type SearchBar_FormOutput = z.output<typeof schema_searchBar>;
 
 // TODO: Name these types better. These are used for encoding/decoding search params in URL, so they are all strings. But the naming is not great.
-export type SearchParams = {
+export type SearchSpec_Params = {
   locationId: string,
   locationType: SearchBar_LocationType,
   checkInDate: string,
@@ -64,7 +64,7 @@ export function toYYYY_MM_DD(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export const SearchParamsCodec = z.codec(
+export const codec_SearchSpec_Params = z.codec(
   z.object({
     locationId: z.string(),
     locationType: z.enum(locationTypes),
@@ -89,7 +89,7 @@ export const SearchParamsCodec = z.codec(
       };
     },
 
-    decode(input: SearchParams): SearchBar_FormInput {
+    decode(input: SearchSpec_Params): SearchBar_FormInput {
       const {
         locationId,
         locationType,
@@ -126,7 +126,7 @@ export const SearchParamsCodec = z.codec(
 
 const maxDays = 30;
 /// ----------- TEST -------------------
-export const schema_searchSpec = z.object({
+export const schema_searchSpecWithoutLocation = z.object({
   inOutDates: z.object({
     from: z.date(),
     to: z.date(),
@@ -155,9 +155,9 @@ export const schema_searchSpec = z.object({
 
 
 // TODO: Rename for better clarity.
-export type SearchSpecWithoutLocation = z.input<typeof schema_searchSpec>;
+export type SearchSpecWithoutLocation = z.input<typeof schema_searchSpecWithoutLocation>;
 
-export type SearchSpec = {
+export type SearchSpecWithoutLocation_Params = {
   checkInDate: string,
   checkOutDate: string,
   numAdults: string,
@@ -165,7 +165,7 @@ export type SearchSpec = {
   numRooms: string,
 }
 
-export const codec_searchSpec = z.codec(
+export const codec_SearchSpecWithoutLocation_Params = z.codec(
   z.object({
     checkInDate: z.iso.date(),
     checkOutDate: z.iso.date(),
@@ -173,9 +173,9 @@ export const codec_searchSpec = z.codec(
     numChildren: z.string(),
     numRooms: z.string(),
   }),
-  schema_searchSpec,
+  schema_searchSpecWithoutLocation,
   {
-    encode(data: z.input<typeof schema_searchSpec>) {
+    encode(data: z.input<typeof schema_searchSpecWithoutLocation>) {
       return {
         checkInDate: toYYYY_MM_DD(data.inOutDates.from),
         checkOutDate: toYYYY_MM_DD(data.inOutDates.to),
@@ -185,7 +185,7 @@ export const codec_searchSpec = z.codec(
       };
     },
 
-    decode(input: SearchSpec): z.input<typeof schema_searchSpec> {
+    decode(input: SearchSpecWithoutLocation_Params): z.input<typeof schema_searchSpecWithoutLocation> {
       const {
         checkInDate,
         checkOutDate,
@@ -194,7 +194,7 @@ export const codec_searchSpec = z.codec(
         numRooms,
       } = input;
 
-      return schema_searchSpec.parse({
+      return schema_searchSpecWithoutLocation.parse({
         inOutDates: {
           from: new Date(checkInDate.concat("T00:00:00Z")), // Ensure it's treated as UTC to avoid timezone issues
           to: new Date(checkOutDate.concat("T00:00:00Z")),

@@ -1,55 +1,44 @@
 "use client";
 
+import { useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { columns } from "../tmp-components/booking-columns";
 import { hotelowner_getBookings } from "@/lib/actions/hotel-manager/bookings";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 
-import { useState, useMemo } from "react";
-
-import { Calendar } from "@/components/ui/calendar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+} from "@/components/ui/select";
 
-import type { DateRange } from "react-day-picker";
-import { vi } from "date-fns/locale";
+type BookingTimeRangeOptions = "past" | "current" | "upcoming";
+const PAGE_SIZE = 20;
 
-function makeRangeFromPreset(preset: "last7" | "last30"): DateRange {
-  const to = new Date();
-  const days = preset === "last7" ? 7 : 30;
-  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  return { from, to };
-}
-
-function presetFromRange(range: DateRange | undefined): "last7" | "last30" | undefined {
-  if (!range || !range.from || !range.to) return undefined;
-  const to = range.to.getTime();
-  const from = range.from.getTime();
-
-  const last7 = makeRangeFromPreset("last7");
-  const last30 = makeRangeFromPreset("last30");
-
-  if (last7.from && last7.to && last7.from.getTime() === from && last7.to.getTime() === to) return "last7";
-  if (last30.from && last30.to && last30.from.getTime() === from && last30.to.getTime() === to) return "last30";
-  return undefined;
-}
-
-// TODO: Control the date range.
 export default function BookingsTable() {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(Date.now() - 24 * 60 * 60 * 1000), // Default to a range of 1 day
-    to: new Date(),
+  const [timeRange, setTimeRange] = useState<BookingTimeRangeOptions>("upcoming");
+
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["hotelowner_bookings", timeRange, PAGE_SIZE],
+    queryFn: async ({ pageParam }: { pageParam: { checkInDate: Date, id: string} | null }) =>
+      (await hotelowner_getBookings(timeRange, PAGE_SIZE, pageParam)),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    initialPageParam: null,
+    placeholderData: keepPreviousData,
   });
 
-  // derive the toggle's selected value from the single source-of-truth (dateRange)
-  const toggleValue = useMemo(() => presetFromRange(dateRange), [dateRange]);
-
-  const { data = [], isLoading, isError } = useQuery({
-    queryKey: ["hotelowner_bookings"],
-    queryFn: hotelowner_getBookings,
-  });
+  const items = data?.pages?.flatMap((p) => p.items) ?? [];
 
   if (isLoading)
     return (
@@ -79,58 +68,65 @@ export default function BookingsTable() {
         </div>
       </div>
     );
-  if (isError) return <div>Có lỗi xảy ra khi tải dữ liệu.</div>;
+
+  if (isError) return <div>Đã có lỗi khi tải danh sách đặt phòng. Vui lòng thử lại.</div>;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              Chọn khoảng thời gian
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="p-4">
-            {/* Layout: toggle group on the left, calendar on the right */}
-            <div className="flex gap-4">
-              <ToggleGroup
-                type="single"
-                orientation="vertical"
-                value={toggleValue}
-                onValueChange={(val) => {
-                  // val can be string or null; if it matches a preset, apply it; otherwise clear selection
-                  if (val === "last7" || val === "last30") {
-                    setDateRange(makeRangeFromPreset(val));
-                  } else {
-                    setDateRange(undefined);
-                  }
-                }}
-                className="flex flex-col space-y-2"
-                aria-label="Date presets"
-              >
-                <ToggleGroupItem value="last7" className="data-[state=on]:bg-primary data-[state=on]:text-white w-36 text-left">
-                  7 ngày qua
-                </ToggleGroupItem>
-                <ToggleGroupItem value="last30" className="data-[state=on]:bg-primary data-[state=on]:text-white w-36 text-left">
-                  30 ngày qua
-                </ToggleGroupItem>
-              </ToggleGroup>
+      <div className="flex justify-between gap-2">
+        <header className="flex flex-col gap-2">
+          <h1 className="font-semibold">Danh sách lượt đặt phòng</h1>
+          <p className="text-sm text-muted-foreground">Quản lý các lượt đặt phòng của khách hàng tại khách sạn của bạn.</p>
+        </header>
 
-              <Calendar
-                locale={vi}
-                mode="range"
-                numberOfMonths={2}
-                selected={dateRange}
-                onSelect={(range) => {
-                  // Keep the calendar as the single source of truth; toggle will reflect if it matches a preset
-                  setDateRange(range as DateRange | undefined);
-                }}
-              />
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center justify-between">
+          <ToggleGroup
+            type="single"
+            value={timeRange}
+            onValueChange={(value) => setTimeRange(value as BookingTimeRangeOptions)}
+            variant="outline"
+            className="hidden *:data-[slot=toggle-group-item]:px-4! md:flex"
+          >
+            <ToggleGroupItem value="upcoming">
+              Chưa nhận phòng
+            </ToggleGroupItem>
+            <ToggleGroupItem value="current">
+              Đang lưu trú
+            </ToggleGroupItem>
+            <ToggleGroupItem value="past">
+              Đã trả phòng
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          <Select
+            value={timeRange}
+            onValueChange={(value) => {
+              setTimeRange(value as BookingTimeRangeOptions);
+            }}
+          >
+            <SelectTrigger
+              className="flex **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate md:hidden"
+              size="sm"
+              aria-label="Chọn khoảng thời gian hiển thị đặt phòng"
+            >
+              <SelectValue placeholder="Chọn khoảng thời gian" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="upcoming" className="rounded-lg">
+                Chưa nhận phòng
+              </SelectItem>
+              <SelectItem value="current" className="rounded-lg">
+                Đang lưu trú
+              </SelectItem>
+              <SelectItem value="past" className="rounded-lg">
+                Đã trả phòng
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <DataTable columns={columns} data={data} />
+
+      <DataTable columns={columns} data={items} />
     </div>
   );
 }

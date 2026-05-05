@@ -24,7 +24,7 @@ import {
 
 import { ArrowRight, ChevronDown, Minus, Plus, Search, RotateCwIcon, LoaderCircleIcon } from "lucide-react";
 
-import { codec_searchSpec, schema_searchBar, type SearchBar_FormInput, type SearchBar_FormOutput, SearchBar_LocationType, SearchParamsCodec } from "@/lib/zod_schemas/search-bar";
+import { codec_SearchSpecWithoutLocation_Params, schema_searchBar, type SearchBar_FormInput, type SearchBar_FormOutput, SearchBar_LocationType, codec_SearchSpec_Params } from "@/lib/zod_schemas/search-bar";
 import {
   MAX_ADULTS,
   MAX_CHILDREN,
@@ -33,29 +33,14 @@ import {
   MIN_ADULTS,
   MIN_CHILDREN,
   MIN_ROOMS,
-  PATHS
+  PATHS,
+  DEFAULT_SEARCH_BAR_VALUES,
 } from "@/lib/constants";
 
 import useSWR, { mutate } from "swr";
 import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { user_getLocationNameOrHotelNameById, user_getLocationOrHotelByQueryString } from "@/lib/actions/search-bar";
 
-// TODO: Factor this out.
-const DEFAULT_SEARCH_BAR_VALUES: SearchBar_FormOutput = {
-  location: {
-    id: "",
-    type: "none"
-  },
-  inOutDates: {
-    from: new Date(),
-    to: new Date(Date.now() + 24 * 60 * 60 * 1000)
-  },
-  guestsAndRooms: {
-    numAdults: 2,
-    numChildren: 0,
-    numRooms: 1
-  }
-};
 
 export default function SearchBar({
   defaultValues,
@@ -79,7 +64,7 @@ export default function SearchBar({
     try {
       const raw = sessionStorage.getItem("searchBarForm");
       if (!raw) return;
-      const parsed = SearchParamsCodec.safeDecode(JSON.parse(raw));
+      const parsed = codec_SearchSpec_Params.safeDecode(JSON.parse(raw));
       if (parsed.success) {
         form.reset(parsed.data);
       }
@@ -150,22 +135,21 @@ export function SearchBarForm({
 
   const router = useRouter();
   const pathname = usePathname();
-  const onSubmit = (values: SearchBar_FormOutput) => {
-    if (values.location.type === "none" || !values.location.id) return;
+  const onSubmit = (formValues: SearchBar_FormOutput) => {
+    if (formValues.location.type === "none" || !formValues.location.id) return;
 
-    sessionStorage.setItem("searchBarForm", JSON.stringify(SearchParamsCodec.encode(values)));
+    sessionStorage.setItem("searchBarForm", JSON.stringify(codec_SearchSpec_Params.encode(formValues)));
 
-    // TODO: rename codec and types. The amount of confusion has reached critical point.
-    if (values.location.type === "hotel") {
-      const dest = PATHS.hotels + "/" + values.location.id;
-      const { location, ...spec } = values;
-      const encodedSpecOnly = codec_searchSpec.encode(spec);
-      const searchParams = new URLSearchParams(encodedSpecOnly).toString();
+    if (formValues.location.type === "hotel") {
+      const dest = PATHS.hotels + "/" + formValues.location.id;
+      const { location, ...specWithoutLocation } = formValues;
+      const encodedSpecWithoutLocation = codec_SearchSpecWithoutLocation_Params.encode(specWithoutLocation);
+      const searchParams = new URLSearchParams(encodedSpecWithoutLocation).toString();
       router.push(`${dest}?${searchParams}`);
     } else {
-      const dest = pathname === PATHS.searchMap ? PATHS.searchMap : PATHS.search;
-      const encodedFullParams = SearchParamsCodec.encode(values);
-      const searchParams = new URLSearchParams(encodedFullParams).toString();
+      const dest = (pathname === PATHS.searchMap) ? PATHS.searchMap : PATHS.search;
+      const encodedSpec = codec_SearchSpec_Params.encode(formValues);
+      const searchParams = new URLSearchParams(encodedSpec).toString();
       router.push(`${dest}?${searchParams}`);
     }
   };
@@ -448,6 +432,4 @@ function LocationAutocomplete({
     </Autocomplete>
   );
 }
-
-
-// should experiment removing useSWR
+// NOTE: should experiment removing useSWR

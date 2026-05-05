@@ -3,28 +3,33 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-import { MultiRoomType_FormValues, RoomFormValues } from "@/lib/zod_schemas/create-room";
+import { MultiRoomType_FormValues, RoomType_FormOutput } from "@/lib/zod_schemas/create-room";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { OperationResult, Override } from "@/lib/types/utils";
+import { revalidatePath } from "next/cache";
+import { PATHS } from "@/lib/constants";
 
-// TODO:
-export async function hotelowner_updateRoomById(id: string, data: RoomFormValues): Promise<OperationResult> {
+export async function hotelowner_updateRoomTypeById(id: string, data: RoomType_FormOutput): Promise<OperationResult> {
   const session = await auth();
   if (session?.user.role !== "HOTEL_OWNER") {
     return { ok: false, error: "Unauthorized", status: 401 };
   }
 
   try {
-    const updated = await prisma.room.update({
-      where: { id, type: { hotel: { ownerId: session.user.id } } },
+    const updated = await prisma.roomType.update({
+      where: { id, hotel: { ownerId: session.user.id } },
       data,
-    });
+      // select: {},
+    }).then((roomType) => ({
+      ...roomType,
+      price: roomType.price.toNumber(),
+    }));
     return { ok: true, data: updated };
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      return { ok: false, error: "Room not found", status: 404 };
+      return { ok: false, error: "Room type not found", status: 404 };
     }
-    return { ok: false, error: "Failed to update room" };
+    return { ok: false, error: "Failed to update room type" };
   }
 }
 
@@ -46,13 +51,13 @@ export async function hotelowner_createManyRoomTypes(formData: MultiRoomType_For
     return { ok: false, error: "Hotel not found for the owner", status: 404 };
   }
 
-  // TODO: Handle errors + Revalidate rooms page after creation.
   const result =  prisma.roomType.createMany({ // only need to return the batch count
     data: formData.map(roomType => ({ ...roomType, hotelId: hotel.id })),
   });
   if (!result) {
     return { ok: false, error: "Failed to create room types" };
   }
+  revalidatePath(PATHS.hotelRooms);
   return { ok: true, data: result };
 }
 

@@ -5,7 +5,7 @@
 -- @param {Int}      $5:pageSize
 
 -- @param {Float}    $6:northBound
--- @param {Float}    $7:southBound
+-- @param {Float}    $7:southBoundv
 -- @param {Float}    $8:westBound
 -- @param {Float}    $9:eastBound
 
@@ -32,11 +32,11 @@ WITH available AS (
       END) AS booked_rooms
     FROM room_types rt
     JOIN rooms r ON r.type_id = rt.id
-    JOIN "_BookingToRoom" b2r ON b2r."B" = r.id
-    JOIN bookings b ON b.id = b2r."A"
+    LEFT JOIN "_BookingToRoom" b2r ON b2r."B" = r.id
+    LEFT JOIN bookings b ON b.id = b2r."A"
     WHERE rt.price BETWEEN $10 AND $11
-      AND rt.adult_capacity * $4 >= $3
-      AND (rt.adult_capacity + rt.children_capacity) * $4 >= $3 + $14
+      AND (rt.adult_capacity * $4) >= $3
+      AND ((rt.adult_capacity + rt.children_capacity) * $4) >= ($3 + $14)
     GROUP BY rt.hotel_id, rt.id, rt.price
     HAVING COUNT(r.id) - COUNT(DISTINCT CASE
       WHEN b.check_in_date < $2

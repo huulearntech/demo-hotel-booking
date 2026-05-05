@@ -13,10 +13,9 @@ import { haversineMeters } from "@/lib/utils";
 
 
 import { useFilterForm } from "../filter-form-context";
-import { tmp_getHotelsByBoundingBox } from "@/lib/actions/search/map";
-import { codec_searchSpec, SearchBar_FormOutput } from "@/lib/zod_schemas/search-bar";
+import { getHotelsByBoundingBox } from "@/lib/actions/search/map";
+import { codec_SearchSpecWithoutLocation_Params, SearchBar_FormOutput } from "@/lib/zod_schemas/search-bar";
 
-// TODO: May add an error state and show error if fetch fails.
 function MapController({
   searchBarValues,
   onUpdateBBox,
@@ -28,18 +27,21 @@ function MapController({
   onUpdateBBox?: (b: BBox) => void;
   debounceMs?: number;
   minMoveMeters?: number;
-    setDataState: Dispatch<SetStateAction<{ hotels: Map_HotelCardProps[]; loading: boolean }>>;
+  setDataState: Dispatch<SetStateAction<{
+    hotels: Map_HotelCardProps[];
+    loading: boolean;
+    error: { message: string } | null;
+  }>>;
 }) {
 
   const map = useMap();
   const bboxRef = useRef<BBox | null>(null);
   const timerRef = useRef<number | null>(null);
 
-  // TODO: Clean up filter logic. For now it can work, but logic is a bit scattered, and the change doesn't take place immediately.
   const filter = useFilterForm();
 
   const scheduleFetch = useCallback(
-    (newBbox: BBox) => {
+    (newBbox: BBox, force: boolean = false) => {
       // optional outside hook
       onUpdateBBox?.(newBbox);
 
@@ -48,7 +50,7 @@ function MapController({
       }
 
       // avoid fetching if center didn't move enough
-      if (bboxRef.current) {
+      if (!force && bboxRef.current) {
         const prevCenter: [number, number] = [
           (bboxRef.current.north + bboxRef.current.south) / 2,
           (bboxRef.current.east + bboxRef.current.west) / 2,
@@ -63,29 +65,24 @@ function MapController({
         }
       }
 
-      setDataState((prev) => ({ hotels: prev.hotels, loading: true }));
+      setDataState((prev) => ({ hotels: prev.hotels, loading: true, error: null }));
 
       timerRef.current = window.setTimeout(async () => {
         try {
-          // TODO: Clean up filter logic.
           const filterValues = filter.getValues();
+          console.log("Fetching hotels for bbox:", newBbox, "with search values:", searchBarValues, "and filter values:", filterValues);
 
           bboxRef.current = newBbox;
-          const res = await tmp_getHotelsByBoundingBox(newBbox, searchBarValues, filterValues);
-          console.log("fetched hotels for bbox", newBbox, res.length, filterValues, searchBarValues);
-          setDataState({ hotels: res, loading: false });
+          const res = await getHotelsByBoundingBox(newBbox, searchBarValues, filterValues);
+          setDataState({ hotels: res, loading: false, error: null });
         } catch (err) {
-          console.error("fetch hotels error", err);
-          // keep previous hotels on error, just stop loading
-          setDataState((prev) => ({ hotels: prev.hotels, loading: false }));
+          setDataState((prev) => ({ hotels: prev.hotels, loading: false, error: { message: (err as Error).message || "Failed to fetch hotels" } }));
         } finally {
           timerRef.current = null;
         }
       }, debounceMs);
     },
-    // TODO: Clean up or this shit gonna be slow.
-    // FIXME: Added filter and searchBarValues into dependency array but changes still don't take place immediately.
-    [debounceMs, minMoveMeters, onUpdateBBox, setDataState, filter, searchBarValues]
+    [onUpdateBBox, setDataState, filter, searchBarValues]
   );
 
   useMapEvents({
@@ -123,7 +120,12 @@ function MapController({
         timerRef.current = null;
       }
     };
-  }, [map, filter, searchBarValues]);
+  }, [map, scheduleFetch]);
+
+  useEffect(() => {
+    if (!bboxRef.current) return; // skip if bbox not initialized yet
+    scheduleFetch(bboxRef.current, true); // force fetch
+  }, [searchBarValues, scheduleFetch, filter]);
 
   return null;
 }
@@ -138,18 +140,19 @@ type MapClientProps = {
 
 export default function MapClient({
   searchBarValues,
-  initialCenter = [21.0278, 105.8342],
+  initialCenter = [21.003864,105.803041],
   zoom = 13,
   debounceMs = 800,
   minMoveMeters = 500,
 }: MapClientProps) {
-  const [dataState, setDataState] = useState<{ hotels: Map_HotelCardProps[]; loading: boolean }>({
+  const [dataState, setDataState] = useState<{ hotels: Map_HotelCardProps[]; loading: boolean; error: { message: string } | null }>({
     hotels: [],
     loading: true,
+    error: null,
   });
 
   const { location, ...searchBarValuesWithoutLocation } = searchBarValues;
-  const stringifiedSearchParams = new URLSearchParams(codec_searchSpec.encode(searchBarValuesWithoutLocation)).toString();
+  const stringifiedSearchParams = new URLSearchParams(codec_SearchSpecWithoutLocation_Params.encode(searchBarValuesWithoutLocation)).toString();
 
   // optional external hook for bbox changes (minimal)
   const handleBBoxChange = useCallback((b: BBox) => {
@@ -180,7 +183,16 @@ export default function MapClient({
                pointer-events-none"
           >
             <Loader2Icon className="animate-spin size-5" />
-            Loading hotels
+            Đang tải...
+          </div>
+        )}
+        {dataState.error && (
+          <div
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-1000
+               flex items-center gap-x-2 px-3 py-1 rounded-full
+               bg-destructive text-destructive shadow text-base font-semibold"
+          >
+            {dataState.error.message}
           </div>
         )}
 

@@ -1,20 +1,26 @@
+// TODO: Show real status of payment.
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { PATHS } from "@/lib/constants";
+import prisma from "@/lib/prisma";
+import { notFound } from "next/navigation";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ id: string; message: string }> }) {
   const { id, message } = await searchParams;
+  try {
+    const found = await prisma.booking.findUnique({ where: { id }, select: { id: true } });
+    if (!found) notFound();
+  } catch (error) {
+    notFound();
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
       <Card className="max-w-lg w-full shadow-lg">
         <CardHeader className="flex flex-col items-center gap-2 pt-8">
-          <div
-            aria-hidden
-            className="rounded-full bg-green-50 p-6 inline-flex items-center justify-center"
-          >
+          <div aria-hidden className="rounded-full bg-green-50 p-6 inline-flex items-center justify-center">
             <CheckCircle className="text-green-600 w-20 h-20" />
           </div>
           <CardTitle className="text-2xl">Thanh toán thành công</CardTitle>

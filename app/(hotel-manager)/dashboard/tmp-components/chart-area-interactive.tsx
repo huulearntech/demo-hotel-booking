@@ -1,4 +1,3 @@
-// TODO:
 "use client"
 
 import { useState, useEffect } from "react"
@@ -84,13 +83,13 @@ export function ChartAreaInteractive() {
         <CardDescription>
           <span className="hidden @[540px]/card:block">
             Tổng doanh thu và lượt đặt phòng trong {
-              timeRange === "90d" ? "3 tháng qua"
+              timeRange === "90d" ? "90 ngày qua"
                 : timeRange === "30d" ? "30 ngày qua"
                   : "7 ngày qua"
             }
           </span>
           <span className="@[540px]/card:hidden">{
-              timeRange === "90d" ? "3 tháng qua"
+              timeRange === "90d" ? "90 ngày qua"
                 : timeRange === "30d" ? "30 ngày qua"
                   : "7 ngày qua"
           }</span>
@@ -103,7 +102,7 @@ export function ChartAreaInteractive() {
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">3 tháng qua</ToggleGroupItem>
+            <ToggleGroupItem value="90d">90 ngày qua</ToggleGroupItem>
             <ToggleGroupItem value="30d">30 ngày qua</ToggleGroupItem>
             <ToggleGroupItem value="7d">7 ngày qua</ToggleGroupItem>
           </ToggleGroup>
@@ -113,11 +112,11 @@ export function ChartAreaInteractive() {
               size="sm"
               aria-label="Lựa chọn khoảng thời gian"
             >
-              <SelectValue placeholder="3 tháng qua" />
+              <SelectValue placeholder="90 ngày qua" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                3 tháng qua
+                90 ngày qua
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
                 30 ngày qua

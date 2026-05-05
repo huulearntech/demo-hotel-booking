@@ -4,15 +4,20 @@ import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import HotelCard from '@/components/hotel-card';
 import { useInView } from 'react-intersection-observer';
-import { draft_user_fetchFavoriteHotels } from '@/lib/actions/user-account/favorites';
-import { PATHS } from '@/lib/constants';
+import { user_getFavoriteHotels } from '@/lib/actions/user-account/favorites';
+import { PATHS, DEFAULT_SEARCH_BAR_VALUES } from '@/lib/constants';
+import { codec_SearchSpecWithoutLocation_Params } from '@/lib/zod_schemas/search-bar';
 
 export default function FavoritesList() {
   const { ref: sentinelRef, inView } = useInView({ rootMargin: '200px' });
+  const { location, ...defaultSpecWithoutLocation } = DEFAULT_SEARCH_BAR_VALUES;
+  const stringifiedSearchSpecWithoutLocation = new URLSearchParams(
+    codec_SearchSpecWithoutLocation_Params.encode(defaultSpecWithoutLocation)
+  ).toString();
 
   // TODO: cleanup
   const fetchFavorites = async ({ pageParam }: { pageParam?: string | null }) => {
-    const res = await draft_user_fetchFavoriteHotels({ limit: 12, cursor: pageParam ?? undefined });
+    const res = await user_getFavoriteHotels({ limit: 12, cursor: pageParam ?? undefined });
     if (!res.ok) throw new Error(res.error || 'Failed to fetch');
     return res.data; // { items, nextCursor }
   };
@@ -23,6 +28,7 @@ export default function FavoritesList() {
     hasNextPage,
     isFetchingNextPage,
     isError,
+    error,
   } = useInfiniteQuery({
     queryKey: ['favorites'],
     queryFn: fetchFavorites,
@@ -31,7 +37,7 @@ export default function FavoritesList() {
     refetchOnWindowFocus: false,
   });
 
-  const items = data?.pages.flatMap((p: any) => p.items ?? []) ?? [];
+  const items = data?.pages.flatMap(p => p.items ?? []) ?? [];
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -43,7 +49,7 @@ export default function FavoritesList() {
     return (
       <div className="text-center text-destructive mt-10">
         <p className="text-lg">Lỗi khi tải danh sách yêu thích.</p>
-        <p className="text-sm">{(data as any)?.error ?? 'Đã có lỗi xảy ra. Vui lòng thử lại.'}</p>
+        <p className="text-sm">{error?.message ?? 'Đã có lỗi xảy ra. Vui lòng thử lại.'}</p>
       </div>
     );
   }
@@ -60,11 +66,11 @@ export default function FavoritesList() {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {items.map((hotel: any) => (
+        {items.map(hotel => (
           <HotelCard
             key={hotel.id}
             hotel={hotel}
-            href={`${PATHS.hotels}/${hotel.id}?TODO:searchspec`}
+            href={`${PATHS.hotels}/${hotel.id}?${stringifiedSearchSpecWithoutLocation}`}
           />
         ))}
       </div>
@@ -77,7 +83,7 @@ export default function FavoritesList() {
         }
 
         {!hasNextPage &&
-          <span className="text-sm text-muted-foreground">Không còn kết quả.</span>
+          <span className="text-sm text-muted-foreground">Đã tải toàn bộ kết quả.</span>
         }
       </div>
     </>

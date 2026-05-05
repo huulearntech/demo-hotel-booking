@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, ArrowRight } from "lucide-react";
 
-import type { UpcomingBooking } from "@/lib/actions/hotel-manager/bookings";
-import { BookingStatus } from "@/lib/generated/prisma/enums";
+import type { BookingRow } from "@/lib/actions/hotel-manager/bookings";
 import { cn } from "@/lib/utils";
 import { differenceInDays } from "date-fns";
 import { BOOKING_STATUS_BADGE_COLORS } from "@/lib/constants";
@@ -23,7 +22,7 @@ function formatDateShort(date: Date) {
 }
 
 
-export const columns: ColumnDef<UpcomingBooking>[] = [
+export const columns: ColumnDef<BookingRow>[] = [
   {
     id: "customer",
     header: "Khách hàng",

@@ -7,7 +7,11 @@ export default function RoomTypeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <main className="content py-6">
+      {children}
+    </main>
+  );
 }
 
 export async function generateMetadata({

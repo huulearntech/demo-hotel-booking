@@ -9,6 +9,7 @@ export const schema_RoomType = z.object({
   bedType:          z.enum(Object.values(BedType)),
   price:            z.coerce.number(),
   imageUrls:        z.object({ url: z.url() }).array().transform((arr) => arr.map((item) => item.url)),
+  description:      z.string().optional(),
   
   roomsName: z.array(z.object({
     name: z.string().min(1, "Tên phòng không được để trống"),

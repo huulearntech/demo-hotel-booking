@@ -10,35 +10,35 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { fetchUnrepliedReviews, fetchRepliedReviews, hotelowner_replyToReview } from "./tmp-actions";
-import { RepliedReviewType, UnrepliedReviewType } from "./tmp-actions";
+import { hotelowner_getReviews, hotelowner_replyToReview } from "@/lib/actions/hotel-manager/reviews";
+import { hotelowner_getReviews as core_hotelowner_getReviews } from "@/lib/generated/prisma/sql";
+
 import Image from "next/image";
 import { tvlk_favicon } from "@/public/logos";
 import { MAX_REVIEW_POINTS } from "@/lib/constants";
+import { vi } from "date-fns/locale";
 
 
-// TODO: Clean up
+type ReviewType = core_hotelowner_getReviews.Result;
+
 export default function ReviewsClient() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState<"unreplied" | "replied">("unreplied");
+  const repliedFilter = tab === "replied";
 
-  // Queries with initialData from the server component
-  const unrepliedQuery = useQuery<UnrepliedReviewType[]>({
-    queryKey: ["reviews", "unreplied"],
-    queryFn: () => fetchUnrepliedReviews(),
-    initialData: [],
-    refetchOnWindowFocus: false,
-  });
-
-  const repliedQuery = useQuery<RepliedReviewType[]>({
-    queryKey: ["reviews", "replied"],
-    queryFn: () => fetchRepliedReviews(),
-    initialData: [],
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+  } = useInfiniteQuery({
+    queryKey: ["reviews", repliedFilter],
+    queryFn: async ({ pageParam }: { pageParam: { createdAt: Date; id: string } | null }) => {
+      const res = await hotelowner_getReviews(20, repliedFilter, pageParam);
+      return res;
+    },
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
     refetchOnWindowFocus: false,
   });
 
@@ -49,15 +49,15 @@ export default function ReviewsClient() {
     },
     onMutate: async ({ id, reply }: { id: string; reply: string }) => {
       // optimistic update: move from unreplied to replied list
-      await qc.cancelQueries({ queryKey: ["reviews", "unreplied"] });
-      await qc.cancelQueries({ queryKey: ["reviews", "replied"] });
+      await qc.cancelQueries({ queryKey: ["reviews", false] });
+      await qc.cancelQueries({ queryKey: ["reviews", true] });
 
-      const prevUnreplied = qc.getQueryData<UnrepliedReviewType[]>(["reviews", "unreplied"]);
-      const prevReplied = qc.getQueryData<RepliedReviewType[]>(["reviews", "replied"]);
+      const prevUnreplied = qc.getQueryData<ReviewType[]>(["reviews", false]);
+      const prevReplied = qc.getQueryData<ReviewType[]>(["reviews", true]);
 
       if (prevUnreplied) {
         const updated = prevUnreplied.filter((r) => r.id !== id);
-        qc.setQueryData<UnrepliedReviewType[]>(["reviews", "unreplied"], updated);
+        qc.setQueryData<ReviewType[]>(["reviews", false], updated);
       }
 
       if (prevUnreplied) {
@@ -67,8 +67,8 @@ export default function ReviewsClient() {
             ...moved,
             reply,
             repliedAt: new Date().toISOString(),
-          } as unknown as RepliedReviewType;
-          qc.setQueryData<RepliedReviewType[]>(["reviews", "replied"], (old: RepliedReviewType[] = []) => [
+          } as unknown as ReviewType;
+          qc.setQueryData<ReviewType[]>(["reviews", true], (old: ReviewType[] = []) => [
             newItem,
             ...old,
           ]);
@@ -77,23 +77,28 @@ export default function ReviewsClient() {
 
       return { prevUnreplied, prevReplied };
     },
-    onError: (err: unknown, _variables: { id: string; reply: string }, context?: { prevUnreplied?: UnrepliedReviewType[]; prevReplied?: RepliedReviewType[] }) => {
+    onError: (err: unknown, _variables: { id: string; reply: string }, context?: { prevUnreplied?: ReviewType[]; prevReplied?: ReviewType[] }) => {
       // rollback
       if (context?.prevUnreplied) {
-        qc.setQueryData<UnrepliedReviewType[]>(["reviews", "unreplied"], context.prevUnreplied);
+        qc.setQueryData<ReviewType[]>(["reviews", false], context.prevUnreplied);
       }
       if (context?.prevReplied) {
-        qc.setQueryData<RepliedReviewType[]>(["reviews", "replied"], context.prevReplied);
+        qc.setQueryData<ReviewType[]>(["reviews", true], context.prevReplied);
       }
       // optional: you can log or surface `err` here
     },
     onSettled: () => {
+      // refresh both lists to keep UI consistent
       qc.invalidateQueries({ queryKey: ["reviews"] });
     },
   });
 
+  const replying = replyMutation.status === "pending";
+
+  const items = reviewsData?.pages.flatMap((page) => page.items) ?? [];
+
   return (
-    <Tabs defaultValue="unreplied" className="w-full">
+    <Tabs value={tab} className="w-full" onValueChange={(v) => setTab(v as "unreplied" | "replied")}>
       <TabsList className="mb-4">
         <TabsTrigger value="unreplied">Chưa phản hồi</TabsTrigger>
         <TabsTrigger value="replied">Đã phản hồi</TabsTrigger>
@@ -101,19 +106,19 @@ export default function ReviewsClient() {
 
       <TabsContent value="unreplied">
         <ScrollArea className="max-h-120 pr-2">
-          {unrepliedQuery.isLoading ? (
+          {reviewsLoading ? (
             <div className="space-y-3">
               <SkeletonCard />
               <SkeletonCard />
             </div>
-          ) : unrepliedQuery.data && unrepliedQuery.data.length > 0 ? (
+          ) : items.length > 0 ? (
             <div className="space-y-4">
-              {unrepliedQuery.data.map((r) => (
+              {items.map((r) => (
                 <ReviewItem
                   key={r.id}
                   review={r}
                   onReply={(reply) => replyMutation.mutate({ id: r.id, reply })}
-                  replying={replyMutation.status === "pending"}
+                  replying={replying}
                 />
               ))}
             </div>
@@ -125,14 +130,14 @@ export default function ReviewsClient() {
 
       <TabsContent value="replied">
         <ScrollArea className="max-h-120 pr-2">
-          {repliedQuery.isLoading ? (
+          {reviewsLoading ? (
             <div className="space-y-3">
               <SkeletonCard />
               <SkeletonCard />
             </div>
-          ) : repliedQuery.data && repliedQuery.data.length > 0 ? (
+          ) : items.length > 0 ? (
             <div className="space-y-4">
-              {repliedQuery.data.map((r) => (
+              {items.map((r) => (
                 <RepliedItem key={r.id} review={r} />
               ))}
             </div>
@@ -150,24 +155,32 @@ function ReviewItem({
   onReply,
   replying,
 }: {
-  review: UnrepliedReviewType;
+  review: ReviewType;
   onReply: (reply: string) => void;
   replying: boolean;
 }) {
   const [text, setText] = useState("");
+  const replyMutation = useMutation({
+    mutationFn: async (reply: string) => {
+      return await hotelowner_replyToReview(review.id, reply);
+    },
+    onSuccess: (_data, reply) => {
+      if (onReply) onReply(reply);
+    },
+  });
 
-  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true });
+  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true, locale: vi });
 
   return (
     <div className="group data-[open=true]:h-fit px-6 py-4 rounded-xl border bg-card flex flex-col md:flex-row gap-x-12 gap-y-2 md:gap-y-0">
       <div className="flex md:flex-col items-center gap-x-4 md:gap-x-0 md:gap-y-2 shrink-0 w-full md:w-1/6">
         <Avatar size="lg">
-          <AvatarImage src={review.booking?.user?.profileImageUrl ?? undefined} alt={review.booking?.user?.name ?? "User avatar"} />
-          <AvatarFallback>{(review.booking?.user?.name ?? "U").slice(0, 1)}</AvatarFallback>
+          <AvatarImage src={review.authorProfileImageUrl ?? undefined} alt={review.authorName} />
+          <AvatarFallback>{(review.authorName ?? "U").slice(0, 1)}</AvatarFallback>
         </Avatar>
 
         <div className="truncate flex flex-col gap-1">
-          <span className="font-bold">{review.booking?.user?.name ?? "Guest"}</span>
+          <span className="font-bold">{review.authorName}</span>
 
           <div className="flex gap-x-4 items-center md:hidden">
             <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">
@@ -214,11 +227,12 @@ function ReviewItem({
           <div className="flex justify-end">
             <Button
               onClick={() => {
-                if (!text.trim()) return;
-                onReply(text.trim());
+                const replyText = text.trim();
+                if (!replyText) return;
+                replyMutation.mutate(replyText);
                 setText("");
               }}
-              disabled={replying || text.trim().length === 0}
+              disabled={replying || replyMutation.isPending || text.trim().length === 0}
               className="w-fit"
             >
               Phản hồi
@@ -230,20 +244,20 @@ function ReviewItem({
   );
 }
 
-function RepliedItem({ review }: { review: RepliedReviewType }) {
+function RepliedItem({ review }: { review: ReviewType }) {
   const [open, setOpen] = useState(false);
-  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true });
+  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true, locale: vi });
 
   return (
     <div className="group data-[open=false]:h-fit px-6 py-4 rounded-xl border bg-card flex flex-col md:flex-row gap-x-12 gap-y-2 md:gap-y-0" data-open={open}>
       <div className="flex md:flex-col items-center gap-x-4 md:gap-x-0 md:gap-y-2 shrink-0 w-full md:w-1/6">
         <Avatar size="lg">
-          <AvatarImage src={review.booking?.user?.profileImageUrl ?? undefined} alt={review.booking?.user?.name ?? "User avatar"} />
-          <AvatarFallback>{(review.booking?.user?.name ?? "U").slice(0, 1)}</AvatarFallback>
+          <AvatarImage src={review.authorProfileImageUrl ?? undefined} alt={review.authorName ?? "User avatar"} />
+          <AvatarFallback>{(review.authorName ?? "U").slice(0, 1)}</AvatarFallback>
         </Avatar>
 
         <div className="truncate flex flex-col gap-1">
-          <span className="font-bold">{review.booking?.user?.name ?? "Guest"}</span>
+          <span className="font-bold">{review.authorName}</span>
 
           <div className="flex gap-x-4 items-center md:hidden">
             <div className="px-2.5 py-0.5 rounded-full bg-blue-50 flex items-center justify-center space-x-1">

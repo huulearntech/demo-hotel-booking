@@ -5,7 +5,7 @@ import { type SearchBar_FormInput } from "@/lib/zod_schemas/search-bar";
 
 import { getHotelsBySearchBarForm } from "@/lib/generated/prisma/sql";
 import {
-  draft_HotelCardProps,
+  HotelCardProps,
   //  HotelCardProps
 } from "@/lib/types/hotel-card";
 import { Decimal } from "@prisma/client/runtime/client";
@@ -13,7 +13,7 @@ import { FilterFormValues } from "@/lib/zod_schemas/filter";
 import { FILTER_MAX_PRICE, FILTER_MIN_PRICE } from "@/lib/constants";
 import { auth } from "@/auth";
 
-export type SortType = "price_asc" | "price_desc" | "reviewPoints_desc";
+export type SortType = "price_asc" | "price_desc" | "rating_desc";
 // NOTE: There is some kind of tagged union here:
 export type SearchResult_CursorType = {
   lastPrice: Decimal | number | null;
@@ -23,14 +23,14 @@ export type SearchResult_CursorType = {
 
 
 // FIXME: not debounced or bind to the apply button yet.
-export async function draft_fetchSearchResult(
+export async function user_getSearchResult(
   searchBarFormValues: SearchBar_FormInput,
   filterFormValues: FilterFormValues,
   sort: SortType,
   cursor: SearchResult_CursorType | null,
   pageSize: number = 10,
 ): Promise<{
-  items: draft_HotelCardProps[];
+  items: HotelCardProps[];
   totalCount: number;
   nextCursor: SearchResult_CursorType | null
 }> {

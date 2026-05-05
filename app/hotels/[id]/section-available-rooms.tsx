@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 import { type UserGetAvailableRoomTypeOfHotelResult } from "@/lib/actions/hotel";
-import { type SearchSpec } from "@/lib/zod_schemas/search-bar";
+import { type SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { PATHS } from "@/lib/constants";
@@ -22,7 +22,7 @@ export default async function AvailableRoomsSection({
 }: {
   hotelName: string;
   roomTypes: Awaited<ReturnType<typeof user_getAvailableRoomTypeOfHotel>>;
-  searchSpecWithoutLocation: SearchSpec;
+  searchSpecWithoutLocation: SearchSpecWithoutLocation_Params;
 }) {
   const searchParams = new URLSearchParams(searchSpecWithoutLocation).toString();
   const session = await auth();

@@ -1,4 +1,4 @@
-export type draft_HotelCardProps = {
+export type HotelCardProps = {
   id: string;
   name: string;
   thumbnailUrl: string | null;

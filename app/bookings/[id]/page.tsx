@@ -16,44 +16,17 @@ import {
   DoorOpen,
 } from "lucide-react";
 import { tvlk_logo_text_dark } from "@/public/logos"
-import { BedType } from "@/lib/generated/prisma/client";
-import { schema_searchSpec, SearchSpec } from "@/lib/zod_schemas/search-bar";
+import { BedType, Prisma } from "@/lib/generated/prisma/client";
+import { schema_searchSpecWithoutLocation, SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
+import { OperationResult } from "@/lib/types/utils";
 
 const getHHMMFromDate = (date: Date) => {
   console.log(date);
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
-export default async function BookingPage({
-  params,
-  searchParams
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<SearchSpec>;
-}) {
-  const session = await auth();
-  if (!session || !session.user) notFound(); // already handled by proxy.
-  const { email, name } = session.user;
-  
-  const { id } = await params;
-  const awaitedSearchParams = await searchParams;
-  const candidates = {
-    inOutDates: {
-      from: new Date(awaitedSearchParams.checkInDate.concat("T00:00:00Z")), // Ensure it's treated as UTC to avoid timezone issues
-      to: new Date(awaitedSearchParams.checkOutDate.concat("T00:00:00Z")),
-    },
-    guestsAndRooms: {
-      numAdults: Number(awaitedSearchParams.numAdults),
-      numChildren: Number(awaitedSearchParams.numChildren),
-      numRooms: Number(awaitedSearchParams.numRooms),
-    },
-  }
-  const searchSpec = schema_searchSpec.safeParse(candidates);
-  if (!searchSpec.success) notFound();
-
-
-  const roomType = await prisma.roomType.findUnique({
-    where: { id },
+async function user_getRoomTypeById(id: string): Promise<OperationResult<
+  Prisma.RoomTypeGetPayload<{
     select: {
       hotel: {
         select: {
@@ -77,11 +50,80 @@ export default async function BookingPage({
       adultCapacity: true,
       childrenCapacity: true,
       bedType: true,
-    },
-  });
+    }
+  }>
+>> {
+  try {
+    const result = await prisma.roomType.findUnique({
+      where: { id },
+      select: {
+        hotel: {
+          select: {
+            name: true,
+            type: true,
+            rating: true,
+            numberOfReviews: true,
+            checkInTime: true,
+            checkOutTime: true,
+          }
+        },
+        facilities: {
+          select: {
+            id: true,
+            name: true,
+            iconUrl: true,
+          }
+        },
+        name: true,
+        price: true,
+        adultCapacity: true,
+        childrenCapacity: true,
+        bedType: true,
+      },
+    });
 
-  if (!roomType) notFound();
-  const { hotel } = roomType;
+    if (!result) {
+      return { ok: false, error: "Room type not found", status: 404 };
+    }
+
+    return { ok: true, data: result };
+  } catch (err) {
+    console.error("Error fetching room type:", err);
+    return { ok: false, error: "An error occurred while fetching room type", status: 500 };
+  }
+}
+
+export default async function BookingPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchSpecWithoutLocation_Params>;
+}) {
+  const session = await auth();
+  if (!session || !session.user) notFound(); // already handled by proxy.
+  const { email, name } = session.user;
+  
+  const { id } = await params;
+  const awaitedSearchParams = await searchParams;
+  const candidates = {
+    inOutDates: {
+      from: new Date(awaitedSearchParams.checkInDate.concat("T00:00:00Z")), // Ensure it's treated as UTC to avoid timezone issues
+      to: new Date(awaitedSearchParams.checkOutDate.concat("T00:00:00Z")),
+    },
+    guestsAndRooms: {
+      numAdults: Number(awaitedSearchParams.numAdults),
+      numChildren: Number(awaitedSearchParams.numChildren),
+      numRooms: Number(awaitedSearchParams.numRooms),
+    },
+  }
+  const searchSpec = schema_searchSpecWithoutLocation.safeParse(candidates);
+  if (!searchSpec.success) notFound();
+
+  const result = await user_getRoomTypeById(id);
+  if (!result.ok) notFound();
+
+  const roomType = result.data;
 
   const nights = differenceInDays(searchSpec.data.inOutDates.to, searchSpec.data.inOutDates.from);
 
@@ -94,14 +136,14 @@ export default async function BookingPage({
             <div className="h-10 w-px bg-gray-200 mx-3"></div>
             <div className="flex flex-col gap-y-1 p-4">
               <div className="flex items-center gap-x-2">
-                <span className="text-base text-black font-semibold"> {hotel.name} </span>
+                <span className="text-base text-black font-semibold"> {roomType.hotel.name} </span>
                 <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-primary lowercase first-letter:capitalize">
-                  {hotel.type}
+                  {roomType.hotel.type}
                 </span>
               </div>
               <div className="flex items-center gap-x-2 text-xs">
-                <span className="text-primary font-black">{hotel.rating.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
-                <span className="text-gray-500 font-semibold">({hotel.numberOfReviews} đánh giá)</span>
+                <span className="text-primary font-black">{roomType.hotel.rating.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
+                <span className="text-gray-500 font-semibold">({roomType.hotel.numberOfReviews} đánh giá)</span>
               </div>
             </div>
           </div>

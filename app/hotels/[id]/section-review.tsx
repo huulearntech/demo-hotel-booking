@@ -1,46 +1,48 @@
-import Image from "next/image"
-import { tvlk_logo_text_dark } from "@/public/logos"
+"use client";
 
-import { user_getReviewsOfHotel } from "@/lib/actions/reviews"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import Image from "next/image";
+import { useState } from "react";
+import { tvlk_logo_text_dark } from "@/public/logos";
 
-import ReviewCard from "./review-card"
+import { user_getReviewsOfHotel, type ReviewCursor } from "@/lib/actions/reviews";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
+import ReviewCard from "./review-card";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-export default async function ReviewSection({
+const pageSize = 5; // TODO: avoid hardcoding this.
+
+export default function ReviewSection({
   hotelId,
   hotelName,
   rating,
   numberOfReviews,
-  cursorCreatedAt = null,
-  cursorId = null,
-  pageSize = 1,
 }: {
-  hotelId: string,
-  hotelName: string,
-  rating: number,
-  numberOfReviews: number,
-  cursorCreatedAt?: string | null,
-  cursorId?: string | null,
-  pageSize?: number,
+  hotelId: string;
+  hotelName: string;
+  rating: number;
+  numberOfReviews: number;
 }) {
-  // TODO: fix this AI bullshit pagination.
-  const { reviews, nextCursor, prevCursor } = await user_getReviewsOfHotel(
-    hotelId,
-    cursorCreatedAt ? new Date(cursorCreatedAt) : undefined,
-    cursorId ?? undefined,
-    pageSize
-  );
+  const [pageParam, setPageParam] = useState<{
+    queryPrevCursor: ReviewCursor | null;
+    queryNextCursor: ReviewCursor | null;
+    directionIsNext: boolean
+  }>({
+    queryPrevCursor: null,
+    queryNextCursor: null,
+    directionIsNext: true
+  });
 
-  const prevHref = prevCursor
-    ? `?cursorCreatedAt=${encodeURIComponent(prevCursor.createdAt.toISOString())}&cursorId=${prevCursor.id}&direction=before`
-    : null;
+  const { data, isFetching } = useQuery({
+    queryKey: ["hotelReviews", hotelId, pageParam],
+    queryFn: () => user_getReviewsOfHotel(hotelId, pageSize, pageParam.queryPrevCursor, pageParam.queryNextCursor, pageParam.directionIsNext),
+    placeholderData: keepPreviousData,
+  });
 
-  const nextHref = nextCursor
-    ? `?cursorCreatedAt=${encodeURIComponent(nextCursor.createdAt.toISOString())}&cursorId=${nextCursor.id}&direction=after`
-    : null;
+  const reviews = data?.items ?? [];
+  const hasNextPage = Boolean(data?.nextCursor);
+  const hasPreviousPage = Boolean(data?.prevCursor);
 
   return (
     <section id="review" className="w-full flex flex-col">
@@ -48,27 +50,29 @@ export default async function ReviewSection({
         <h2 className="font-bold text-[1.25rem]">Những review của khách về {hotelName}</h2>
         <div className="flex flex-col lg:flex-row lg:items-center gap-y-6 lg:gap-y-0 lg:gap-x-12">
           <div className="flex gap-x-6 md:gap-x-12 flex-1">
-            {numberOfReviews > 0 &&
-              <div className="flex shrink-0 items-center justify-center
+            {numberOfReviews > 0 && (
+              <div
+                className="flex shrink-0 items-center justify-center
                 size-24 rounded-2xl
                 md:size-32 md:rounded-4xl
                 bg-linear-[137deg] from-[rgb(245,251,255)] from-0% via-[rgb(209,240,255)] via-[46.1%] to-[rgb(245,251,255)] to-[96.84%]"
               >
-                <div className="flex items-center justify-center border-white
+                <div
+                  className="flex items-center justify-center border-white
                   size-18 border-3 rounded-2xl
                   md:size-24 md:border-4 md:rounded-3xl"
                 >
-                  <div className="text-center text-[2rem] md:text-[3rem] font-bold text-primary">{rating.toFixed(1)}</div>
+                  <div className="text-center text-[2rem] md:text-[3rem] font-bold text-primary">
+                    {rating.toFixed(1)}
+                  </div>
                 </div>
               </div>
-            }
+            )}
             <div className="flex flex-col space-y-3">
-              {numberOfReviews > 0 &&
-                <div className="text-[1.25rem] font-bold">Từ {numberOfReviews} đánh giá</div>
-              }
+              {numberOfReviews > 0 && <div className="text-[1.25rem] font-bold">Từ {numberOfReviews} đánh giá</div>}
               <div className="font-medium flex">
                 <div className="whitespace-pre">Bởi khách du lịch trong </div>
-                <Image src={tvlk_logo_text_dark} alt="hoteloka" className="h-6.25 w-auto"/>
+                <Image src={tvlk_logo_text_dark} alt="hoteloka" className="h-6.25 w-auto" />
               </div>
             </div>
           </div>
@@ -76,26 +80,51 @@ export default async function ReviewSection({
 
         <ul className="flex flex-col gap-y-3">
           {reviews.map((r) => (
-            <li key={r.reviewId}> <ReviewCard review={r} /> </li>
+            <li key={r.id}>
+              <ReviewCard review={r} />
+            </li>
           ))}
         </ul>
 
         <div className="flex items-center justify-end gap-x-4 mt-4">
-          <Button asChild variant="outline" size="sm" disabled>
-            <Link href={prevHref || "#"} aria-label="Previous page">
-              <ArrowLeft className="mr-2" />
-              Trang trước
-            </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasPreviousPage || isFetching}
+            onClick={() => {
+              if (data?.prevCursor) {
+                setPageParam({
+                  queryPrevCursor: data.prevCursor,
+                  queryNextCursor: data.nextCursor,
+                  directionIsNext: false
+                });
+              }
+            }}
+            aria-label="Previous page"
+          >
+            <ArrowLeft className="mr-2" />
+            Trang trước
           </Button>
 
-          <Button asChild size="sm" disabled={!nextHref}>
-            <Link href={nextHref || "#"} aria-label="Next page">
-              Trang sau
-              <ArrowRight className="ml-2" />
-            </Link>
+          <Button
+            size="sm"
+            disabled={!hasNextPage || isFetching}
+            onClick={() => {
+              if (data?.nextCursor) {
+                setPageParam({
+                  queryPrevCursor: data.prevCursor,
+                  queryNextCursor: data.nextCursor,
+                  directionIsNext: true
+                });
+              }
+            }}
+            aria-label="Next page"
+          >
+            Trang sau
+            <ArrowRight className="ml-2" />
           </Button>
         </div>
       </div>
     </section>
-  )
-};
+  );
+}

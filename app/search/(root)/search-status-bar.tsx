@@ -1,3 +1,5 @@
+"use client";
+
 import { ReadonlyURLSearchParams } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,13 +16,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MapPinnedIcon } from "lucide-react";
 import { PATHS } from "@/lib/constants";
 import ButtonOpenFilterSheet from "../button-open-filter-sheet";
+import { SortType } from "@/lib/actions/search";
 
 export default function SearchStatusBar({
   total,
-  searchParams
+  searchParams,
+  sortedBy,
+  onSortChange,
 }: {
   total: number;
   searchParams: ReadonlyURLSearchParams;
+  sortedBy: SortType;
+  onSortChange: (value: SortType) => void;
 }) {
   return (
     <div className="flex items-center justify-between sticky top-21 lg:top-20.5 border-b p-3 -mt-3 z-10 bg-background shadow-md">
@@ -28,16 +35,16 @@ export default function SearchStatusBar({
       <div className="flex gap-x-4 items-center">
         <div className="flex gap-x-2">
           <Label htmlFor="sort-by-select" className="text-xs font-semibold" >Sắp xếp theo:</Label>
-          <Select defaultValue="price-desc">
+          <Select value={sortedBy} onValueChange={(value) => onSortChange(value as SortType)}>
             <SelectTrigger id="sort-by-select" className="text-xs font-semibold py-2 px-3 rounded-full">
               <SelectValue placeholder="Sắp xếp theo" />
             </SelectTrigger>
 
             <SelectContent position="popper">
               <SelectGroup>
-                <SelectItem value="price-asc">Giá thấp nhất </SelectItem>
-                <SelectItem value="price-desc">Giá cao nhất</SelectItem>
-                <SelectItem value="rating">Điểm đánh giá cao nhất</SelectItem>
+                <SelectItem value="price_asc">Giá thấp nhất </SelectItem>
+                <SelectItem value="price_desc">Giá cao nhất</SelectItem>
+                <SelectItem value="rating_desc">Điểm đánh giá cao nhất</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

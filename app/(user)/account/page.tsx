@@ -10,6 +10,8 @@ import ChangeNameDialog from "./dialog-change-name";
 import { Avatar as AvatarPrimitive } from "radix-ui"
 import { AvatarUploader } from "./button-upload-avatar-cloudinary";
 import { ChevronRightIcon } from "lucide-react";
+import Image from "next/image";
+import { tvlk_favicon } from "@/public/logos";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -21,19 +23,21 @@ export default async function AccountPage() {
       <div className="mx-auto flex flex-col items-center gap-y-4 mt-13 px-4 py-3">
         <AvatarPrimitive.Root
           data-slot="avatar"
-          className="group relative flex size-25 shrink-0 rounded-full select-none"
+          className="group relative flex size-25 shrink-0 rounded-full bg-muted select-none items-center justify-center"
         >
-          <AvatarPrimitive.Image
-            data-slot="avatar-image"
-            src={user.profileImageUrl ?? undefined} alt={user.name}
-            className="aspect-square size-full rounded-full"
-          />
-          <AvatarPrimitive.Fallback
-            data-slot="avatar-fallback"
-            className="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm truncate"
-          >
-            {user.name}
-          </AvatarPrimitive.Fallback>
+          {user.profileImageUrl
+            ? <AvatarPrimitive.Image
+              data-slot="avatar-image"
+              src={user.profileImageUrl ?? undefined} alt={user.name}
+              className="aspect-square size-full rounded-full"
+            />
+            : <Image
+              src={tvlk_favicon}
+              alt={`Ảnh đại diện mặc định của ${user.name ?? "người dùng"}`}
+              data-slot="avatar-fallback"
+              className="rounded-full object-contain"
+            />
+          }
           <AvatarUploader onUploadSuccess={user_createOrUpdateAvatarUrl} />
         </AvatarPrimitive.Root>
       </div>

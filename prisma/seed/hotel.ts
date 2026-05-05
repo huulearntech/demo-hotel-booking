@@ -106,7 +106,8 @@ async function seedRooms(roomTypes: RoomType[]) {
   });
 }
 
-const inRoomFacilities: { name: string, type: FacilityType, iconUrl: string }[] = [
+// TODO: vietnamese translation.
+const inRoomFacilities: { name: string, type: FacilityType, iconUrl?: string }[] = [
   {
     name: "Air Conditioning",
     type: "IN_ROOM",
@@ -116,11 +117,6 @@ const inRoomFacilities: { name: string, type: FacilityType, iconUrl: string }[] 
     name: "Free Wi-Fi",
     type: "IN_ROOM",
     iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2017/06/07/1496833833458-7b6ab67bc5df6ef9f2caee150aae1f43.png"
-  },
-  {
-    name: "TV",
-    type: "IN_ROOM",
-    iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2016/12/21/1482301320867-9c8b0e5a4c8d9e5a2c8b0e5a4c8d9e5a.png"
   },
   {
     name: "Hot Water",
@@ -141,10 +137,62 @@ const inRoomFacilities: { name: string, type: FacilityType, iconUrl: string }[] 
     name: "Bath Tub",
     type: "IN_ROOM",
     iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2018/08/13/1534147032878-74c93691dc0791ceb2fd76093c27b200.png"
-  }
+  },
+  {
+    name: "Mini Fridge",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Wardrobe",
+    type: "IN_ROOM",
+  },
+  {
+    name: "TV",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Electric Kettle",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Coffee / Tea Maker",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Hair Dryer",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Iron & Ironing Board",
+    type: "IN_ROOM",
+  },
+  {
+    name: "In-room Safe",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Work Desk",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Sofa / Seating Area",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Telephone",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Room Heater",
+    type: "IN_ROOM",
+  },
+  {
+    name: "Microwave",
+    type: "IN_ROOM",
+  },
 ];
 
-const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl: string }[] = [
+const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl?: string }[] = [
   {
     name: "Free Public Wi-Fi",
     type: "PUBLIC",
@@ -175,6 +223,16 @@ const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl: string }
     type: "PUBLIC",
     iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2017/06/07/1496833756238-56e24fb64a964d38b8f393bf093a77a9.png"
   },
+  { name: "Laundry Service", type: "HOTEL_SERVICES" },
+  { name: "Room Service", type: "HOTEL_SERVICES" },
+  { name: "Concierge", type: "HOTEL_SERVICES" },
+  { name: "Fitness Center", type: "PUBLIC" },
+  { name: "Spa", type: "PUBLIC" },
+  { name: "Business Center", type: "HOTEL_SERVICES" },
+  { name: "Conference / Meeting Rooms", type: "PUBLIC" },
+  { name: "Airport Shuttle", type: "HOTEL_SERVICES" },
+  { name: "24-hour Security", type: "HOTEL_SERVICES" },
+  { name: "Dry Cleaning", type: "HOTEL_SERVICES" },
 ];
 
 async function seedFacilities() {
@@ -199,7 +257,7 @@ async function seedConnectionHotelsOnFacilities(hotels: Hotel[]) {
       // pick at least 3 distinct facilities for each hotel
       const hotelFacilities = faker.helpers.arrayElements(
         nonInRoomFacilities,
-        faker.number.int({ min: 3, max: nonInRoomFacilities.length })
+        faker.number.int({ min: 5, max: nonInRoomFacilities.length })
       );
 
       try {

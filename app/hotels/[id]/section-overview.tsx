@@ -8,7 +8,7 @@ import { tvlk_favicon } from "@/public/logos";
 import { MAX_REVIEW_POINTS, PATHS } from "@/lib/constants";
 import { formatVND } from "@/lib/utils";
 import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
-import { SearchSpec } from "@/lib/zod_schemas/search-bar";
+import { SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,7 @@ export default async function OverviewSection({
   poiCategoriesWithPlaces,
   reviews,
 }: {
-  searchParams: SearchSpec,
+  searchParams: SearchSpecWithoutLocation_Params,
   hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>>
   poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>
   reviews: Awaited<ReturnType<typeof get5ReviewsAboutHotelForOverview>>

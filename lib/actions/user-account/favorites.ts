@@ -1,6 +1,6 @@
 "use server";
 
-import { draft_HotelCardProps } from "@/lib/types/hotel-card";
+import { HotelCardProps } from "@/lib/types/hotel-card";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { OperationResult } from "@/lib/types/utils";
@@ -46,7 +46,7 @@ export async function user_upsertFavoriteHotel(
 }
 
 
-export async function draft_user_createOrDeleteFavoriteHotel(
+export async function user_createOrDeleteFavoriteHotel(
   hotelId: string,
   shouldFavorite: boolean
 ): Promise<{
@@ -89,9 +89,9 @@ export async function draft_user_createOrDeleteFavoriteHotel(
 }
 
 
-export async function draft_user_fetchFavoriteHotels(
+export async function user_getFavoriteHotels(
   opts?: { limit?: number; cursor?: string }
-): Promise<OperationResult<{ items: draft_HotelCardProps[]; nextCursor?: string }>> {
+): Promise<OperationResult<{ items: HotelCardProps[]; nextCursor?: string }>> {
   const session = await auth();
   if (!session || !session.user) {
     return { ok: false, error: "Unauthorized", status: 401 };
@@ -162,7 +162,7 @@ export async function draft_user_fetchFavoriteHotels(
   const hasMore = rows.length > limit;
   const pageRows = hasMore ? rows.slice(0, -1) : rows;
 
-  const items: draft_HotelCardProps[] = pageRows.map(r => ({
+  const items: HotelCardProps[] = pageRows.map(r => ({
     id: r.hotel.id,
     name: r.hotel.name,
     thumbnailUrl: r.hotel.imageUrls[0],
@@ -174,7 +174,7 @@ export async function draft_user_fetchFavoriteHotels(
     price: r.hotel.roomTypes.length > 0 ? r.hotel.roomTypes[0].price.toNumber() : 0,
     type: r.hotel.type,
     isFavorited: true, // since these are all favorites
-  } as draft_HotelCardProps));
+  } as HotelCardProps));
 
   let nextCursor: string | undefined;
   if (hasMore) {

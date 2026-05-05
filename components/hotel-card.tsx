@@ -9,12 +9,12 @@ import {
 } from "./ui/tooltip";
 
 import { cn, formatVND } from "@/lib/utils";
-import { draft_HotelCardProps } from "@/lib/types/hotel-card";
+import { HotelCardProps } from "@/lib/types/hotel-card";
 
 import { hotel as hotelIcon } from "@/public/icons/index";
 import { MapPin, Heart } from "lucide-react";
 import { createContext, useContext, ReactNode } from "react";
-import { draft_user_createOrDeleteFavoriteHotel } from "@/lib/actions/user-account/favorites";
+import { user_createOrDeleteFavoriteHotel } from "@/lib/actions/user-account/favorites";
 import { toast } from "sonner";
 
 
@@ -23,7 +23,7 @@ export default function HotelCard({
   href,
   className,
 }: {
-  hotel: draft_HotelCardProps;
+  hotel: HotelCardProps;
   href: string;
   className?: string
 }) {
@@ -208,7 +208,7 @@ export function FavoriteToggleProvider({
   children: ReactNode;
 }) {
   const onToggleFavorite = useCallback(async (hotelId: string, currIsFavorited: boolean, setIsFavorited: (newValue: boolean) => void) => {
-    const response = await draft_user_createOrDeleteFavoriteHotel(hotelId, !currIsFavorited);
+    const response = await user_createOrDeleteFavoriteHotel(hotelId, !currIsFavorited);
     if (!response.ok) {
       if (response.status === 401) {
         toast.info("Bạn cần đăng nhập để thêm khách sạn vào danh sách yêu thích.");

@@ -8,19 +8,19 @@ import { fetchHotel, get5ReviewsAboutHotelForOverview, user_getAvailableRoomType
 import Navbar from "./navbar";
 import { notFound } from "next/navigation";
 import SearchBar from "@/components/search-bar";
-import { SearchBar_FormOutput, SearchBar_LocationType, SearchSpec, codec_searchSpec } from "@/lib/zod_schemas/search-bar";
+import { SearchBar_FormOutput, SearchBar_LocationType, SearchSpecWithoutLocation_Params, codec_SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 
 
 export default async function Page(props: {
   params: Promise<{ id: string }>
-  searchParams: Promise<SearchSpec>;
+  searchParams: Promise<SearchSpecWithoutLocation_Params>;
 }) {
   const [{ id: hotelId }, awaitedSearchParams] = await Promise.all([
     props.params,
     props.searchParams
   ]);
-  const safeDecodedParams = codec_searchSpec.safeParse(awaitedSearchParams);
+  const safeDecodedParams = codec_SearchSpecWithoutLocation_Params.safeParse(awaitedSearchParams);
   if (!safeDecodedParams.success) notFound()
 
   const hotel = await fetchHotel(hotelId);
