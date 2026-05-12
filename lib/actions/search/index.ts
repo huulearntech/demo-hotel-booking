@@ -22,7 +22,6 @@ export type SearchResult_CursorType = {
 }
 
 
-// FIXME: not debounced or bind to the apply button yet.
 export async function user_getSearchResult(
   searchBarFormValues: SearchBar_FormInput,
   filterFormValues: FilterFormValues,
@@ -42,6 +41,7 @@ export async function user_getSearchResult(
 
   const {
     priceRange: [minPrice, maxPrice],
+    ratingRange: [minRating, maxRating],
     propertyTypes: hotelTypes,
     amenities: facilities,
   } = filterFormValues;
@@ -70,7 +70,9 @@ export async function user_getSearchResult(
     facilities,
     hotelTypes,
     numChildren,  // NOTE: move this up with the numAdults.
-    userId
+    userId,
+    minRating,
+    maxRating,
   ));
 
   const items = result.map((hotel) => ({

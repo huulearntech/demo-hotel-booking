@@ -64,7 +64,7 @@ export default function HotelCard({
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          : <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          : <div className="absolute inset-0 flex items-center justify-center bg-muted">
             <span className="text-sm text-gray-500">Không có hình ảnh</span>
           </div>
         }
@@ -134,30 +134,36 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
     }
 
     const containerWidth = container.clientWidth;
-
-    // Estimation
-    const charWidth = 7;
-    const px = 4;
+    // Estimation parameters (tweak if needed)
+    const charWidth = 7; // average width per character in px for the small font
+    const horizontalPadding = 8; // px for left+right padding (approx)
     const badgeExtra = 4; // extra space for rounding/border etc.
-    const gap = 8;
+    const gap = 6; // gap between badges in px (matches tailwind spacing used)
+    const moreBadgePadding = 12; // px for "+X" badge padding (a bit larger)
 
     // precompute widths
-    const widths = facilities.map((f) => f.length * charWidth + px * 2 + badgeExtra );
+    const widths = facilities.map((f) => horizontalPadding + badgeExtra + f.length * charWidth);
 
-    // width of "+N" badge
-    const plusNBadgeWidth = (n: number) =>
-      px * 2 + String(n).length * charWidth + badgeExtra;
+    // width of a potential "+N" badge (digits depend on how many remain)
+    const moreBaseWidth = (n: number) =>
+      moreBadgePadding + String(n).length * charWidth + badgeExtra;
 
-    let used_width = 0;
+    let used = 0;
     let count = 0;
 
     for (let i = 0; i < widths.length; i++) {
-      if (used_width + widths[i] + plusNBadgeWidth(widths.length - i) > containerWidth) {
-        count = i;
-        break;
-      }
+      const w = widths[i];
+      const gapBefore = i > 0 ? gap : 0;
+      const remaining = facilities.length - (i + 1);
 
-      used_width += widths[i] + gap;
+      const moreW = remaining > 0 ? moreBaseWidth(remaining) + gap : 0;
+
+      const totalNeeded = used + gapBefore + w + moreW;
+
+      if (totalNeeded > containerWidth) break;
+
+      used += gapBefore + w;
+      count++;
     }
 
     // Ensure at least 0 and at most facilities.length
@@ -168,14 +174,14 @@ function FacilityBadges({ facilities }: { facilities: string[] }) {
     <>
       <div ref={containerRef} aria-hidden className="flex items-center gap-x-2 overflow-clip">
         {facilities.slice(0, visibleCount).map((facility) => (
-          <span key={facility} className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-gray-50">
+          <span key={facility} className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-muted">
             {facility}
           </span>
         ))}
 
         {visibleCount < facilities.length && (
           <TooltipTrigger aria-hidden className="shrink-0">
-            <span className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-gray-50">
+            <span className="shrink-0 text-[10px] font-semibold px-1 py-0.75 rounded-lg bg-muted">
               +{facilities.length - visibleCount}
             </span>
           </TooltipTrigger>

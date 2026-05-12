@@ -17,10 +17,13 @@ CREATE TYPE "RoomStatus" AS ENUM ('ACTIVE', 'MAINTENANCE', 'OUT_OF_SERVICE');
 CREATE TYPE "BedType" AS ENUM ('SINGLE', 'DOUBLE', 'QUEEN', 'KING', 'TWIN');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'HOTEL_OWNER', 'USER', 'PENDING');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'HOTEL_OWNER', 'USER');
 
 -- CreateEnum
-CREATE TYPE "UserStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED', 'DELETED');
+CREATE TYPE "UserStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED', 'DELETED', 'HOTEL_OWNER_FILLING_INFORMATION');
+
+-- CreateEnum
+CREATE TYPE "VerificationType" AS ENUM ('REGISTRATION', 'PASSWORD_RESET');
 
 -- CreateTable
 CREATE TABLE "countries" (
@@ -37,6 +40,9 @@ CREATE TABLE "provinces" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "country_id" UUID NOT NULL,
+    "code" TEXT NOT NULL,
+    "centroid_lat" DOUBLE PRECISION NOT NULL,
+    "centroid_lng" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -48,6 +54,9 @@ CREATE TABLE "districts" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "province_id" UUID NOT NULL,
+    "code" TEXT NOT NULL,
+    "centroid_lat" DOUBLE PRECISION NOT NULL,
+    "centroid_lng" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -59,6 +68,9 @@ CREATE TABLE "wards" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "district_id" UUID NOT NULL,
+    "code" TEXT NOT NULL,
+    "centroid_lat" DOUBLE PRECISION NOT NULL,
+    "centroid_lng" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -187,7 +199,7 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "role" "UserRole" NOT NULL DEFAULT 'PENDING',
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
     "profile_image_url" TEXT,
     "status" "UserStatus" NOT NULL DEFAULT 'PENDING',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -212,6 +224,20 @@ CREATE TABLE "recently_viewed" (
     "viewed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "recently_viewed_pkey" PRIMARY KEY ("user_id","hotel_id")
+);
+
+-- CreateTable
+CREATE TABLE "verification_tokens" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL,
+    "code" TEXT NOT NULL,
+    "type" "VerificationType" NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "used" BOOLEAN NOT NULL DEFAULT false,
+    "expires_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "verification_tokens_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -245,19 +271,19 @@ CREATE UNIQUE INDEX "countries_name_key" ON "countries"("name");
 CREATE INDEX "provinces_country_id_idx" ON "provinces"("country_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "provinces_name_country_id_key" ON "provinces"("name", "country_id");
+CREATE UNIQUE INDEX "provinces_code_country_id_key" ON "provinces"("code", "country_id");
 
 -- CreateIndex
 CREATE INDEX "districts_province_id_idx" ON "districts"("province_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "districts_name_province_id_key" ON "districts"("name", "province_id");
+CREATE UNIQUE INDEX "districts_code_province_id_key" ON "districts"("code", "province_id");
 
 -- CreateIndex
 CREATE INDEX "wards_district_id_idx" ON "wards"("district_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "wards_name_district_id_key" ON "wards"("name", "district_id");
+CREATE UNIQUE INDEX "wards_code_district_id_key" ON "wards"("code", "district_id");
 
 -- CreateIndex
 CREATE INDEX "bookings_user_id_room_type_id_idx" ON "bookings"("user_id", "room_type_id");
@@ -348,6 +374,9 @@ ALTER TABLE "recently_viewed" ADD CONSTRAINT "recently_viewed_user_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "recently_viewed" ADD CONSTRAINT "recently_viewed_hotel_id_fkey" FOREIGN KEY ("hotel_id") REFERENCES "hotels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "verification_tokens" ADD CONSTRAINT "verification_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_BookingToRoom" ADD CONSTRAINT "_BookingToRoom_A_fkey" FOREIGN KEY ("A") REFERENCES "bookings"("id") ON DELETE CASCADE ON UPDATE CASCADE;

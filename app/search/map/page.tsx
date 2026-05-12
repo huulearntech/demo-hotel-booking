@@ -13,7 +13,6 @@ import ButtonOpenFilterSheet from "../button-open-filter-sheet";
 const MapClient = dynamic(() => import("./map-client"), { ssr: false });
 
 export default function SearchMapPage() {
-  // FIXME: using search params only on page mount make it not updated when user change the search params.
   const searchParams = useSearchParams();
 
   const searchBarValuesFromSearchParams: SearchBar_FormInput = {
@@ -26,14 +25,13 @@ export default function SearchMapPage() {
       to: new Date(searchParams.get("checkOutDate")!),
     },
     guestsAndRooms: {
-      numAdults: searchParams.get("numAdults") ? parseInt(searchParams.get("numAdults")!) : 1,
+      numAdults: searchParams.get("numAdults") ? parseInt(searchParams.get("numAdults")!) : 2,
       numChildren: searchParams.get("numChildren") ? parseInt(searchParams.get("numChildren")!) : 0,
       numRooms: searchParams.get("numRooms") ? parseInt(searchParams.get("numRooms")!) : 1,
     },
   };
 
   const { success, data: defaultSearchBarValues } = schema_searchBar.safeParse(searchBarValuesFromSearchParams);
-  console.log("defaultSearchBarValues", defaultSearchBarValues);
   if (!success) return null;
   return (
     <FilterFormProvider>
@@ -49,7 +47,7 @@ export default function SearchMapPage() {
           </div>
           <MapClient searchBarValues={defaultSearchBarValues}/>
         </div>
-        <FilterSheet standAlone/>
+        <FilterSheet standAlone showCloseButton/>
       </FilterSheetProvider>
     </FilterFormProvider>
   );

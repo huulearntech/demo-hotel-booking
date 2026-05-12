@@ -152,7 +152,6 @@ function Gallery({
               >
                 <Image
                   src={src}
-                  // FIXME: improve alt text
                   alt={`Thumbnail ${index + 1}`}
                   width={96}
                   height={96}

@@ -1,14 +1,18 @@
 "use server";
 
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { differenceInDays } from "date-fns";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { type OperationResult } from "@/lib/types/utils";
-import { differenceInDays } from "date-fns";
+import { UserUpdateNameData, userUpdateNameSchema } from "@/lib/zod_schemas/auth";
+import { CACHE_TAGS, PATHS } from "@/lib/constants";
+import { BookingStatus } from "@/lib/generated/prisma/enums";
 
-// TODO: categorize by status.
-export async function user_getRecentBookingsPaginated(
+export async function user_getRecentBookings(
   lastCursor: string | null = null,
-  limit = 10
+  limit: number = 10,
+  status: BookingStatus = "PENDING_TO_PAY",
 ) {
   const session = await auth();
   if (!session) {
@@ -30,7 +34,7 @@ export async function user_getRecentBookingsPaginated(
   }
 
   const bookings = await prisma.booking.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, status },
     orderBy: { createdAt: "desc" },
     ...pagination,
     select: {
@@ -81,10 +85,8 @@ export async function user_getRecentBookingsPaginated(
   return { items, nextCursor };
 }
 
-export type RecentBookingType = Awaited<ReturnType<typeof user_getRecentBookingsPaginated>>["items"][number];
+export type RecentBookingType = Awaited<ReturnType<typeof user_getRecentBookings>>["items"][number];
 
-
-import { UserUpdateNameData, userUpdateNameSchema } from "@/lib/zod_schemas/auth";
 
 export async function user_updateName(formData_newName: UserUpdateNameData): Promise<OperationResult<{ id: string; name: string }>> {
   const session = await auth();
@@ -116,10 +118,8 @@ export async function user_updateName(formData_newName: UserUpdateNameData): Pro
   }
 }
 
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
-import { CACHE_TAGS, PATHS } from "@/lib/constants";
 
-// Can't use session = auth() in here.
+// NOTE: Can't use session = auth() in here.
 export const user_getInfoById = unstable_cache(
   async (userId: string) => {
     return prisma.user.findUnique({

@@ -82,7 +82,6 @@ export async function fetchRevenueByRoomTypeLast90Days():
     totalRevenue: r.totalRevenue?.toNumber() ?? 0,
   })));
 
-  console.log("hello", result)
   return { ok: true, data: result };
 }
 
@@ -116,7 +115,6 @@ export async function fetchBookingsCountByRoomTypeLast90Days(): Promise<Operatio
 
     return { ok: true, data: result };
   } catch (err: any) {
-    console.error('Error fetching bookings count by room type', err);
     return { ok: false, error: err?.message ?? 'Internal error', status: 500 };
   }
 }
@@ -147,7 +145,6 @@ export async function fetchAvgRatingByRoomTypeLast90Days(): Promise<OperationRes
 
     return { ok: true, data: mapped };
   } catch (err: any) {
-    console.error('Error fetching ratings by room type', err);
     return { ok: false, error: err?.message ?? 'Internal error', status: 500 };
   }
 }

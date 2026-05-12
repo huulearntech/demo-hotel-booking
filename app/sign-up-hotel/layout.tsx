@@ -7,24 +7,18 @@ export default function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <header className="w-full h-20 z-60 bg-white shadow-md sticky top-0">
-        <div className="flex h-full justify-between items-center content">
-          <div className="flex items-center">
-            <Image src={tvlk_logo_text_dark} alt="hoteloka" />
-            <div className="h-10 w-px bg-gray-200 mx-3"></div>
-            <div className="text-2xl text-gray-700 font-medium">
-              Business
-            </div>
-          </div>
-          <div className="flex items-center gap-16">
-            {/** TODO: Stepper */}
-            Stepper go here
+    <main className="flex items-center justify-center h-screen bg-accent">
+      <div className="flex flex-col md:flex-row items-center justify-between bg-white shadow-md rounded-lg p-8 gap-8 w-full max-w-md md:max-w-2xl lg:max-w-3xl">
+        <div className="flex flex-col items-center justify-center gap-y-2 content">
+          <Image src={tvlk_logo_text_dark} alt="hoteloka" className="w-64 mx-auto" />
+          <div className="text-2xl sm:text-3xl text-gray-700 font-medium">
+            Business
           </div>
         </div>
-      </header>
-
-      {children}
-    </>
+        <div className="w-full">
+          {children}
+        </div>
+      </div>
+    </main>
   );
 }

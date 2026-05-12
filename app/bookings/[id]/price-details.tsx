@@ -16,7 +16,7 @@ export default function PriceDetail({
   numAdults,
   numChildren,
   numRooms,
-  totalPrice, // TODO: Must be calculated on the server and passed in, to prevent weird stuffs.
+  totalPrice,
   nights,
   snapshotRoomTypeName,
 }: {
@@ -52,7 +52,8 @@ export default function PriceDetail({
               currency: 'VND',
               minimumFractionDigits: 0,
               maximumFractionDigits: 0,
-            }).format(snapshotRoomPrice)}
+            }).format(snapshotRoomPrice) // NOTE: Should it be calculated on the server and passed in, to prevent weird stuffs??
+            }
           </div>
         </div>
         <div className="flex justify-between">

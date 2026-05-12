@@ -1,7 +1,7 @@
 "use server";
 import prisma from "@/lib/prisma";
 import { getHotelsByBoundingBox as core_getHotelsByBoundingBox } from "@/lib/generated/prisma/sql";
-import { SearchBar_FormOutput } from "@/lib/zod_schemas/search-bar";
+import { SearchBar_FormOutput, SearchBar_LocationType } from "@/lib/zod_schemas/search-bar";
 import { FilterFormValues } from "@/lib/zod_schemas/filter";
 
 export type BBox = {
@@ -25,6 +25,7 @@ export async function getHotelsByBoundingBox(
 
   const {
     priceRange: [minPrice, maxPrice],
+    ratingRange: [minRating, maxRating],
     propertyTypes: hotelTypes,
     amenities: facilities,
   } = filterFormValues;
@@ -50,13 +51,50 @@ export async function getHotelsByBoundingBox(
 
 
     numChildren,  // NOTE: move this up with the numAdults.
+    minRating,
+    maxRating,
   )).then(hotels => hotels.map(hotel => ({
     ...hotel,
     price: hotel.price?.toNumber() || 0, // convert Decimal to number, default to 0 if price is null
   })));
-  console.log("hotels fetched by map",hotels);
 
   return hotels;
 }
 
 export type Map_HotelCardProps = Awaited<ReturnType<typeof getHotelsByBoundingBox>>[number];
+
+export async function getCentroidOfRegion({
+  id,
+  type,
+}: {
+  id: string,
+  type: SearchBar_LocationType;
+}) {
+  if (type === "province") {
+    return prisma.province.findUnique({
+      where: { id },
+      select: {
+        centroidLat: true,
+        centroidLng: true,
+      }
+    });
+  } else if (type === "district") {
+    return prisma.district.findUnique({
+      where: { id },
+      select: {
+        centroidLat: true,
+        centroidLng: true,
+      }
+    });
+  } else if (type === "ward") {
+    return prisma.ward.findUnique({
+      where: { id },
+      select: {
+        centroidLat: true,
+        centroidLng: true,
+      }
+    });
+  } else {
+    throw new Error("Invalid location type");
+  }
+}

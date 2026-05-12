@@ -28,6 +28,7 @@ export const nextAuthConfig = {
             email: true,
             password: true,
             role: true,
+            status: true,
           },
         });
         if (!user) return null;
@@ -49,10 +50,20 @@ export const nextAuthConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Handle updates coming from unstable_update / session.update in NextAuth v5
+      if (trigger === "update" && session) {
+        const { id, role, status } = session.user;
+        if (id !== undefined) token.id = id;
+        if (role !== undefined) token.role = role;
+        if (status !== undefined) token.status = status;
+        return token;
+      }
+
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.status = user.status;
       }
       return token;
     },
@@ -60,6 +71,7 @@ export const nextAuthConfig = {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.status = token.status;
       }
       return session;
     },
@@ -77,4 +89,4 @@ export const nextAuthConfig = {
   },
 } satisfies NextAuthConfig;
 
-export const { handlers, signIn, signOut, auth } = NextAuth(nextAuthConfig);
+export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth(nextAuthConfig);

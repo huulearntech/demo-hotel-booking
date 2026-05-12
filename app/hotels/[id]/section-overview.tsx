@@ -5,7 +5,7 @@ import { fetchHotel, get5ReviewsAboutHotelForOverview } from "@/lib/actions/hote
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ChevronRight, MapPin } from 'lucide-react';
 import { tvlk_favicon } from "@/public/logos";
-import { MAX_REVIEW_POINTS, PATHS } from "@/lib/constants";
+import { MAX_RATING, PATHS } from "@/lib/constants";
 import { formatVND } from "@/lib/utils";
 import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 import { SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
@@ -145,7 +145,7 @@ export default async function OverviewSection({
                 <Image src={tvlk_favicon} alt="" className="mr-2" />
                 <div className="flex items-end text-primary">
                   <div className="text-[1.625rem] font-bold">{hotel.rating.toFixed(1)}</div>
-                  <div className="text-sm font-semibold whitespace-pre">/ {MAX_REVIEW_POINTS}</div>
+                  <div className="text-sm font-semibold whitespace-pre">/ {MAX_RATING}</div>
                 </div>
               </div>
 
@@ -155,9 +155,9 @@ export default async function OverviewSection({
               </a>
             </div>
             <h2 className="font-semibold">Khách nói gì về kỳ nghỉ của họ</h2>
-            <div className="flex flex-col overflow-y-auto max-h-32 space-y-2">
+            <ul className="flex flex-col overflow-y-auto space-y-2">
               {reviews.map(review => (
-                <div key={review.id} className="flex items-start gap-x-2">
+                <li key={review.id} className="flex items-start gap-x-2">
                   <Image
                     src={review.booking.user.profileImageUrl ?? tvlk_favicon}
                     alt={`Ảnh đại diện của ${review.booking.user.name}`}
@@ -168,13 +168,13 @@ export default async function OverviewSection({
                   <div>
                     <div className="flex items-center gap-x-2">
                       <div className="font-semibold">{review.booking.user.name}</div>
-                      <div className="text-gray-500 text-sm">{review.rating}/{MAX_REVIEW_POINTS}</div>
+                      <div className="text-muted-foreground text-sm">{review.rating}/{MAX_RATING}</div>
                     </div>
-                    <p className="text-gray-500 text-sm max-h-12 overflow-hidden overflow-ellipsis">{review.comment}</p>
+                    <p className="text-muted-foreground text-sm overflow-hidden overflow-ellipsis">{review.comment}</p>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
           <div className="bg-white border border-gray-300 rounded-lg p-4 flex-1" >
@@ -188,13 +188,13 @@ export default async function OverviewSection({
             <div className="flex flex-col gap-y-2 text-sm">
               {places.map((place, index) => (
                 <div key={index} className="flex items-start gap-x-2">
-                  <MapPin className="size-4 text-gray-500 mt-1" />
+                  <MapPin className="size-4 text-muted-foreground mt-1 shrink-0" />
                   <div>
-                    <div className="flex items-center gap-x-2">
-                      <div className="font-semibold">{place.name}</div>
-                      <div className="text-gray-500">{place.distance}</div>
+                    <div className="inline-flex items-baseline gap-x-2">
+                      <div className="font-semibold line-clamp-2">{place.name}</div>
+                      <div className="text-muted-foreground shrink-0">{place.distance}</div>
                     </div>
-                    <div className="text-gray-500">{place.address}</div>
+                    <div className="text-muted-foreground">{place.address}</div>
                   </div>
                 </div>
               ))}
@@ -231,10 +231,10 @@ export default async function OverviewSection({
         <div className="bg-white border border-gray-200 rounded-[0.625rem] p-3 flex-1 flex-col space-y-3">
           <h2 className="font-bold"> Tổng quan về khách sạn </h2>
           <p className="text-sm max-h-20 overflow-hidden overflow-ellipsis">{hotel.description}</p>
-          <div className="flex gap-x-1 text-sm font-bold text-primary">
+          {/* <div className="flex gap-x-1 text-sm font-bold text-primary">
             Xem thêm
             <ChevronRight className="size-5" aria-hidden />
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

@@ -1,5 +1,4 @@
-import "dotenv/config";
-import { UserRole } from "@/lib/generated/prisma/enums";
+import { UserRole, UserStatus } from "@/lib/generated/prisma/enums";
 import prisma from "@/lib/prisma";
 
 import { fakerVI as faker } from "@faker-js/faker";
@@ -14,49 +13,26 @@ async function seedRegularUsers(count = 10) {
     profileImageUrl: faker.image.avatar(),
   })) satisfies NonNullable<Parameters<typeof prisma.user.createMany>[0]>["data"];
   
-  if (process.env.FAKE_USER_NAME && process.env.FAKE_USER_EMAIL && process.env.FAKE_USER_PASSWORD) {
-    users.push({
-      name: process.env.FAKE_USER_NAME,
-      email: process.env.FAKE_USER_EMAIL,
-      password: process.env.FAKE_USER_PASSWORD,
-      role: UserRole.USER,
-      profileImageUrl: faker.image.avatar(),
-    });
-  } else {
-    console.warn("fake user name is not set.")
-  }
-
-  return await prisma.user.createManyAndReturn({
+  await prisma.user.createMany({
     data: users,
     skipDuplicates: true, // In case you run the seeding multiple times
   });
 }
 
 async function seedHotelOwners(count = 5) {
-  console.log("Seeding hotel owners");
   const users = Array.from({ length: count }, () => ({
     name: `${faker.person.lastName()} ${faker.person.firstName()}`, // Vietnamese name order
     email: faker.internet.email(),
     password: faker.internet.password(),
     role: UserRole.HOTEL_OWNER,
     profileImageUrl: faker.image.avatar(),
+    status: "ACTIVE" as UserStatus,
   }));
-
-  if (process.env.FAKE_HOTEL_OWNER_NAME && process.env.FAKE_HOTEL_OWNER_EMAIL && process.env.FAKE_HOTEL_OWNER_PASSWORD) {
-    users.push({
-      name: process.env.FAKE_HOTEL_OWNER_NAME,
-      email: process.env.FAKE_HOTEL_OWNER_EMAIL,
-      password: process.env.FAKE_HOTEL_OWNER_PASSWORD,
-      role: UserRole.HOTEL_OWNER,
-      profileImageUrl: faker.image.avatar(),
-    });
-  } else {
-    console.warn("fake hotel owner name is not set.")
-  }
 
   return await prisma.user.createManyAndReturn({
     data: users,
     skipDuplicates: true, // In case you run the seeding multiple times
+    select: { id: true },
   });
 }
 

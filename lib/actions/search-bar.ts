@@ -35,3 +35,23 @@ export async function user_getLocationNameOrHotelNameById(id: string, type: Sear
   }
   return result;
 }
+
+export async function user_getDefaultSearchBarLocations() {
+  const top_destinations = await prisma.province.findMany({
+    where: {
+      code: {
+        in: ["48", "01", "79", "24", "20"]
+      }
+    },
+    select: {
+      id: true,
+      name: true,
+    }
+  });
+
+  return top_destinations.map(dest => ({
+    id: dest.id,
+    name: dest.name,
+    type: "province" as SearchBar_LocationType,
+  }));
+}

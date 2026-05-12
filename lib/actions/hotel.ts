@@ -23,7 +23,6 @@ export async function fetchHotel(hotelId: string) {
   }
 
 
-  // FIXME: This logic is incorrect: it selects the reviews of the cheapest room type, not the whole hotel.
   return prisma.hotel.findUnique({
     where: { id: hotelId },
     include: {

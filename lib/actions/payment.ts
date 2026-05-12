@@ -1,3 +1,4 @@
+// TODO: May need to store the payment url for the "PENDING_TO_PAY" booking for user to retry payment.
 "use server";
 
 import "dotenv/config";
@@ -122,7 +123,6 @@ export async function createBookingThenRedirectToVNPay(
         throw new Error("Not enough available rooms for the selected dates");
       }
 
-      // TODO: when on production, this should be create a booking with status "PENDING_TO_PAY" and then redirect to the vnpay page, not the success page.
       return await tx.booking.create({
         data: {
           userId: session.user.id,
@@ -176,13 +176,6 @@ export async function createBookingThenRedirectToVNPay(
       (error as any).digest?.includes("NEXT_REDIRECT")
     );
 
-    if (isRedirect) {
-      // This is expected behavior for redirect() in Server Actions
-      console.log("Redirecting to VNPay payment gateway...");
-    } else {
-      // Only log actual errors
-      console.error("Error creating payment URL:", error);
-    }
     throw error;
   }
 }

@@ -1,102 +1,41 @@
 "use server";
 
 import { auth } from "@/auth";
+import { user_getRecentlyViewedHotels as core_user_getRecentlyViewedHotels } from "@/lib/generated/prisma/sql";
 import prisma from "@/lib/prisma";
 
 import { HotelCardProps } from "@/lib/types/hotel-card";
-import { OperationResult } from "@/lib/types/utils";
 
 
-export async function user_fetchRecentlyViewedHotels(
-  opts?: { limit?: number; cursor?: string }
-): Promise<OperationResult<{ items: HotelCardProps[]; nextCursor?: string }>> {
+export async function user_getRecentlyViewedHotels(
+  limit: number = 10,
+  cursor: { viewedAt: Date, id: string } | null
+): Promise<{ items: HotelCardProps[]; nextCursor: { viewedAt: Date, id: string } | null }> {
   const session = await auth();
   if (!session || !session.user) {
-    return { ok: false, error: "Unauthorized", status: 401 };
+    throw new Error("Unauthorized");
   }
 
   if (session.user.role !== "USER") {
-    return { ok: false, error: "Forbidden", status: 403 };
+    throw new Error("Forbidden");
   }
 
-  const limit = Math.max(1, Math.min(50, opts?.limit ?? 10));
-  const fetchCount = limit + 1;
+  const recentlyViewedHotel = await prisma.$queryRawTyped((core_user_getRecentlyViewedHotels(
+    session.user.id,
+    limit + 1,
+    cursor ? cursor.viewedAt : null,
+    cursor ? cursor.id : null,
+  ))).then(rows => rows.map(r => ({
+    ...r,
+    price: r.price ? r.price.toNumber() : 0,
+  })));
 
-  let cursorViewedAt: Date | undefined;
-  let cursorHotelId: string | undefined;
+  const hasMore = recentlyViewedHotel.length > (limit ?? 10);
+  const items = hasMore ? recentlyViewedHotel.slice(0, -1) : recentlyViewedHotel;
 
-  if (opts?.cursor) {
-    try {
-      const decoded = JSON.parse(Buffer.from(opts.cursor, "base64").toString("utf8"));
-      cursorViewedAt = new Date(decoded.viewedAt);
-      cursorHotelId = decoded.hotelId;
-      if (Number.isNaN(cursorViewedAt.getTime()) || typeof cursorHotelId !== "string") {
-        throw new Error("Invalid cursor");
-      }
-    } catch {
-      return { ok: false, error: "Invalid cursor", status: 400 };
-    }
-  }
+  const nextCursor = hasMore
+    ? { viewedAt: items[items.length - 1].viewedAt, id: items[items.length - 1].id }
+    : null;
 
-  const baseWhere: any = { userId: session.user.id };
-  if (cursorViewedAt && cursorHotelId) {
-    baseWhere.AND = [
-      { userId: session.user.id },
-      {
-        OR: [
-          { viewedAt: { lt: cursorViewedAt } },
-          { AND: [{ viewedAt: { equals: cursorViewedAt } }, { hotelId: { lt: cursorHotelId } }] },
-        ],
-      },
-    ];
-  }
-
-  const rows = await prisma.recentlyViewed.findMany({
-    where: baseWhere,
-    orderBy: [{ viewedAt: "desc" }, { hotelId: "desc" }],
-    select: {
-      viewedAt: true,
-      hotelId: true,
-      hotel: {
-        select: {
-          id: true,
-          name: true,
-          imageUrls: true,
-          rating: true,
-          numberOfReviews: true,
-          ward: { select: { name: true, district: { select: { province: { select: { name: true } } } } } },
-          facilities: { select: { name: true } },
-          roomTypes: { select: { price: true }, orderBy: { price: "asc" }, take: 1 },
-          type: true,
-        },
-      },
-    },
-    take: fetchCount,
-  });
-
-  const hasMore = rows.length > limit;
-  const pageRows = hasMore ? rows.slice(0, -1) : rows;
-
-  const items: HotelCardProps[] = pageRows.map(r => ({
-    id: r.hotel.id,
-    name: r.hotel.name,
-    thumbnailUrl: r.hotel.imageUrls[0],
-    rating: r.hotel.rating,
-    numberOfReviews: r.hotel.numberOfReviews,
-    wardName: r.hotel.ward.name,
-    provinceName: r.hotel.ward.district.province.name,
-    facilityNames: r.hotel.facilities.map(f => f.name),
-    price: r.hotel.roomTypes.length > 0 ? r.hotel.roomTypes[0].price.toNumber() : 0,
-    type: r.hotel.type,
-    isFavorited: false, // FIXME: just use SQL instead of prisma. it sucks.
-  } as HotelCardProps));
-
-  let nextCursor: string | undefined;
-  if (hasMore) {
-    const last = pageRows[pageRows.length - 1];
-    const payload = JSON.stringify({ viewedAt: last.viewedAt.toISOString(), hotelId: last.hotel.id });
-    nextCursor = Buffer.from(payload, "utf8").toString("base64");
-  }
-
-  return { ok: true, data: { items, nextCursor } };
+  return { items, nextCursor };
 }

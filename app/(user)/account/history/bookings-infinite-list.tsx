@@ -1,13 +1,12 @@
-// TODO: 5 tab: pending, upcoming, staying, past, cancelled. with filter? This covers all cases of enum, so it should use the enum itself.
 "use client";
 
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ArrowRightIcon, DoorOpenIcon, UserIcon } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-import { type RecentBookingType, user_getRecentBookingsPaginated } from "@/lib/actions/user-account";
+import { user_getRecentBookings, type RecentBookingType } from "@/lib/actions/user-account";
 import { type BookingStatus } from "@/lib/generated/prisma/enums";
 import { differenceInDays } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,8 +20,6 @@ import {
   SelectValue,
   SelectContent,
 } from "@/components/ui/select";
-
-type BookingTimeRangeOptions = "past" | "current" | "upcoming";
 
 
 function StatusBadge({ status }: { status: BookingStatus }) {
@@ -82,7 +79,7 @@ function BookingCard({ booking }: { booking: RecentBookingType }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <div className="truncate font-semibold leading-5">{hotelName}</div>
-              <span className="ml-1 rounded-md bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground">
+              <span className="ml-1 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 {hotelType}
               </span>
             </div>
@@ -105,29 +102,22 @@ function BookingCard({ booking }: { booking: RecentBookingType }) {
         </div>
       </CardHeader>
 
-      <CardContent className="flex items-center justify-between gap-4 py-3 px-4">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <DoorOpenIcon className="h-4 w-4 text-muted-foreground" />
-            <span>{numRooms} phòng</span>
-            <span className="ml-1 rounded-md bg-muted/20 px-2 py-0.5 text-xs text-muted-foreground">
-              {snapshotRoomTypeName}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <UserIcon className="h-4 w-4 text-muted-foreground" />
-            <span>
-              {numAdults} người lớn{numChildren ? ` • ${numChildren} trẻ em` : ""}
-            </span>
-          </div>
+      <CardFooter className="text-sm gap-x-4">
+        <div className="flex items-center gap-2">
+          <DoorOpenIcon className="size-4 text-muted-foreground" />
+          <span>{numRooms} phòng</span>
+          <span className="rounded-md bg-muted px-2 py-0.5 text-sm text-muted-foreground">
+            {snapshotRoomTypeName}
+          </span>
         </div>
 
-        <div className="hidden sm:flex items-center gap-3">
-          <div className="text-xs text-muted-foreground">Chi tiết</div>
-          <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <UserIcon className="size-4 text-muted-foreground" />
+          <span>
+            {numAdults} người lớn{numChildren ? ` & ${numChildren} trẻ em` : ""}
+          </span>
         </div>
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 }
@@ -166,7 +156,7 @@ export default function BookingsInfiniteScrollList() {
     threshold: 0.1,
   });
 
-  const [timeRange, setTimeRange] = useState<BookingTimeRangeOptions>("upcoming");
+  const [status, setStatus] = useState<BookingStatus>("PENDING_TO_PAY");
 
   const {
     data,
@@ -177,10 +167,10 @@ export default function BookingsInfiniteScrollList() {
     isError,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["user_recent_bookings"],
+    queryKey: ["user_recent_bookings", status],
     queryFn: async ({ pageParam }: { pageParam: string | null }) => {
       // pageParam is the lastCursor string or null
-      return user_getRecentBookingsPaginated(pageParam);
+      return user_getRecentBookings(pageParam, 10, status);
     },
     initialPageParam: null,
     getNextPageParam: (lastPage, _allPages) => lastPage.nextCursor ?? undefined,
@@ -212,26 +202,32 @@ export default function BookingsInfiniteScrollList() {
         <div className="flex items-center justify-between">
           <ToggleGroup
             type="single"
-            value={timeRange}
-            onValueChange={(value) => setTimeRange(value as BookingTimeRangeOptions)}
+            value={status}
+            onValueChange={(value) => setStatus(value as BookingStatus)}
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:px-4! md:flex"
           >
-            <ToggleGroupItem value="upcoming">
+            <ToggleGroupItem value="PENDING_TO_PAY">
+              Chờ thanh toán
+            </ToggleGroupItem>
+            <ToggleGroupItem value="PAID">
               Chưa nhận phòng
             </ToggleGroupItem>
-            <ToggleGroupItem value="current">
+            <ToggleGroupItem value="CHECKED_IN">
               Đang lưu trú
             </ToggleGroupItem>
-            <ToggleGroupItem value="past">
+            <ToggleGroupItem value="CHECKED_OUT">
               Đã trả phòng
+            </ToggleGroupItem>
+            <ToggleGroupItem value="CANCELLED">
+              Đã huỷ
             </ToggleGroupItem>
           </ToggleGroup>
 
           <Select
-            value={timeRange}
+            value={status}
             onValueChange={(value) => {
-              setTimeRange(value as BookingTimeRangeOptions);
+              setStatus(value as BookingStatus);
             }}
           >
             <SelectTrigger
@@ -242,14 +238,20 @@ export default function BookingsInfiniteScrollList() {
               <SelectValue placeholder="Chọn khoảng thời gian" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
-              <SelectItem value="upcoming" className="rounded-lg">
+              <SelectItem value="PENDING_TO_PAY" className="rounded-lg">
+                Chờ thanh toán
+              </SelectItem>
+              <SelectItem value="PAID" className="rounded-lg">
                 Chưa nhận phòng
               </SelectItem>
-              <SelectItem value="current" className="rounded-lg">
+              <SelectItem value="CHECKED_IN" className="rounded-lg">
                 Đang lưu trú
               </SelectItem>
-              <SelectItem value="past" className="rounded-lg">
+              <SelectItem value="CHECKED_OUT" className="rounded-lg">
                 Đã trả phòng
+              </SelectItem>
+              <SelectItem value="CANCELLED" className="rounded-lg">
+                Đã huỷ
               </SelectItem>
             </SelectContent>
           </Select>
@@ -259,7 +261,7 @@ export default function BookingsInfiniteScrollList() {
       <main>
           {bookings.length === 0 && !loading ? (
             <div className="py-12 text-center text-sm text-muted-foreground">
-              Bạn chưa có đơn đặt phòng nào. Hãy khám phá các khách sạn và đặt phòng đầu tiên của bạn!
+              Không có kết quả.
             </div>
           ) : (
             <>

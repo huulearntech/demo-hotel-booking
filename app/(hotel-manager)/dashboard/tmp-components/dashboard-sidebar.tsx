@@ -6,7 +6,7 @@ import {
   LayoutDashboardIcon,
   TicketsIcon,
   DoorOpenIcon as RoomIcon,
-  CircleStarIcon
+  StarIcon
 } from "lucide-react"
 
 import {
@@ -51,7 +51,7 @@ const navMain = [
   {
     title: "Đánh giá",
     url: PATHS.hotelReviews,
-    icon: CircleStarIcon,
+    icon: StarIcon,
   }
 ];
 

@@ -8,7 +8,7 @@ export const schema_RoomType = z.object({
   areaM2:           z.coerce.number(),
   bedType:          z.enum(Object.values(BedType)),
   price:            z.coerce.number(),
-  imageUrls:        z.object({ url: z.url() }).array().transform((arr) => arr.map((item) => item.url)),
+  imageUrls:        z.object({ url: z.url() }).array().nonempty().transform((arr) => arr.map((item) => item.url)),
   description:      z.string().optional(),
   
   roomsName: z.array(z.object({

@@ -337,6 +337,8 @@ type Location = {
 }
 
 // TODO: This has reduced rerender compared to the original. But still rerender a lot. One keystroke causes 3 renders.
+// NOTE: BaseUI will close when the query is empty. We want to show default suggestions in that case
+import { user_getDefaultSearchBarLocations } from "@/lib/actions/search-bar";
 function LocationAutocomplete({
   query,
   setQuery,
@@ -348,24 +350,47 @@ function LocationAutocomplete({
 }) {
   const debouncedQuery = useDebounced(query, 500);
 
+  const swrKey: readonly [string, string | null] =
+    debouncedQuery.trim() !== ""
+      ? ["locations", debouncedQuery.trim()]
+      : ["locations", null];
+
   const { data = [], isLoading, error } = useSWR(
-    debouncedQuery && debouncedQuery.trim() !== "" ? ["locations", debouncedQuery] : null,
-    async ([, q]) => user_getLocationOrHotelByQueryString(q),
+    swrKey,
+    async ([, q]) => {
+      if (q == null) {
+        return await user_getDefaultSearchBarLocations();
+      }
+      return await user_getLocationOrHotelByQueryString(q as string);
+    },
     { dedupingInterval: 10_000 }
   );
 
-  const isTypingOrLoading = (query.trim() !== "" && query !== debouncedQuery) || isLoading;
+  useEffect(() => {
+    // Prefetch default results once and populate SWR cache so clearing the query
+    // doesn't trigger another network fetch for the default set.
+    const prefetchDefault = async () => {
+      try {
+        const defaultData = await user_getDefaultSearchBarLocations();
+        // Populate SWR cache for the default key without revalidating.
+        mutate(["locations", null], defaultData, false);
+      } catch (e) {
+        // ignore prefetch errors
+      }
+    };
+    prefetchDefault();
+  }, []);
 
-  const items = data.filter((it: any) => it && it.id && it.name && it.type);
+  const isTypingOrLoading = (query !== debouncedQuery) || isLoading;
 
   const handleRetry = () => {
-    mutate(["locations", debouncedQuery]);
+    mutate(swrKey);
   };
 
   return (
     <Autocomplete
       modal={false}
-      items={items}
+      items={data}
       filter={null}
       limit={MAX_LOCATION_AUTOCOMPLETE_RESULTS} // use or not?
       itemToStringValue={item => item.name}
@@ -405,13 +430,13 @@ function LocationAutocomplete({
           </div>
         )}
 
-        {!isTypingOrLoading && !error && items.length === 0 && (
+        {!isTypingOrLoading && !error && data.length === 0 && (
           <AutocompleteEmpty>Không tìm thấy địa điểm này.</AutocompleteEmpty>
         )}
 
-        {!error && items.length > 0 && (
+        {!error && data.length > 0 && (
           <AutocompleteList>
-            {items.map((item: { id: string, type: string, name: string }) => (
+            {data.map(item => (
               <AutocompleteItem
                 key={`${item.type}::${item.id}`}
                 value={item}

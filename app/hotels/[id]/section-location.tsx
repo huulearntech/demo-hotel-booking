@@ -3,18 +3,25 @@ import Link from "next/link";
 import { fetchHotel } from "@/lib/actions/hotel";
 import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 import { MapPin, MapPinnedIcon, Info } from "lucide-react";
+import { SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
+import { PATHS } from "@/lib/constants";
 
 
 export default async function LocationSection({
   hotel,
-  poiCategoriesWithPlaces
+  poiCategoriesWithPlaces,
+  searchParams
 }: {
   hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>>;
   poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>;
+  searchParams: SearchSpecWithoutLocation_Params;
 }) {
   if (!hotel) {
     return null;
   }
+  const mapPageUrl = `${PATHS.searchMap}?locationId=${hotel.wardId}&locationType=ward&${
+    new URLSearchParams(searchParams).toString()
+  }`;
 
   // const staticMapApiKey = process.env.GEOAPIFY_MAPS_API_KEY;
   // const staticMapWidth = 928;
@@ -42,7 +49,7 @@ export default async function LocationSection({
             fill
             className="absolute inset-0 object-cover w-full h-full z-0"
           />
-          <Link href="#" className="absolute z-10 px-4 py-3 rounded-full font-semibold bg-primary-foreground text-primary bottom-2 right-2 flex gap-x-1">
+          <Link href={mapPageUrl} className="absolute z-10 px-4 py-3 rounded-full font-semibold bg-primary-foreground text-primary bottom-2 right-2 flex gap-x-1">
             <span>Khám phá nhiều địa điểm hơn</span>
             <MapPinnedIcon className="size-6" />
           </Link>

@@ -8,7 +8,7 @@ import { Loader2Icon } from "lucide-react";
 
 import MyMarker from "./my-marker";
 
-import { type Map_HotelCardProps, type BBox } from "@/lib/actions/search/map";
+import { type Map_HotelCardProps, type BBox, getCentroidOfRegion } from "@/lib/actions/search/map";
 import { haversineMeters } from "@/lib/utils";
 
 
@@ -40,6 +40,26 @@ function MapController({
 
   const filter = useFilterForm();
 
+  
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getCentroidOfRegion(searchBarValues.location)
+        if (!res) {
+          throw new Error(`Failed to fetch initial center:`);
+        } else {
+          const { centroidLat, centroidLng } = res;
+          map.setView([centroidLat, centroidLng], map.getZoom());
+          console.log("Fetched initial center:", centroidLat, centroidLng);
+        }
+      } catch (err) {
+        console.error("Error fetching initial center:", err);
+        // keep default center
+      }
+    })();
+  }, [map, searchBarValues.location]);
+
+
   const scheduleFetch = useCallback(
     (newBbox: BBox, force: boolean = false) => {
       // optional outside hook
@@ -70,8 +90,6 @@ function MapController({
       timerRef.current = window.setTimeout(async () => {
         try {
           const filterValues = filter.getValues();
-          console.log("Fetching hotels for bbox:", newBbox, "with search values:", searchBarValues, "and filter values:", filterValues);
-
           bboxRef.current = newBbox;
           const res = await getHotelsByBoundingBox(newBbox, searchBarValues, filterValues);
           setDataState({ hotels: res, loading: false, error: null });
@@ -154,11 +172,6 @@ export default function MapClient({
   const { location, ...searchBarValuesWithoutLocation } = searchBarValues;
   const stringifiedSearchParams = new URLSearchParams(codec_SearchSpecWithoutLocation_Params.encode(searchBarValuesWithoutLocation)).toString();
 
-  // optional external hook for bbox changes (minimal)
-  const handleBBoxChange = useCallback((b: BBox) => {
-    // can log or use analytics; kept minimal so it doesn't trigger re-renders
-  }, []);
-
   return (
     <div className="w-full flex-1">
       <MapContainer center={initialCenter} zoom={zoom} style={{ height: "100%", width: "100%" }} zoomControl={false}>
@@ -171,7 +184,6 @@ export default function MapClient({
           searchBarValues={searchBarValues}
           debounceMs={debounceMs}
           minMoveMeters={minMoveMeters}
-          onUpdateBBox={handleBBoxChange}
           setDataState={setDataState}
         />
 

@@ -1,109 +1,181 @@
+import { fakerVI as faker } from "@faker-js/faker";
+import { Decimal } from "@prisma/client/runtime/client";
+import fs from "fs";
+import path from "path";
+
 import { BedType, Hotel, HotelType, FacilityType, RoomType } from "@/lib/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
 
-import { fakerVI as faker } from "@faker-js/faker";
-import { Decimal } from "@prisma/client/runtime/client";
-
 import { randomQuarterTime } from "./booking";
+import { seedHotelOwners } from "./user";
 
 // if Hotel model has a field of Unsupported (geolocation), Prisma will not allow to use create
 
-async function seedHotels(data: { wardId: string, ownerId: string }[]) {
-  console.log("Seeding hotels");
-  if (data.length === 0) {
-    console.warn("No data provided for seeding hotels.");
-    return [];
-  }
+async function seedHotels() {
+  console.log("Seeding hotels (batched)");
 
-  const hotels: Prisma.HotelUncheckedCreateInput[] = data.map(({ wardId, ownerId }) => {
-    const checkInTime = randomQuarterTime({ minHour: 14, maxHour: 14 });
-    const checkOutTime = randomQuarterTime({ minHour: 10, maxHour: 12 });
-
-    //-----------------------------------------------------
-
-    return {
-      name: faker.company.name(),
-      ownerId,
-      wardId,
-      // limit coordinates to roughly the Hanoi area
-      longitude: faker.number.float({ min: 105.7, max: 106.05, multipleOf: 0.000001 }),
-      latitude: faker.number.float({ min: 20.85, max: 21.1, multipleOf: 0.000001 }),
-      type: faker.helpers.arrayElement(Object.values(HotelType)),
-      description: faker.lorem.paragraph(),
-      rating: 0,
-      numberOfReviews: 0,
-      checkInTime,
-      checkOutTime,
-      imageUrls: faker.helpers.uniqueArray(() => faker.image.url({ width: 400, height: 300 }), 8),
-      status: "ACTIVE",
-    };
-  }) ;
-
-  return prisma.hotel.createManyAndReturn({
-    data: hotels,
-    skipDuplicates: true,
+  const wardCodes: string[] = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "address-json", "ward-codes-quan-thanh-pho.json"), "utf-8")
+  );
+  const wards = await prisma.ward.findMany({
+    where: { code: { in: wardCodes } },
+    select: { id: true, code: true, centroidLng: true, centroidLat: true },
   });
-}
 
-async function seedRoomTypes(hotels: Hotel[]) {
-  console.log("Seeding room types");
-  if (hotels.length === 0) {
-    console.warn("No hotels provided for seeding room types.");
-    return [];
-  }
-  const roomTypes: Prisma.RoomTypeUncheckedCreateInput[] = [];
-  for (const hotel of hotels) {
-    const typeCount = faker.number.int({ min: 3, max: 6 });
-    const typeNames = faker.helpers.uniqueArray(
-      () => faker.word.noun({ length: { min: 4, max: 10 } }),
-      typeCount
-    );
+  const BATCH_SIZE = 20;
+  const buffer: Prisma.HotelUncheckedCreateInput[] = [];
 
-    typeNames.forEach((type) => {
-      roomTypes.push({
-        hotelId: hotel.id,
-        name: type,
-        description: `A ${type.toLowerCase()} room at ${hotel.name}`,
-        adultCapacity: faker.number.int({ min: 1, max: 4 }),
-        childrenCapacity: faker.number.int({ min: 0, max: 4 }),
-        price: new Decimal(faker.number.int({ min: 100_000, max: 500_000, multipleOf: 1_000 })),
-        areaM2: faker.number.int({ min: 20, max: 100 }),
-        bedType: faker.helpers.arrayElement(Object.values(BedType)),
-        imageUrls: faker.helpers.uniqueArray(() => faker.image.url({ width: 400, height: 300 }), 1),
-      });
-    });
-  }
-  console.log(roomTypes[0]);
-  return prisma.roomType.createManyAndReturn({
-    data: roomTypes,
-    skipDuplicates: true,
-  });
-}
-
-async function seedRooms(roomTypes: RoomType[]) {
-  console.log("Seeding rooms");
-  if (roomTypes.length === 0) {
-    console.warn("No hotels provided for seeding rooms.");
-    return [];
+  async function flushBuffer() {
+    while (buffer.length > 0) {
+      const chunk = buffer.splice(0, Math.min(BATCH_SIZE, buffer.length));
+      try {
+        await prisma.hotel.createMany({
+          data: chunk,
+          skipDuplicates: true,
+        });
+      } catch (error) {
+        console.error("Failed creating hotel batch:", error);
+      }
+    }
   }
 
-  const rooms: Prisma.RoomUncheckedCreateInput[] = [];
+  for (const ward of wards) {
+    const hotelCount = faker.number.int({ min: 5, max: 7 });
+    const owners = await seedHotelOwners(hotelCount);
 
-  roomTypes.forEach((roomType) => {
-    const roomCount = faker.number.int({ min: 3, max: 5 });
-    for (let i = 0; i < roomCount; i++) {
-      rooms.push({
-        typeId: roomType.id,
-        name: `${roomType.name} Room ${String(i + 1).padStart(3, "0")}`,
+    const { centroidLng, centroidLat } = ward;
+    for (const owner of owners) {
+      const checkInTime = randomQuarterTime({ minHour: 14, maxHour: 14 });
+      const checkOutTime = randomQuarterTime({ minHour: 12, maxHour: 12 });
+
+      // coordinates near ward centroid
+      const longitude = centroidLng + faker.number.float({ min: -0.003, max: 0.003, multipleOf: 0.000001 });
+      const latitude = centroidLat + faker.number.float({ min: -0.003, max: 0.003, multipleOf: 0.000001 });
+
+      buffer.push({
+        name: faker.company.name(),
+        ownerId: owner.id,
+        wardId: ward.id,
+        longitude,
+        latitude,
+        type: faker.helpers.arrayElement(Object.values(HotelType)),
+        description: faker.lorem.paragraph(),
+        rating: 0,
+        numberOfReviews: 0,
+        checkInTime,
+        checkOutTime,
+        imageUrls: faker.helpers.uniqueArray(() => faker.image.url({ width: 400, height: 300 }), 8),
+        status: "ACTIVE",
       });
     }
-  });
 
-  return prisma.room.createManyAndReturn({
-    data: rooms,
-    skipDuplicates: true,
-  });
+    // flush if buffer grows large to limit memory/DB pressure
+    if (buffer.length >= BATCH_SIZE) {
+      await flushBuffer();
+    }
+  }
+
+  // flush any remaining hotels
+  if (buffer.length > 0) {
+    await flushBuffer();
+  }
+}
+
+async function seedRoomTypes() {
+  console.log("Seeding room types (paginated by cursor)");
+  const BATCH_SIZE = 20;
+  let lastId: string | undefined = undefined;
+
+  while (true) {
+    const hotels: { id: string; name: string }[] = await prisma.hotel.findMany({
+      take: BATCH_SIZE,
+      ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
+      select: { id: true, name: true },
+      orderBy: { id: "asc" },
+    });
+
+    if (hotels.length === 0) break;
+
+    const roomTypesBatch: Prisma.RoomTypeUncheckedCreateInput[] = [];
+
+    for (const hotel of hotels) {
+      const typeCount = faker.number.int({ min: 3, max: 6 });
+      const typeNames = faker.helpers.uniqueArray(
+        () => faker.word.noun({ length: { min: 4, max: 10 } }),
+        typeCount
+      );
+
+      typeNames.forEach((type) => {
+        roomTypesBatch.push({
+          hotelId: hotel.id,
+          name: type,
+          description: `A ${type.toLowerCase()} room at ${hotel.name}`,
+          adultCapacity: faker.number.int({ min: 1, max: 4 }),
+          childrenCapacity: faker.number.int({ min: 0, max: 4 }),
+          price: new Decimal(faker.number.int({ min: 100_000, max: 500_000, multipleOf: 1_000 })),
+          areaM2: faker.number.int({ min: 20, max: 100 }),
+          bedType: faker.helpers.arrayElement(Object.values(BedType)),
+          imageUrls: faker.helpers.uniqueArray(() => faker.image.url({ width: 400, height: 300 }), 1),
+        });
+      });
+    }
+
+    if (roomTypesBatch.length > 0) {
+      try {
+        await prisma.roomType.createMany({
+          data: roomTypesBatch,
+          skipDuplicates: true,
+        });
+      } catch (error) {
+        console.error("Failed creating room types for batch:", error);
+      }
+    }
+
+    // advance cursor to last hotel's id in this batch
+    lastId = hotels[hotels.length - 1].id;
+  }
+}
+async function seedRooms() {
+  console.log("Seeding rooms (paginated by cursor)");
+  const BATCH_SIZE = 20;
+  let lastId: string | undefined = undefined;
+
+  while (true) {
+    const roomTypes: { id: string, name: string }[] = await prisma.roomType.findMany({
+      take: BATCH_SIZE,
+      ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
+      select: { id: true, name: true },
+      orderBy: { id: "asc" },
+    });
+
+    if (roomTypes.length === 0) break;
+
+    const roomsBatch: Prisma.RoomUncheckedCreateInput[] = [];
+
+    for (const roomType of roomTypes) {
+      const roomCount = faker.number.int({ min: 3, max: 5 });
+      for (let i = 0; i < roomCount; i++) {
+        roomsBatch.push({
+          typeId: roomType.id,
+          name: `${roomType.name} Room ${String(i + 1).padStart(3, "0")}`,
+        });
+      }
+    }
+
+    if (roomsBatch.length > 0) {
+      try {
+        await prisma.room.createMany({
+          data: roomsBatch,
+          skipDuplicates: true,
+        });
+      } catch (error) {
+        console.error("Failed creating rooms for batch:", error);
+      }
+    }
+
+    lastId = roomTypes[roomTypes.length - 1].id;
+  }
 }
 
 // TODO: vietnamese translation.
@@ -151,10 +223,6 @@ const inRoomFacilities: { name: string, type: FacilityType, iconUrl?: string }[]
     type: "IN_ROOM",
   },
   {
-    name: "Electric Kettle",
-    type: "IN_ROOM",
-  },
-  {
     name: "Coffee / Tea Maker",
     type: "IN_ROOM",
   },
@@ -172,14 +240,6 @@ const inRoomFacilities: { name: string, type: FacilityType, iconUrl?: string }[]
   },
   {
     name: "Work Desk",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Sofa / Seating Area",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Telephone",
     type: "IN_ROOM",
   },
   {
@@ -224,95 +284,118 @@ const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl?: string 
     iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2017/06/07/1496833756238-56e24fb64a964d38b8f393bf093a77a9.png"
   },
   { name: "Laundry Service", type: "HOTEL_SERVICES" },
-  { name: "Room Service", type: "HOTEL_SERVICES" },
-  { name: "Concierge", type: "HOTEL_SERVICES" },
   { name: "Fitness Center", type: "PUBLIC" },
   { name: "Spa", type: "PUBLIC" },
-  { name: "Business Center", type: "HOTEL_SERVICES" },
   { name: "Conference / Meeting Rooms", type: "PUBLIC" },
   { name: "Airport Shuttle", type: "HOTEL_SERVICES" },
-  { name: "24-hour Security", type: "HOTEL_SERVICES" },
   { name: "Dry Cleaning", type: "HOTEL_SERVICES" },
 ];
 
 async function seedFacilities() {
   console.log("Seeding facilities");
-  const result = await prisma.facility.createManyAndReturn({
+  await prisma.facility.createMany({
     data: [...inRoomFacilities, ...nonInRoomFacilities],
     skipDuplicates: true,
   });
-
-  return result;
 }
 
-async function seedConnectionHotelsOnFacilities(hotels: Hotel[]) {
-  console.log("Seeding hotel-facility connections");
-  if (hotels.length === 0) {
-    console.warn("No hotels provided for seeding hotel-facility connections.");
-    return;
-  }
+async function seedConnectionHotelsOnFacilities() {
+  console.log("Seeding hotel-facility connections (paginated by cursor)");
+  const BATCH_SIZE = 20;
+  const allFacilities = await prisma.facility.findMany({ select: { id: true, name: true, type: true } });
+  const nonInRoomFacilities = allFacilities.filter(f => f.type !== "IN_ROOM");
 
-  await Promise.all(
-    hotels.map(async (hotel) => {
-      // pick at least 3 distinct facilities for each hotel
-      const hotelFacilities = faker.helpers.arrayElements(
-        nonInRoomFacilities,
-        faker.number.int({ min: 5, max: nonInRoomFacilities.length })
-      );
+  let lastId: string | undefined = undefined;
 
-      try {
-        await prisma.hotel.update({
-          where: { id: hotel.id },
-          data: {
-            facilities: {
-              // use connectOrCreate to be idempotent whether facilities already exist or not
-              connectOrCreate: hotelFacilities.map((f) => ({
-                where: { name: f.name },
-                create: f,
-              })),
+  while (true) {
+    const hotels: { id: string }[] = await prisma.hotel.findMany({
+      take: BATCH_SIZE,
+      ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
+      select: { id: true },
+      orderBy: { id: "asc" },
+    });
+
+    if (hotels.length === 0) {
+      if (!lastId) console.warn("No hotels found for seeding hotel-facility connections.");
+      break;
+    }
+    const endId = hotels[hotels.length - 1].id;
+
+    // attach at least 5 distinct non in-room facilities to each hotel using per-hotel updates
+    await Promise.all(
+      hotels.map(async (hotel) => {
+        const hotelFacilities = faker.helpers.arrayElements(
+          nonInRoomFacilities,
+          faker.number.int({ min: 5, max: nonInRoomFacilities.length })
+        );
+
+        try {
+          await prisma.hotel.update({
+            where: { id: hotel.id },
+            data: {
+              facilities: {
+                connectOrCreate: hotelFacilities.map((f) => ({
+                  where: { name: f.name },
+                  create: f,
+                })),
+              },
             },
-          },
-        });
-      } catch (error) {
-        console.error(`Failed to attach facilities to hotel ${hotel.id}:`, error);
-      }
-    })
-  );
+          });
+        } catch (error) {
+          console.error(`Failed to attach facilities to hotel ${hotel.id}:`, error);
+        }
+      })
+    );
+
+    lastId = endId;
+  }
 }
 
-async function seedConnectionRoomTypesOnFacilities(roomTypes: RoomType[]) {
-  console.log("Seeding roomType-facility connections");
-  if (roomTypes.length === 0) {
-    console.warn("No roomTypes provided for seeding roomType-facility connections.");
-    return;
-  }
+async function seedConnectionRoomTypesOnFacilities() {
+  console.log("Seeding roomType-facility connections (paginated by cursor)");
+  const BATCH_SIZE = 20;
+  let lastId: string | undefined = undefined;
 
-  await Promise.all(
-    roomTypes.map(async (roomType) => {
-      // pick at least 2 distinct in-room facilities for each room
-      const roomFacilities = faker.helpers.arrayElements(
-        inRoomFacilities,
-        faker.number.int({ min: 2, max: inRoomFacilities.length })
-      );
+  while (true) {
+    const roomTypes: { id: string; name: string }[] = await prisma.roomType.findMany({
+      take: BATCH_SIZE,
+      ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
+      select: { id: true, name: true },
+      orderBy: { id: "asc" },
+    });
 
-      try {
-        await prisma.roomType.update({
-          where: { id: roomType.id },
-          data: {
-            facilities: {
-              // use connectOrCreate to be idempotent whether facilities already exist or not
-              connectOrCreate: roomFacilities.map((f) => ({
-                where: { name: f.name },
-                create: f,
-              })),
+    if (roomTypes.length === 0) {
+      if (!lastId) console.warn("No room types found for seeding roomType-facility connections.");
+      break;
+    }
+
+    await Promise.all(
+      roomTypes.map(async (roomType) => {
+        const roomFacilities = faker.helpers.arrayElements(
+          inRoomFacilities,
+          faker.number.int({ min: 3, max: inRoomFacilities.length })
+        );
+
+        try {
+          await prisma.roomType.update({
+            where: { id: roomType.id },
+            data: {
+              facilities: {
+                connectOrCreate: roomFacilities.map((f) => ({
+                  where: { name: f.name },
+                  create: f,
+                })),
+              },
             },
-          },
-        });
-      } catch (error) {
-        console.error(`Failed to attach facilities to room ${roomType.id}:`, error);
-      }
-    })
-  );
+          });
+        } catch (error) {
+          console.error(`Failed to attach facilities to roomType ${roomType.id}:`, error);
+        }
+      })
+    );
+
+    lastId = roomTypes[roomTypes.length - 1].id;
+  }
 }
 
 export {

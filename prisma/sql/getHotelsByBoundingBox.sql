@@ -12,6 +12,8 @@
 -- @param {Decimal}  $10:minPrice (filter)
 -- @param {Decimal}  $11:maxPrice (filter)
 -- @param {Int}      $14:numChildren (NOTE: temporarily put this at the end.)
+-- @param {Int}      $15:minRating
+-- @param {Int}      $16:maxRating
 
 -- TODO: query should change from joining rooms into inventory.
 -- TODO: This counting booked room logic is different from the one in getHotelBySearchBarForm.
@@ -81,6 +83,7 @@ WHERE
         AND fac.name = ANY($12::text[])
     )
   )
+  AND h.rating BETWEEN $15 AND $16
 ORDER BY available.min_price ASC NULLS LAST, h.id ASC
 LIMIT $5;
 

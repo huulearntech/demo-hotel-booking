@@ -13,6 +13,7 @@ import { defaultFilterValues, FILTER_CATEGORIES } from "@/lib/zod_schemas/filter
 
 import { FILTER_MAX_PRICE, FILTER_MIN_PRICE, FILTER_PRICE_STEP } from '@/lib/constants';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
 
 export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
   const { control } = useFilterForm();
@@ -20,12 +21,12 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
   return (
     <div
       data-issheet={isSheet}
-      className="flex flex-col space-y-3 w-full max-w-sm overflow-y-auto data-[issheet=true]:px-3"
+      className="flex flex-col space-y-3 w-full max-w-sm data-[issheet=true]:px-3"
     >
       <Controller
         control={control}
         name="priceRange"
-        defaultValue={[FILTER_MIN_PRICE, FILTER_MAX_PRICE]}
+        defaultValue={defaultFilterValues.priceRange}
         render={({ field: { value: priceRange, onChange: setPriceRange } }) => {
           return (
             <div className="w-full bg-white border border-gray-300 rounded-lg p-4 flex flex-col space-y-3">
@@ -98,8 +99,56 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
       <Accordion
         type="multiple"
         className="flex-col space-y-3"
-        defaultValue={Object.keys(FILTER_CATEGORIES)}
+        defaultValue={[...Object.keys(FILTER_CATEGORIES), "ratingRange"]}
       >
+        <AccordionItem
+          value={"ratingRange"}
+          className="border rounded-md last:border"
+        >
+          <AccordionTrigger className="flex px-4 py-3 justify-between items-center text-sm font-bold">
+            Đánh giá
+          </AccordionTrigger>
+          <AccordionContent className="flex flex-col px-4 gap-y-2">
+            <Controller
+              control={control}
+              name="ratingRange"
+              defaultValue={defaultFilterValues.ratingRange}
+              render={({ field: { value: ratingRange, onChange: setRatingRange } }) => {
+                const min = defaultFilterValues.ratingRange[0];
+                const max = defaultFilterValues.ratingRange[1];
+                const ticks = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+
+          return (
+            <div className="w-full flex flex-col gap-y-2">
+              <div className="text-sm text-muted-foreground">
+                từ {ratingRange[0]} đến {ratingRange[1]} sao
+              </div>
+
+              <Slider
+                min={min}
+                max={max}
+                step={1}
+                value={ratingRange}
+                onValueChange={setRatingRange}
+              />
+
+              <div className="flex items-center justify-between px-1 text-sm select-none">
+                {ticks.map((t) => {
+                  const active = t >= ratingRange[0] && t <= ratingRange[1];
+                  return (
+                    <div key={t} className={cn("mt-1", active ? "text-primary" : "text-muted-foreground")}>
+                      {t}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
         {Object.entries(FILTER_CATEGORIES).map(([category_key, category]) => {
           return (
             <AccordionItem
@@ -120,20 +169,20 @@ export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
                   render={({ field: { value, onChange } }: { field: { value: string[]; onChange: (v: string[]) => void } }) => (
                     <div className="flex flex-col gap-2">
                       {category.options.map((option) => (
-                        <div key={option} className="flex items-center">
+                        <div key={option.value} className="flex items-center">
                           <Checkbox
-                            id={`${category}-${option}`}
-                            checked={value.includes(option)}
+                            id={`${category_key}-${option.value}`}
+                            checked={value.includes(option.value)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                onChange([...value, option]);
+                                onChange([...value, option.value]);
                               } else {
-                                onChange(value.filter((v: string) => v !== option));
+                                onChange(value.filter((v: string) => v !== option.value));
                               }
                             }}
                           />
-                          <Label htmlFor={`${category}-${option}`} className="ml-2 text-sm cursor-pointer">
-                            {option} {/** TODO: separate label from value */}
+                          <Label htmlFor={`${category_key}-${option.value}`} className="ml-2 text-sm cursor-pointer">
+                            {option.label}
                           </Label>
                         </div>
                       ))}
@@ -160,7 +209,8 @@ export function FilterForm__Reset_and_Apply_Buttons() {
     formValues.sortBy === defaultFilterValues.sortBy &&
     formValues.amenities.length === 0 &&
     formValues.propertyTypes.length === 0 &&
-    formValues.ratings.length === 0
+    formValues.ratingRange[0] === defaultFilterValues.ratingRange[0] &&
+    formValues.ratingRange[1] === defaultFilterValues.ratingRange[1]
   )
   
   return (
@@ -180,7 +230,6 @@ export function FilterForm__Reset_and_Apply_Buttons() {
         onClick={() => {
           const values = getValues();
           reset(values);
-          // FIXME: This works sometime, not work sometime. Have no idea.
           queryClient.resetQueries({ queryKey: ["hotels"] });
         }}
       >

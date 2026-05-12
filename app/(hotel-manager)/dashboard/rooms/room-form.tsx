@@ -21,7 +21,6 @@ import {
   CardTitle
 } from "@/components/ui/card";
 
-// FIXME: Fragmented definitions.
 import { schema_Room, type RoomFormInput, RoomFormOutput } from "@/lib/zod_schemas/create-room";
 
 
@@ -39,7 +38,7 @@ export default function RoomForm({ onSubmit }: { onSubmit: (data: RoomFormOutput
   // fuck javashit.
   async function onSubmitLocal(data: RoomFormOutput) {
     startTransition(async () => {
-      const res = await onSubmit(data); // await network
+      const res = await onSubmit(data);
       // if (res instanceof Error) {
     });
   }

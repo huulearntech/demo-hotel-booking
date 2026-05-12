@@ -98,11 +98,6 @@ export default function SignInForm () {
               data-slot="separator"
               className="shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px absolute inset-0 top-1/2">
             </div>
-            <span
-              className="relative mx-auto block w-fit bg-background px-2 text-muted-foreground"
-              data-slot="field-separator-content">
-              Hoặc đăng nhập với
-            </span>
           </div> 
 
           <CardFooter className="p-0 justify-center text-muted-foreground text-sm flex flex-col gap-2">

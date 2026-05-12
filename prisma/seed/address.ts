@@ -1,73 +1,101 @@
-import { fakerVI as faker } from "@faker-js/faker";
-
+import fs from "fs";
+import path from "path";
 import prisma from "@/lib/prisma";
-import { Country, District, Province } from "@/lib/generated/prisma/client";
 
-async function seedCountryVietnam() {
+
+type AddressRecord = {
+  code: string;
+  name: string;
+  centroid: [number, number];
+};
+
+type ProvinceRecords = AddressRecord[];
+type DistrictRecords = Record<string, AddressRecord[]>;
+type WardRecords = Record<string, AddressRecord[]>;
+
+function loadAddressRecords<T>(fileName: string): T {
+  const filePath = path.join(__dirname, "address-json", fileName);
+  const raw = fs.readFileSync(filePath, "utf-8");
+  return JSON.parse(raw) as T;
+}
+
+async function seedAddress() {
   console.log("Seeding country: Vietnam");
-  return await prisma.country.upsert({
+  const { id: countryId } = await prisma.country.upsert({
     where: { name: "Việt Nam" },
     update: {},
     create: { name: "Việt Nam" },
+    select: { id: true },
   });
-}
-
-async function seedProvinces(country: Country, count = 5) {
-  console.log("Seeding provinces");
-  const provinces = Array.from({ length: count }, () => ({
-    countryId: country.id,
-    name: faker.location.city(),
-  }));
-  return await prisma.province.createManyAndReturn({
-    data: provinces,
-    skipDuplicates: true, // In case you run the seeding multiple times
-  });
-}
-
-async function seedDistricts(provinces: Province[], countPerProvince = 5) {
-  console.log("Seeding districts");
-  if (provinces.length === 0) {
-    console.warn("No provinces found. Skipping district seeding.");
-    return [];
-  }
-
-  const districtNames = faker.helpers.uniqueArray(faker.location.county, provinces.length * countPerProvince);
-
-  const districts = provinces.flatMap((province) =>
-    Array.from({ length: countPerProvince }, () => ({
-      provinceId: province.id,
-      name: districtNames.pop() || faker.location.county(),
-    }))
-  )
-
-  return await prisma.district.createManyAndReturn({
-    data: districts,
-    skipDuplicates: true, // In case you run the seeding multiple times
-  });
-}
-
-async function seedWards(districts: District[], countPerDistrict = 5) {
-  console.log("Seeding wards");
-  if (districts.length === 0) {
-    console.warn("No districts found. Skipping ward seeding.");
-    return [];
-  }
-
-  const wardNames = faker.helpers.uniqueArray(faker.location.street, districts.length * countPerDistrict);
 
 
-  const wards = districts.flatMap((district) =>
-    Array.from({ length: countPerDistrict }, () => ({
-      districtId: district.id,
-      name: wardNames.pop() || faker.location.street(),
-    }))
-  );
-
-  return await prisma.ward.createManyAndReturn({
-    data: wards,
+  console.log("Seeding provinces from JSON");
+  const provinces = loadAddressRecords<ProvinceRecords>("provinces.json");
+  await prisma.province.createMany({
+    data: provinces.map((province) => ({
+      countryId,
+      name: province.name,
+      code: province.code,
+      centroidLng: province.centroid[0],
+      centroidLat: province.centroid[1],
+    })),
     skipDuplicates: true,
   });
+
+
+  console.log("Seeding districts from JSON");
+  const districtsByProvince = loadAddressRecords<DistrictRecords>("districts.json");
+  for (const provinceCode in districtsByProvince) {
+    const province = await prisma.province.findUnique({
+      where: {
+        code_countryId: {
+          code: provinceCode,
+          countryId,
+        }
+      }
+    });
+    if (!province) {
+      console.warn(`Province with code ${provinceCode} not found. Skipping its districts.`);
+      continue;
+    }
+
+    const districts = districtsByProvince[provinceCode];
+    await prisma.district.createMany({
+      data: districts.map((district) => ({
+        provinceId: province.id,
+        name: district.name,
+        code: district.code,
+        centroidLng: district.centroid[0],
+        centroidLat: district.centroid[1],
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+
+  console.log("Seeding wards from JSON");
+  const wardsByDistrict = loadAddressRecords<WardRecords>("wards.json");
+  for (const districtCode in wardsByDistrict) {
+    const district = await prisma.district.findFirst({
+      where: { code: districtCode },
+    });
+    if (!district) {
+      console.warn(`District with code ${districtCode} not found. Skipping its wards.`);
+      continue;
+    }
+
+    const wards = wardsByDistrict[districtCode];
+    await prisma.ward.createMany({
+      data: wards.map((ward) => ({
+        districtId: district.id,
+        name: ward.name,
+        code: ward.code,
+        centroidLng: ward.centroid[0],
+        centroidLat: ward.centroid[1],
+      })),
+      skipDuplicates: true,
+    });
+  }
 }
 
-
-export { seedCountryVietnam, seedProvinces, seedDistricts, seedWards };
+export { seedAddress };

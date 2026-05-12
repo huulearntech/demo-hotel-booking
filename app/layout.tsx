@@ -52,7 +52,7 @@ export default function RootLayout({
             </TanstackQueryProvider>
           </FavoriteToggleProvider>
         </SessionProvider>
-        <Toaster />
+        <Toaster position="top-right" />
       </body>
     </html>
   );

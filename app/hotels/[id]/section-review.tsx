@@ -10,8 +10,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import ReviewCard from "./review-card";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 
-const pageSize = 5; // TODO: avoid hardcoding this.
 
 export default function ReviewSection({
   hotelId,
@@ -36,7 +36,13 @@ export default function ReviewSection({
 
   const { data, isFetching } = useQuery({
     queryKey: ["hotelReviews", hotelId, pageParam],
-    queryFn: () => user_getReviewsOfHotel(hotelId, pageSize, pageParam.queryPrevCursor, pageParam.queryNextCursor, pageParam.directionIsNext),
+    queryFn: () => user_getReviewsOfHotel(
+      hotelId,
+      DEFAULT_PAGE_SIZE,
+      pageParam.queryPrevCursor,
+      pageParam.queryNextCursor,
+      pageParam.directionIsNext
+    ),
     placeholderData: keepPreviousData,
   });
 
@@ -78,52 +84,62 @@ export default function ReviewSection({
           </div>
         </div>
 
-        <ul className="flex flex-col gap-y-3">
-          {reviews.map((r) => (
-            <li key={r.id}>
-              <ReviewCard review={r} />
-            </li>
-          ))}
-        </ul>
+        { numberOfReviews > 0
+          ? <>
+            <ul className="flex flex-col gap-y-3">
+              {reviews.map((r) => (
+                <li key={r.id}>
+                  <ReviewCard review={r} />
+                </li>
+              ))}
+            </ul>
 
-        <div className="flex items-center justify-end gap-x-4 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hasPreviousPage || isFetching}
-            onClick={() => {
-              if (data?.prevCursor) {
-                setPageParam({
-                  queryPrevCursor: data.prevCursor,
-                  queryNextCursor: data.nextCursor,
-                  directionIsNext: false
-                });
-              }
-            }}
-            aria-label="Previous page"
-          >
-            <ArrowLeft className="mr-2" />
-            Trang trước
-          </Button>
+            <div className="flex items-center justify-end gap-x-4 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasPreviousPage || isFetching}
+                onClick={() => {
+                  if (data?.prevCursor) {
+                    setPageParam({
+                      queryPrevCursor: data.prevCursor,
+                      queryNextCursor: data.nextCursor,
+                      directionIsNext: false
+                    });
+                  }
+                }}
+                aria-label="Previous page"
+              >
+                <ArrowLeft className="mr-2" />
+                Trang trước
+              </Button>
 
-          <Button
-            size="sm"
-            disabled={!hasNextPage || isFetching}
-            onClick={() => {
-              if (data?.nextCursor) {
-                setPageParam({
-                  queryPrevCursor: data.prevCursor,
-                  queryNextCursor: data.nextCursor,
-                  directionIsNext: true
-                });
-              }
-            }}
-            aria-label="Next page"
-          >
-            Trang sau
-            <ArrowRight className="ml-2" />
-          </Button>
-        </div>
+              <Button
+                size="sm"
+                disabled={!hasNextPage || isFetching}
+                onClick={() => {
+                  if (data?.nextCursor) {
+                    setPageParam({
+                      queryPrevCursor: data.prevCursor,
+                      queryNextCursor: data.nextCursor,
+                      directionIsNext: true
+                    });
+                  }
+                }}
+                aria-label="Next page"
+              >
+                Trang sau
+                <ArrowRight className="ml-2" />
+              </Button>
+            </div>
+          </>
+          : (
+            <div className="text-center text-muted-foreground mt-10">
+              <p>Chưa có đánh giá nào.</p>
+              <p className="text-sm">Hãy là người đầu tiên đánh giá trải nghiệm của bạn tại {hotelName}!</p>
+            </div>
+           )
+        }
       </div>
     </section>
   );

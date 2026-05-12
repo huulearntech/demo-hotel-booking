@@ -1,203 +1,120 @@
 "use client";
 
-import { useTransition } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { z } from "zod";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { HotelType } from "@/lib/generated/prisma/enums";
-import { FormField } from "@/components/ui/form";
-import LocationSelect from "./location-select";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
-const formSchema = z.object({
-  name:         z.string().trim().min(1, "Tên cơ sở lưu trú là bắt buộc."),
-  wardId:       z.string().trim().min(1, "Địa chỉ là bắt buộc."),
-  longitude:    z.string().trim().min(1, "bla").pipe(z.coerce.number()).refine((val) => val >= -180 && val <= 180),
-  latitude:     z.string().trim().min(1, "bla").pipe(z.coerce.number()).refine((val) => val >= -90 && val <= 90),
-  type:         z.enum(Object.values(HotelType)),
-  description:  z.string().optional(),
-  checkInTime:  z.iso.time({ precision: -1, error: "Check-in time must be a valid time." }),
-  checkOutTime: z.iso.time({ precision: -1, error: "Check-out time must be a valid time." }),
-  imageUrls:    z.object({ url: z.url() }).array().transform((arr) => arr.map((item) => item.url)),
-});
+import { PATHS } from "@/lib/constants";
+import { schemaSignUp, SignUpData, defaultSignUpValues } from "@/lib/zod_schemas/auth";
+import { signUpUser } from "@/lib/actions/auth";
 
-type FormSchemaInput  = z.input<typeof formSchema>;
-type FormSchemaOutput = z.output<typeof formSchema>;
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import PasswordInput from "@/components/password-input";
+import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Loader2Icon } from "lucide-react";
+import { toast } from "sonner";
 
-export default function HotelSignUpForm({
-  defaultValues,
-  onSubmit = (data) => {
-    console.log("Submitted data:", data);
-  },
-}: {
-  defaultValues?: FormSchemaInput;
-  onSubmit?: (data: FormSchemaOutput) => Promise<void> | void;
-}) {
+
+export default function HotelSignUpForm() {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<FormSchemaInput, unknown, FormSchemaOutput>({
-    resolver: zodResolver(formSchema),
-    defaultValues: defaultValues ?? {
-      name: "",
-      wardId: "",
-      longitude: "",
-      latitude: "",
-      type: "HOTEL",
-      checkInTime: "14:00",
-      checkOutTime: "12:00",
-      imageUrls: [],
-    },
-    mode: "onSubmit",
+  const form = useForm<SignUpData>({
+    resolver: zodResolver(schemaSignUp),
+    defaultValues: defaultSignUpValues,
   });
 
-  async function handleSubmit(values: FormSchemaOutput) {
+  const onSubmit = (signupFormValues: SignUpData) => {
     startTransition(async () => {
-      await onSubmit(values);
+      const response = await signUpUser(signupFormValues, true);
+      if (response.success) {
+        const verificationId = response.data.id;
+        console.log("success")
+        router.push(PATHS.otp + `/${verificationId}`);
+      } else {
+        // TODO: error handling.
+        toast.error("Đăng ký thất bại. Vui lòng kiểm tra lại thông tin đã nhập.");
+        console.log("failed", response.errors);
+        const { fieldErrors, formErrors } = response.errors;
+        Object.entries(fieldErrors).forEach(([fieldName, errorMessages]) => {
+          if (errorMessages && errorMessages.length > 0) {
+            form.setError(fieldName as keyof SignUpData, { message: errorMessages[0] });
+          }
+        });
+        if (formErrors && formErrors.length > 0) {
+          form.setError("root", { message: formErrors[0] });
+        }
+      }
     });
-  }
+  };
 
   return (
-    <form
-      onSubmit={form.handleSubmit(handleSubmit)}
-      className="space-y-6"
-      noValidate
-    >
-      {form.formState.errors.root && (
-        <div className="text-sm text-destructive">
-          {form.formState.errors.root.message}
-        </div>
-      )}
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-y-7"
+      >
+        <CardHeader className="p-0 text-center">
+          <CardTitle>Đăng ký làm đối tác lưu trú với chúng tôi</CardTitle>
+          <CardDescription> Điền vào mẫu dưới đây để bắt đầu quá trình đăng ký và trở thành một phần của mạng lưới lưu trú của chúng tôi. </CardDescription>
+        </CardHeader>
 
-      <div className="grid gap-2">
-        <Label>Tên cơ sở lưu trú</Label>
-        <Input
-          {...form.register("name")}
-          className="mt-1"
-        />
-        {form.formState.errors.name && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.name.message}
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-2">
-        <Label>Loại hình lưu trú</Label>
-        <Controller
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <Select
-              value={field.value}
-              onValueChange={(val) => field.onChange(val as FormSchemaOutput["type"])}
-            >
-              <SelectTrigger className="mt-1 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="HOTEL">Hotel</SelectItem>
-                <SelectItem value="MOTEL">Motel</SelectItem>
-                <SelectItem value="RESORT">Resort</SelectItem>
-                <SelectItem value="APARTMENT">Apartment</SelectItem>
-                <SelectItem value="HOSTEL">Hostel</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label>Địa chỉ</Label>
         <FormField
           control={form.control}
-          name="wardId"
-          render={({ field: { value, onChange, ...props } }) => (
-            <LocationSelect wardId={value} onWardIdChange={(wardId) => onChange(wardId)} {...props} />
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input {...field} disabled={isPending} autoFocus/>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
-        {form.formState.errors.wardId && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.wardId.message}
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-2">
-        <div className="flex flex-col md:flex-row gap-x-4 gap-y-6 md:gap-y-0">
-          <div className="grid gap-2">
-            <Label>Kinh độ</Label>
-            <Input
-              type="number"
-              step="any"
-              {...form.register("longitude")}
-              className="mt-1"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label>Vĩ độ</Label>
-            <Input
-              type="number"
-              step="any"
-              {...form.register("latitude")}
-              className="mt-1"
-            />
-          </div>
-        </div>
-        {(form.formState.errors.latitude ||form.formState.errors.longitude)  && (
-          <p className="text-sm text-destructive"> Toạ độ không hợp lệ. </p>
-        )}
-      </div>
-
-      <div className="grid gap-2">
-        <Label>Mô tả (không bắt buộc)</Label>
-        <Textarea {...form.register("description")} className="mt-1" rows={4} />
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="grid gap-2">
-          <Label>Thời gian nhận phòng</Label>
-          <Input
-            type="time"
-            {...form.register("checkInTime")}
-            className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-          />
-          {form.formState.errors.checkInTime && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.checkInTime.message}
-            </p>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Họ và tên</FormLabel>
+              <FormControl>
+                <Input {...field} disabled={isPending}/>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-        <div className="grid gap-2">
-          <Label>Thời gian trả phòng</Label>
-          <Input
-            type="time"
-            {...form.register("checkOutTime")}
-            className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-          />
-          {form.formState.errors.checkOutTime && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.checkOutTime?.message}
-            </p>
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mật khẩu</FormLabel>
+              <FormControl>
+                <PasswordInput {...field} disabled={isPending}/>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-      </div>
-
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Submitting..." : "Create hotel"}
-      </Button>
-    </form>
+        />
+        <Button type="submit" disabled={isPending}>
+          {isPending ? (
+            <div className="flex items-center gap-2">
+              Đang đăng ký...
+              <Loader2Icon className="animate-spin" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              Đăng ký
+              <ArrowRight />
+            </div>
+          )}
+        </Button>
+      </form>
+    </Form>
   );
-}
+};

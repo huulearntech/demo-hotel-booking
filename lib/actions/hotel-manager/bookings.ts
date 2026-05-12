@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hotelowner_getBookings as core_hotelowner_getBookings } from "@/lib/generated/prisma/sql";
 
-// TODO: filter, pagination, date range: upcoming, ongoing, past, custom range, etc.
+// TODO: filter, pagination: currently only go forward, not be able to go backward.
 export async function hotelowner_getBookings(
   timeRange: "past" | "current" | "upcoming" = "upcoming",
   pageSize = 20,

@@ -4,16 +4,10 @@ import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import HotelCard from '@/components/hotel-card';
 import { useInView } from 'react-intersection-observer';
-import { user_fetchRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
+import { user_getRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
 
 export default function RecentlyViewedList() {
   const { ref: sentinelRef, inView } = useInView({ rootMargin: '200px' });
-
-  const fetchRecentlyViewed = async ({ pageParam }: { pageParam?: string | null }) => {
-    const res = await user_fetchRecentlyViewedHotels({ limit: 12, cursor: pageParam ?? undefined });
-    if (!res.ok) throw new Error(res.error || 'Failed to fetch');
-    return res.data; // { items, nextCursor }
-  };
 
   const {
     data,
@@ -24,7 +18,9 @@ export default function RecentlyViewedList() {
     error,
   } = useInfiniteQuery({
     queryKey: ['recentlyViewed'],
-    queryFn: fetchRecentlyViewed,
+    queryFn: async ({ pageParam }: { pageParam: { viewedAt: Date; id: string } | null }) => {
+      return user_getRecentlyViewedHotels(12, pageParam);
+    },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     refetchOnWindowFocus: false,
@@ -72,7 +68,7 @@ export default function RecentlyViewedList() {
 
       <div className="mt-6 flex items-center justify-center">
         {isFetchingNextPage && <span className="text-sm text-muted-foreground">Đang tải...</span>}
-        {!hasNextPage && <span className="text-sm text-muted-foreground">Không còn kết quả.</span>}
+        {!hasNextPage && <span className="text-sm text-muted-foreground">Đã tải hết kết quả.</span>}
       </div>
     </>
   );

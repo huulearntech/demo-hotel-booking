@@ -14,8 +14,12 @@ export const FILTER_MIN_PRICE = 100_000;
 export const FILTER_MAX_PRICE = 20_000_000;
 export const FILTER_PRICE_STEP = 100_000;
 
-export const MAX_REVIEW_POINTS = 5;
+export const MAX_RATING = 5;
 export const MAX_LOCATION_AUTOCOMPLETE_RESULTS = 10;
+
+export const MAX_OTP_ATTEMPTS = 5;
+
+export const DEFAULT_PAGE_SIZE = 20;
 
 export const CACHE_TAGS = {
   userInfo: "user_info",
@@ -41,6 +45,7 @@ export const PATHS = {
   hotelStatistics: '/dashboard/analytics',
   hotelBookings: '/dashboard/bookings',
   hotelReviews: '/dashboard/reviews',
+  hotelRegisterInformation: '/hotel-register-information',
 
   signUpHotel: '/sign-up-hotel',
 

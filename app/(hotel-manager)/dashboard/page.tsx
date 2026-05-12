@@ -21,7 +21,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="flex flex-col gap-y-4">
-        <h2 className="font-semibold"> Trạng thái các phòng </h2>
+        <h2 className="font-semibold"> Trạng thái các loại phòng </h2>
         <RoomTypesOccupancyPctBoard />
       </section>
     </main>

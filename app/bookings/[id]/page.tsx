@@ -4,7 +4,7 @@ import { differenceInDays } from "date-fns";
 import { auth } from "@/auth";
 
 import prisma from "@/lib/prisma";
-import { MAX_REVIEW_POINTS } from "@/lib/constants";
+import { MAX_RATING } from "@/lib/constants";
 
 import InformationForm from "./information-form";
 import { InformationFormProvider } from "./information-form-context";
@@ -129,12 +129,12 @@ export default async function BookingPage({
 
   return (
     <InformationFormProvider defaultValues={{ name: name || "", email: email || "" }} >
-      <header className="w-full h-20 z-60 bg-white shadow-md sticky top-0">
-        <div className="flex h-full justify-between items-center content">
+      <header className="w-full z-60 bg-white shadow-md sticky top-0">
+        <div className="flex flex-col gap-y-4 sm:flex-row py-4 h-full justify-between items-center content">
           <div className="flex items-center">
             <Image src={tvlk_logo_text_dark} alt="" />
             <div className="h-10 w-px bg-gray-200 mx-3"></div>
-            <div className="flex flex-col gap-y-1 p-4">
+            <div className="flex flex-col gap-y-1 px-4">
               <div className="flex items-center gap-x-2">
                 <span className="text-base text-black font-semibold"> {roomType.hotel.name} </span>
                 <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-primary lowercase first-letter:capitalize">
@@ -142,7 +142,7 @@ export default async function BookingPage({
                 </span>
               </div>
               <div className="flex items-center gap-x-2 text-xs">
-                <span className="text-primary font-black">{roomType.hotel.rating.toFixed(1) + " / " + MAX_REVIEW_POINTS}</span>
+                <span className="text-primary font-black">{roomType.hotel.rating.toFixed(1) + " / " + MAX_RATING}</span>
                 <span className="text-gray-500 font-semibold">({roomType.hotel.numberOfReviews} đánh giá)</span>
               </div>
             </div>

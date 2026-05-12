@@ -14,12 +14,16 @@ import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { resendOtpToEmail, user_verifyOTP } from "@/lib/actions/auth";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { PATHS } from "@/lib/constants";
 
 const schema_otp = z.object({
-  otp: z.string().length(6, "OTP must be 6 digits"),
+  otp: z.string().length(6, "OTP phải có 6 chữ số").regex(/^\d+$/, "OTP chỉ được chứa chữ số"),
 });
-export default function OTPForm() {
-  const length = 6;
+export default function OtpForm({ id, email, name }: { id: string, email: string, name: string }) {
+  const router = useRouter();
   const {
     control,
     handleSubmit,
@@ -30,17 +34,24 @@ export default function OTPForm() {
   });
 
   const onSubmit = async (data: z.infer<typeof schema_otp>) => {
-    console.log("Submitted OTP:", data.otp);
+    const result = await user_verifyOTP(id, data.otp, "REGISTRATION");
+    if (result.success) {
+      toast.success("Xác thực OTP thành công! Bạn đã có thể đăng nhập vào tài khoản của mình.");
+      router.push(PATHS.signIn);
+    }
+    else {
+      toast.error(result.message || "Xác thực OTP thất bại. Vui lòng thử lại.");
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-7">
       <CardHeader className="p-0">
         <CardTitle className="text-center">
-          Xác thực đăng ký tài khoản
+          Xin chào, {name}
         </CardTitle>
         <CardDescription>
-          Vui lòng nhập mã xác thực mà chúng tôi đã gửi đến địa chỉ email của bạn: {"m@example.com"}.
+          Vui lòng nhập mã xác thực mà chúng tôi đã gửi đến địa chỉ email của bạn: {email}.
         </CardDescription>
       </CardHeader>
 
@@ -49,8 +60,14 @@ export default function OTPForm() {
           <Label htmlFor="otp-verification">
             Mã xác thực (OTP)
           </Label>
-          <Button type="button" variant="outline" size="sm" disabled={true}>
-            <RotateCwIcon /> Gửi lại mã
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={true}
+            // onClick={() => resendOtpToEmail()}
+          >
+            <RotateCwIcon /> Gửi lại mã sau 
           </Button>
         </div>
 
@@ -61,12 +78,12 @@ export default function OTPForm() {
             return (
               <InputOTP
                 value={field.value}
-                maxLength={length}
+                maxLength={6}
                 id="otp-verification"
                 required
                 onChange={(value) => {
-                  // this current code will delete the digit already in the slot if user try to input character.
-                  const processed_value = value.replace(/\D/g, "").slice(0, length);
+                  // NOTE: this code will delete the digit already in the slot if user try to input character.
+                  const processed_value = value.replace(/\D/g, "").slice(0, 6);
                   field.onChange(processed_value);
                 }}
                 onBlur={field.onBlur}

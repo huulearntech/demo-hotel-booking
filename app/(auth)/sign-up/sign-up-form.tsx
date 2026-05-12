@@ -27,13 +27,14 @@ export default function SignUpForm() {
     defaultValues: defaultSignUpValues,
   });
 
-  const onSubmit = (data: SignUpData) => {
+  const onSubmit = (signupFormValues: SignUpData) => {
     startTransition(async () => {
-      const { success, errors } = await signUpUser(data);
-      if (success) {
-        router.push(PATHS.otp);
+      const response = await signUpUser(signupFormValues);
+      if (response.success) {
+        const verificationId = response.data.id;
+        router.push(PATHS.otp + `/${verificationId}`);
       } else {
-        const { fieldErrors, formErrors } = errors;
+        const { fieldErrors, formErrors } = response.errors;
         Object.entries(fieldErrors).forEach(([fieldName, errorMessages]) => {
           if (errorMessages && errorMessages.length > 0) {
             form.setError(fieldName as keyof SignUpData, { message: errorMessages[0] });
@@ -120,11 +121,6 @@ export default function SignUpForm() {
             data-slot="separator"
             className="shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px absolute inset-0 top-1/2">
           </div>
-          <span
-            className="relative mx-auto block w-fit bg-background px-2 text-muted-foreground"
-            data-slot="field-separator-content">
-            Hoặc đăng nhập với
-          </span>
         </div>
 
         <CardFooter className="p-0 justify-center">

@@ -1,4 +1,4 @@
-// NOTE: Not implement "nearby" yet. To busy man.
+// NOTE: Not implement "nearby" yet. Too busy man.
 import { differenceInDays } from "date-fns";
 import { z } from "zod";
 
@@ -46,7 +46,6 @@ export const schema_searchBar = z.object({
 export type SearchBar_FormInput = z.input<typeof schema_searchBar>;
 export type SearchBar_FormOutput = z.output<typeof schema_searchBar>;
 
-// TODO: Name these types better. These are used for encoding/decoding search params in URL, so they are all strings. But the naming is not great.
 export type SearchSpec_Params = {
   locationId: string,
   locationType: SearchBar_LocationType,
@@ -77,7 +76,6 @@ export const codec_SearchSpec_Params = z.codec(
   schema_searchBar,
   {
     encode(data: SearchBar_FormInput) {
-      console.log("Encoding search params:", data);
       return {
         locationId: data.location.id,
         locationType: data.location.type,
@@ -99,8 +97,6 @@ export const codec_SearchSpec_Params = z.codec(
         numChildren,
         numRooms,
       } = input;
-
-      console.log("Decoding search params:", input);
 
       return ({
         location: {
@@ -154,7 +150,6 @@ export const schema_searchSpecWithoutLocation = z.object({
 });
 
 
-// TODO: Rename for better clarity.
 export type SearchSpecWithoutLocation = z.input<typeof schema_searchSpecWithoutLocation>;
 
 export type SearchSpecWithoutLocation_Params = {

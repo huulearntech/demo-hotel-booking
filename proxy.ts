@@ -7,22 +7,22 @@ const pathsRequiringRole: Record<string, (UserRole | "UNAUTH")[]> = {
   // unauthenticated routes
   [PATHS.signIn]: ['UNAUTH'],
   [PATHS.signUp]: ['UNAUTH'],
-  [PATHS.otp]: ['PENDING'],
+  [PATHS.otp]: ['UNAUTH'],
   [PATHS.forgotPassword]: ['UNAUTH'],
   [PATHS.signUpHotel]: ['UNAUTH'],
 
   // user and part of hotel owner 
-  [PATHS.home]: ['USER', 'UNAUTH', 'PENDING'],
+  [PATHS.home]: ['USER', 'UNAUTH'],
   [PATHS.account]: ['USER', 'HOTEL_OWNER', 'ADMIN'],
   [PATHS.accountHistory]: ['USER'],
   [PATHS.accountRecentlyViewed]: ['USER'],
   [PATHS.favorites]: ['USER'],
   [PATHS.bookings]: ['USER'],
-  [PATHS.hotels]: ['USER', 'UNAUTH', 'PENDING'],
-  [PATHS.search]: ['USER', 'UNAUTH', 'PENDING'],
-  [PATHS.searchMap]: ['USER', 'UNAUTH', 'PENDING'],
-  [PATHS.unauthorized]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN', 'PENDING'],
-  [PATHS.notFound]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN', 'PENDING'],
+  [PATHS.hotels]: ['USER', 'UNAUTH'],
+  [PATHS.search]: ['USER', 'UNAUTH'],
+  [PATHS.searchMap]: ['USER', 'UNAUTH'],
+  [PATHS.unauthorized]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN'],
+  [PATHS.notFound]: ['USER', 'UNAUTH', 'HOTEL_OWNER', 'ADMIN'],
 
   // Hotel dashboard sub-routes
   [PATHS.hotelDashboard]: ['HOTEL_OWNER'],
@@ -30,7 +30,8 @@ const pathsRequiringRole: Record<string, (UserRole | "UNAUTH")[]> = {
   [PATHS.hotelStatistics]: ['HOTEL_OWNER'],
   [PATHS.hotelBookings]: ['HOTEL_OWNER'],
   [PATHS.hotelReviews]: ['HOTEL_OWNER'],
-  
+  [PATHS.hotelRegisterInformation]: ['HOTEL_OWNER'],
+
   // Admin
   [PATHS.adminDashboard]: ['ADMIN'],
 };
@@ -41,7 +42,6 @@ const defaultRedirectByRole: Record<UserRole, string> = {
   USER: PATHS.home,
   HOTEL_OWNER: PATHS.hotelDashboard,
   ADMIN: PATHS.adminDashboard,
-  PENDING: PATHS.otp,
 };
 
 // FIXME: when callback is dashboard but user is "USER",
@@ -49,6 +49,7 @@ const defaultRedirectByRole: Record<UserRole, string> = {
 export const proxy = auth(async function handleProxy(request) {
   const { pathname, origin } = request.nextUrl;
   const userRole = request.auth?.user.role ?? "UNAUTH";
+  const userStatus = request.auth?.user.status ?? null;
 
   // Prefer the most specific (longest) pathKey so "/account/history" wins over "/account"
   const matched = Object.entries(pathsRequiringRole)
@@ -56,11 +57,29 @@ export const proxy = auth(async function handleProxy(request) {
     .find(([pathKey]) => pathname === pathKey || pathname.startsWith(pathKey + '/'));
 
   if (matched) {
-    const [, allowedRoles] = matched;
+    const [pathKey, allowedRoles] = matched;
+
+    if (userStatus === 'PENDING') {
+      const isOtpRoute = pathKey === PATHS.otp || pathname.startsWith(PATHS.otp + '/');
+      if (isOtpRoute) {
+        return NextResponse.next();
+      }
+      const otpUrl = new URL(PATHS.otp, origin);
+      return NextResponse.redirect(otpUrl);
+    }
+
+    if (userRole === "HOTEL_OWNER") {
+      if (userStatus === "HOTEL_OWNER_FILLING_INFORMATION" && pathKey !== PATHS.hotelRegisterInformation) {
+        const hotelInfoUrl = new URL(PATHS.hotelRegisterInformation, origin);
+        return NextResponse.redirect(hotelInfoUrl);
+      } else if (userStatus === "ACTIVE" && pathKey === PATHS.hotelRegisterInformation) {
+        const targetUrl = new URL(PATHS.hotelDashboard, origin);
+        return NextResponse.redirect(targetUrl);
+      }
+    }
+
 
     if (!allowedRoles.includes(userRole)) {
-
-      // If not authenticated, redirect to sign-in with callback
       if (userRole === "UNAUTH") {
         const signInUrl = new URL(PATHS.signIn, origin);
         signInUrl.searchParams.set('callbackUrl', pathname);
@@ -103,5 +122,7 @@ export const config = {
     '/dashboard/bookings/:path*',
     '/dashboard/reviews/:path*',
     '/sign-up-hotel/:path*',
+    '/otp/:path*',
+    '/hotel-register-information/:path*',
   ],
 };

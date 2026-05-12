@@ -15,12 +15,6 @@ export default function FavoritesList() {
     codec_SearchSpecWithoutLocation_Params.encode(defaultSpecWithoutLocation)
   ).toString();
 
-  // TODO: cleanup
-  const fetchFavorites = async ({ pageParam }: { pageParam?: string | null }) => {
-    const res = await user_getFavoriteHotels({ limit: 12, cursor: pageParam ?? undefined });
-    if (!res.ok) throw new Error(res.error || 'Failed to fetch');
-    return res.data; // { items, nextCursor }
-  };
 
   const {
     data,
@@ -31,7 +25,13 @@ export default function FavoritesList() {
     error,
   } = useInfiniteQuery({
     queryKey: ['favorites'],
-    queryFn: fetchFavorites,
+    queryFn: async ({ pageParam }: { pageParam?: string | null }) => {
+      // NOTE: I don't like the throw mechanism in general, at the point of writing this,
+      // but tanstack uses it, so I have to conform to it.
+      const res = await user_getFavoriteHotels({ limit: 12, cursor: pageParam ?? undefined });
+      if (!res.ok) throw new Error(res.error || 'Failed to fetch');
+      return res.data; // { items, nextCursor }
+    },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     refetchOnWindowFocus: false,

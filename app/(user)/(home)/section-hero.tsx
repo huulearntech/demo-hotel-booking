@@ -27,7 +27,7 @@ export default function HeroSection() {
       </div>
 
       <div className="absolute top-1/2 left-1/2 -translate-1/2 lg:top-0 lg:left-0 lg:translate-0 lg:relative lg:-mt-30 content flex flex-col items-center max-w-9/10 xl:max-w-6xl">
-        <div className="min-h-30 relative bg-black/50 w-full gap-y-1 rounded-4xl p-2 lg:p-4 lg:pb-0 lg:rounded-b-none lg:mb-20">
+        <div className="min-h-30 relative bg-black/70 w-full gap-y-1 rounded-4xl p-2 lg:p-4 lg:pb-0 lg:rounded-b-none lg:mb-20">
           <div className="m-2">
             <h1 className="text-xl sm:text-2xl font-semibold text-white inline">
               <span>Đặt khách sạn giá tốt với Hoteloka</span>

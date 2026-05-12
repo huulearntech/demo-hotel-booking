@@ -13,6 +13,8 @@
 -- @param {Decimal}  $13:maxPrice (filter)
 -- @param {Int}      $16:numChildren (NOTE: temporarily put this at the end.)
 -- @param {String}   $17:userId? (for favorite)
+-- @param {Int}      $18:minRating
+-- @param {Int}      $19:maxRating
 
 -- TODO: should join with inventory instead of rooms.
 WITH base AS (
@@ -89,10 +91,7 @@ WITH base AS (
     OR cardinality($14::text[]) = 0
     OR facility_list.facility_names && $14::text[]
   )
-  AND (
-    -- TODO: rating
-
-  )
+  AND h.rating BETWEEN $18 AND $19
 )
 SELECT
   b.*,
@@ -117,4 +116,3 @@ LIMIT $6
 ;
 -- $14:facilityNames (prisma doesnot support array, so just treat it as normal sql param)
 -- $15:hotelTypes (array of: resort, apartment, etc.)
--- $18:ratings (array of: from 4.0 to 5.0, etc.)

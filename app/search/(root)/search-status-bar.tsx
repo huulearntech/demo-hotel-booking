@@ -51,14 +51,16 @@ export default function SearchStatusBar({
         </div>
         <Button
           asChild
-          className="h-fit bg-primary text-primary-foreground text-xs font-bold px-3 py-2 rounded-full flex items-center gap-x-2"
+          className="h-fit bg-primary text-primary-foreground px-3 py-2 rounded-full flex items-center gap-x-2"
         >
           <a href={`${PATHS.searchMap}?${searchParams.toString()}`} target="_blank" >
-            <span className="hidden lg:block">Xem trên bản đồ</span>
             <MapPinnedIcon className="size-4" />
+            <span className="text-xs font-semibold">Xem bản đồ</span>
           </a>
         </Button>
-        <ButtonOpenFilterSheet className="lg:hidden" />
+        <ButtonOpenFilterSheet className="lg:hidden w-fit rounded-full">
+          <span className="text-xs font-semibold">Mở bộ lọc</span>
+        </ButtonOpenFilterSheet>
       </div>
     </div>
   );

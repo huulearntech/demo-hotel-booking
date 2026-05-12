@@ -17,7 +17,7 @@ import { hotelowner_getReviews as core_hotelowner_getReviews } from "@/lib/gener
 
 import Image from "next/image";
 import { tvlk_favicon } from "@/public/logos";
-import { MAX_REVIEW_POINTS } from "@/lib/constants";
+import { MAX_RATING } from "@/lib/constants";
 import { vi } from "date-fns/locale";
 
 
@@ -188,7 +188,7 @@ function ReviewItem({
               <div className="flex items-end gap-x-0.5">
                 <div className="text-primary font-bold">{review.rating}</div>
                 <div className="text-sm font-medium">/</div>
-                <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+                <div className="text-sm font-medium">{MAX_RATING}</div>
               </div>
             </div>
 
@@ -204,7 +204,7 @@ function ReviewItem({
             <div className="flex items-end gap-x-0.5">
               <div className="text-primary font-bold">{review.rating}</div>
               <div className="text-sm font-medium">/</div>
-              <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+              <div className="text-sm font-medium">{MAX_RATING}</div>
             </div>
           </div>
 
@@ -265,7 +265,7 @@ function RepliedItem({ review }: { review: ReviewType }) {
               <div className="flex items-end gap-x-0.5">
                 <div className="text-primary font-bold">{review.rating}</div>
                 <div className="text-sm font-medium">/</div>
-                <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+                <div className="text-sm font-medium">{MAX_RATING}</div>
               </div>
             </div>
 
@@ -281,7 +281,7 @@ function RepliedItem({ review }: { review: ReviewType }) {
             <div className="flex items-end gap-x-0.5">
               <div className="text-primary font-bold">{review.rating}</div>
               <div className="text-sm font-medium">/</div>
-              <div className="text-sm font-medium">{MAX_REVIEW_POINTS}</div>
+              <div className="text-sm font-medium">{MAX_RATING}</div>
             </div>
           </div>
 

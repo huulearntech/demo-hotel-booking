@@ -1,23 +1,12 @@
-proxy: handle redirecting.
-
-types: unified them into one place, such as "types" folder.
-
 rate limiting these path (not limited to): bookings, change password,...  
-
-seeding: booking: incrementally, bulk on each search.
 
 Date object: fix mismatch between server and client, and especially in Nextjs.
 
 sign up otp: handle resend otp (limit times, after e.g. 3 mins) and expriration of OTP.
 
-after booking: block user to back to booking page (done) and the payment success (only show for a while).
+TODO: payment result page.
+
+after booking: block user to back to the payment success (only show for a while).
 TODO: on searching: instead of joining room, go check the inventory
 
-
-// TODO: Flow
-// 1. Basic info (name, email, phone) -> sign up for account
-// 1.1. verify email with OTP -> after verification, we can create the account and sign in the user immediately
-// 2. auto sign in -> server sends jwt, create a session id, redirect to that id (timed session).
-// 3. After sign in, show partnership application form (business details, tax info, etc) -> submit to server
-// 3.1. if user exit without submitting, they can come back to the form and continue where they left off (fetch saved data from server)
-// but if the session is expired, they need to sign in again first, then we can give another session id and fetch the saved form data with that session id.
+// TODO: search bar: get the default from the section top destination.

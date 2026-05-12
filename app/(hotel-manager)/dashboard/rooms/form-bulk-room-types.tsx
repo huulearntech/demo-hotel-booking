@@ -63,7 +63,6 @@ export default function RoomForm() {
     startTransition(async () => {
       const result = await hotelowner_createManyRoomTypes(data);
       if (result.ok) {
-        console.log("Created room types:", result.data);
         form.reset();
       } else {
         setError("root", { message: result.error });

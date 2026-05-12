@@ -83,7 +83,7 @@ function AvailableRoomTypeCard({
             alt={name}
             width={400}
             height={300}
-            className="w-full h-48 sm:h-64 rounded-lg object-cover"
+            className="w-full h-48 rounded-lg object-cover"
             loading="lazy"
           />
           : <div className="w-full h-48 sm:h-full bg-muted rounded-lg flex items-center justify-center">
@@ -138,25 +138,27 @@ function AvailableRoomTypeCard({
           <h3>Tiện nghi</h3>
           <ul>
             {Array.isArray(facilities) ? (
-              (facilities as { id: string; iconUrl?: string; name: string }[]).map((facility) => (
-              <li key={facility.id}>
-                {facility.iconUrl ? (
-                  <Image
-                    src={facility.iconUrl}
-                    alt={facility.name}
-                    width={16}
-                    height={16}
-                    className="object-contain"
-                  />
-                ) : null}
-                <span>{facility.name}</span>
-              </li>
-              ))
+              (facilities as { id: string; iconUrl?: string; name: string }[])
+                .filter(f => f.iconUrl)
+                .map((facility) => (
+                  <li key={facility.id}>
+                    {facility.iconUrl ? (
+                      <Image
+                        src={facility.iconUrl}
+                        alt={facility.name}
+                        width={16}
+                        height={16}
+                        className="object-contain"
+                      />
+                    ) : null}
+                    <span>{facility.name}</span>
+                  </li>
+                ))
             ) : null}
           </ul>
         </section>
 
-        <footer className="flex items-center justify-end gap-x-4">
+        <footer className="flex flex-col sm:flex-row sm:items-center justify-end gap-x-4">
           <div className="text-primary inline-flex gap-x-1 items-baseline">
             <span className="text-base lg:text-lg font-extrabold" >
               {formatVND(price)}

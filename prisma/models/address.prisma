@@ -14,13 +14,20 @@ model Province {
   name      String
   countryId String   @map("country_id") @db.Uuid
   country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  // This is the code from the geojson, which is unique within a country. Useful for seeding.
+  code      String
+
+  centroidLat Float  @map("centroid_lat")
+  centroidLng Float  @map("centroid_lng")
+
   districts District[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
   @@index([countryId])
-  @@unique([name, countryId])
+  @@unique([code, countryId]) // Of course name also should be unique.
   @@map("provinces")
 }
 
@@ -29,13 +36,20 @@ model District {
   name       String
   provinceId String   @map("province_id") @db.Uuid
   province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+
+  // This is the code from the geojson, which is unique within a country. Useful for seeding.
+  code      String
+
+  centroidLat Float  @map("centroid_lat")
+  centroidLng Float  @map("centroid_lng")
+
   wards      Ward[]
 
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt      @map("updated_at")
 
   @@index([provinceId])
-  @@unique([name, provinceId])
+  @@unique([code, provinceId]) // Of course name also should be unique.
   @@map("districts")
 }
 
@@ -43,6 +57,13 @@ model Ward {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
   districtId String   @map("district_id") @db.Uuid
+
+  // This is the code from the geojson, which is unique within a country. Useful for seeding.
+  code      String
+
+  centroidLat Float  @map("centroid_lat")
+  centroidLng Float  @map("centroid_lng")
+
   district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime @default(now()) @map("created_at")
@@ -51,6 +72,6 @@ model Ward {
   hotel      Hotel[]
 
   @@index([districtId])
-  @@unique([name, districtId])
+  @@unique([code, districtId]) // Of course name also should be unique.
   @@map("wards")
 }

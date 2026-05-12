@@ -68,34 +68,29 @@ async function hotelowner_getMetrics() {
       }, new Decimal(0));
     });
 
-    const occupancy = await tx.room.aggregate({
+    const inventoryToday = await tx.roomTypeInventory.aggregate({
       where: {
-        type: {
+        roomType: {
           hotel: {
             ownerId: session.user.id,
           }
         },
-        status: "ACTIVE",
+        date: today,
       },
-      _count: true,
+      _sum: {
+        totalRooms: true,
+        bookedRooms: true,
+      },
     });
 
-    const occupiedRooms = await tx.room.count({
-      where: {
-        type: {
-          hotel: {
-            ownerId: session.user.id,
-          }
-        },
-        status: "ACTIVE", // FIXME
-      },
-    });
+    const totalRoomsToday = inventoryToday._sum.totalRooms ?? 0;
+    const bookedRoomsToday = inventoryToday._sum.bookedRooms ?? 0;
 
     return {
       checkinsToday,
       bookingsToday,
       revenueMTD: revenueMTD.toNumber(),
-      occupancyRate: occupancy._count > 0 ? occupiedRooms / occupancy._count : 0,
+      occupancyRate: totalRoomsToday > 0 ? bookedRoomsToday / totalRoomsToday : 0,
     };
   });
 

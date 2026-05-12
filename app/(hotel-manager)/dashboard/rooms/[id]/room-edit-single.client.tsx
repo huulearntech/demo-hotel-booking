@@ -52,11 +52,10 @@ export default function RoomEditSingle({
     });
   };
 
-  const onSubmitLocal = (data: RoomType_FormOutput) => {
+  const onSubmit = (data: RoomType_FormOutput) => {
     startTransition(async () => {
       const response = await hotelowner_updateRoomTypeById(roomTypeId, data);
       if (!response.ok) {
-        console.error("Failed to update room type:", response.error);
         if (response.status === 404) {
           setError("root", { message: "Loại phòng không tồn tại." });
         } else if (response.status === 403) {
@@ -65,7 +64,6 @@ export default function RoomEditSingle({
           setError("root", { message: response.error || "Đã xảy ra lỗi khi cập nhật loại phòng." });
         }
       } else {
-        console.log("Room type updated successfully");
         toast.success("Cập nhật loại phòng thành công!");
       }
     });
@@ -73,7 +71,7 @@ export default function RoomEditSingle({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={handleSubmit(onSubmitLocal)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Chỉnh sửa loại phòng</CardTitle>
