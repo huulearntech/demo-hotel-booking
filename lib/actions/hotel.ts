@@ -35,14 +35,8 @@ export async function fetchHotel(hotelId: string) {
         select: {
           id: true,
           name: true,
-          district: {
-            select: {
-              id: true,
-              name: true,
-              province: {
-                select: { id: true, name: true, },
-              },
-            },
+          province: {
+            select: { id: true, name: true, },
           },
         },
       },

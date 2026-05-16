@@ -8,7 +8,7 @@
 -- @param {Decimal}  $8:lastPrice? (for price_* orderings; pass NULL for first page)
 -- @param {Float}    $9:lastReviewPoints? (for rating_desc ordering; pass NULL for first page)
 -- @param {String}   $10:lastHotelId? (pass NULL for first page)
--- @param {String}   $11:locationType (e.g. "ward", "district", "province")
+-- @param {String}   $11:locationType (e.g. "ward", "province")
 -- @param {Decimal}  $12:minPrice (filter)
 -- @param {Decimal}  $13:maxPrice (filter)
 -- @param {Int}      $16:numChildren (NOTE: temporarily put this at the end.)
@@ -38,8 +38,7 @@ WITH base AS (
     )) AS "isFavorited"
   FROM hotels h
   JOIN wards     w ON w.id = h.ward_id
-  JOIN districts d ON d.id = w.district_id
-  JOIN provinces p ON p.id = d.province_id
+  JOIN provinces p ON p.id = w.province_id
   JOIN LATERAL (
     -- changed: group and HAVING so no rows are returned when no room types are available
     SELECT
@@ -78,7 +77,6 @@ WITH base AS (
   ) AS facility_list ON true
   WHERE ( -- prisma cuid -> postgres text.
        ($11 = 'ward'     AND w.id = $1)
-    OR ($11 = 'district' AND d.id = $1)
     OR ($11 = 'province' AND p.id = $1)
   )
   AND ( -- hotel type filter

@@ -14,8 +14,7 @@ import {
 
 import {
   getProvinces,
-  getDistrictsByProvinceId,
-  getWardsByDistrictId,
+  getWardsByProvinceId,
 } from "@/lib/actions/hotel-manager/register";
 
 export default function LocationSelect({
@@ -26,7 +25,7 @@ export default function LocationSelect({
   onWardIdChange: (wardId: string) => void;
 }) {
   const [provinceId, setProvinceId] = useState<string>("");
-  const [districtId, setDistrictId] = useState<string>("");
+
 
   const {
     data: provinces = [],
@@ -38,21 +37,12 @@ export default function LocationSelect({
   );
 
   const {
-    data: districts = [],
-    // error: districtsError,
-    isValidating: districtsValidating
-  } = useSWR<{ id: string, name: string }[]>(
-    provinceId ? `districts-${provinceId}` : null,
-    async () => getDistrictsByProvinceId(provinceId)
-  );
-
-  const {
     data: wards = [],
     // error: wardsError,
     isValidating: wardsValidating
   } = useSWR<{ id: string, name: string }[]>(
-    districtId ? `wards-${districtId}` : null,
-    async () => getWardsByDistrictId(districtId)
+    provinceId ? `wards-${provinceId}` : null,
+    async () => getWardsByProvinceId(provinceId)
   );
 
   const [isPending, startTransition] = useTransition();
@@ -60,14 +50,6 @@ export default function LocationSelect({
   const onProvinceChange = (v: string) => {
     startTransition(() => {
       setProvinceId(v);
-      setDistrictId("");
-      onWardIdChange("");
-    });
-  };
-
-  const onDistrictChange = (v: string) => {
-    startTransition(() => {
-      setDistrictId(v);
       onWardIdChange("");
     });
   };
@@ -93,33 +75,12 @@ export default function LocationSelect({
         </Select>
       </div>
 
-      {/* District */}
-      <div className="flex-1">
-        <Select
-          value={districtId}
-          onValueChange={onDistrictChange}
-          disabled={!provinceId || districtsValidating || isPending}
-        >
-          <SelectTrigger className="w-full" aria-busy={districtsValidating || isPending}>
-            <SelectValue placeholder={!provinceId ? "Chọn tỉnh trước" : districtsValidating ? "Đang tải..." : "Chọn quận/huyện"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {districts.map((district) => (
-                <SelectItem key={district.id} value={district.id}>
-                  {district.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Ward */}
       <div className="flex-1">
-        <Select value={wardId} onValueChange={onWardIdChange} disabled={!districtId || wardsValidating || isPending}>
+        <Select value={wardId} onValueChange={onWardIdChange} disabled={!provinceId || wardsValidating || isPending}>
           <SelectTrigger className="w-full" aria-busy={wardsValidating || isPending}>
-            <SelectValue placeholder={!districtId ? "Chọn quận trước" : wardsValidating ? "Đang tải..." : "Chọn phường/xã"} />
+            <SelectValue placeholder={!provinceId ? "Chọn tỉnh trước" : wardsValidating ? "Đang tải..." : "Chọn phường/xã"} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

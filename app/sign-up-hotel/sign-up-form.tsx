@@ -32,12 +32,10 @@ export default function HotelSignUpForm() {
       const response = await signUpUser(signupFormValues, true);
       if (response.success) {
         const verificationId = response.data.id;
-        console.log("success")
         router.push(PATHS.otp + `/${verificationId}`);
       } else {
         // TODO: error handling.
         toast.error("Đăng ký thất bại. Vui lòng kiểm tra lại thông tin đã nhập.");
-        console.log("failed", response.errors);
         const { fieldErrors, formErrors } = response.errors;
         Object.entries(fieldErrors).forEach(([fieldName, errorMessages]) => {
           if (errorMessages && errorMessages.length > 0) {

@@ -1,6 +1,5 @@
 "use client"
 
-// TODO: Serverside pagination.
 import { useState } from "react"
 
 import { Button } from "./ui/button"
@@ -13,13 +12,9 @@ import {
 
 import {
   ColumnDef,
-  ColumnFiltersState,
-  SortingState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
 
@@ -37,34 +32,42 @@ import { type Table as TableType } from "@tanstack/react-table"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  // total number of pages from the server (optional; if not provided it's computed from data length)
+  pageCount?: number
+  // called when pagination changes so parent can fetch new page
+  onPaginationChange?: (pagination: { pageIndex: number; pageSize: number }) => void
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  pageCount: externalPageCount,
+  onPaginationChange,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 2,
   });
+
+  const isServerSidePagination = typeof onPaginationChange === "function";
+  const pageCount = externalPageCount ?? Math.ceil(data.length / pagination.pageSize);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
-    state: {
-      sorting,
-      columnFilters,
-      pagination,
+    ...(isServerSidePagination ? {} : { getPaginationRowModel: getPaginationRowModel() }),
+    // tell tanstack table we control pagination externally
+    manualPagination: isServerSidePagination,
+    pageCount,
+    // intercept pagination changes to keep local state and notify parent
+    onPaginationChange: (updater) => {
+      const newState =
+        typeof updater === "function" ? updater(pagination) : updater
+      setPagination(newState)
+      onPaginationChange?.(newState)
     },
+    state: { pagination },
   })
 
   return (
@@ -123,9 +126,6 @@ export function DataTable<TData, TValue>({
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 function DataTablePagination<TData>({ table } : { table: TableType<TData> }) {
-  const currentPage = table.getState().pagination.pageIndex + 1;
-  const totalPages = table.getPageCount();
-
   return (
     <Pagination>
       <PaginationContent>
@@ -140,53 +140,6 @@ function DataTablePagination<TData>({ table } : { table: TableType<TData> }) {
             <span className="hidden sm:block">Trang trước</span>
           </Button>
         </PaginationItem>
-        {totalPages <= 5 ?
-          Array.from({ length: totalPages }).map((_, index) =>
-            <PaginationItem key={index}>
-              <Button
-                variant={index + 1 == currentPage ? "outline" : "ghost"}
-                onClick={() => table.setPageIndex(index)}
-                aria-current={index + 1 == currentPage ? "page" : undefined}
-              >
-                {index + 1}
-              </Button>
-            </PaginationItem>
-          ) : (
-            <>
-              {currentPage > 1 &&
-                <PaginationItem>
-                  <Button variant="ghost" onClick={() => table.setPageIndex(1)}> 1 </Button>
-                </PaginationItem>
-              }
-
-              {currentPage >= 3 &&
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              }
-
-              <PaginationItem>
-                <Button variant="outline">
-                  {currentPage}
-                </Button>
-              </PaginationItem>
-
-              {currentPage <= totalPages - 2 &&
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              }
-              {
-                currentPage < totalPages &&
-                <PaginationItem>
-                  <Button variant="ghost" onClick={() => table.setPageIndex(totalPages)}>
-                    {totalPages}
-                  </Button>
-                </PaginationItem>
-              }
-            </>
-          )
-        }
         <PaginationItem>
           <Button
             onClick={table.nextPage}

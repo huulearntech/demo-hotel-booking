@@ -24,8 +24,7 @@ SELECT
 FROM recently_viewed rv
 JOIN hotels h ON h.id = rv.hotel_id
 JOIN wards     w ON w.id = h.ward_id
-JOIN districts d ON d.id = w.district_id
-JOIN provinces p ON p.id = d.province_id
+JOIN provinces p ON p.id = w.province_id
 LEFT JOIN LATERAL (
   SELECT MIN(rt.price) AS min_price
   FROM room_types rt

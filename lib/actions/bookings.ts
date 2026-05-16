@@ -87,7 +87,6 @@ export async function user_createBooking(
 
     return { ok: true, data: created.id };
   } catch (err) {
-    console.error("Failed to create booking", err);
     return { ok: false, status: 500, error: "Internal Server Error: Failed to create booking" };
   }
 }

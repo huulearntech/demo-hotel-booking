@@ -41,6 +41,7 @@ CREATE TABLE "provinces" (
     "name" TEXT NOT NULL,
     "country_id" UUID NOT NULL,
     "code" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
     "centroid_lat" DOUBLE PRECISION NOT NULL,
     "centroid_lng" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,25 +51,12 @@ CREATE TABLE "provinces" (
 );
 
 -- CreateTable
-CREATE TABLE "districts" (
+CREATE TABLE "wards" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "province_id" UUID NOT NULL,
     "code" TEXT NOT NULL,
-    "centroid_lat" DOUBLE PRECISION NOT NULL,
-    "centroid_lng" DOUBLE PRECISION NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "districts_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "wards" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "name" TEXT NOT NULL,
-    "district_id" UUID NOT NULL,
-    "code" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
     "centroid_lat" DOUBLE PRECISION NOT NULL,
     "centroid_lng" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -274,16 +262,10 @@ CREATE INDEX "provinces_country_id_idx" ON "provinces"("country_id");
 CREATE UNIQUE INDEX "provinces_code_country_id_key" ON "provinces"("code", "country_id");
 
 -- CreateIndex
-CREATE INDEX "districts_province_id_idx" ON "districts"("province_id");
+CREATE INDEX "wards_province_id_idx" ON "wards"("province_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "districts_code_province_id_key" ON "districts"("code", "province_id");
-
--- CreateIndex
-CREATE INDEX "wards_district_id_idx" ON "wards"("district_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "wards_code_district_id_key" ON "wards"("code", "district_id");
+CREATE UNIQUE INDEX "wards_code_province_id_key" ON "wards"("code", "province_id");
 
 -- CreateIndex
 CREATE INDEX "bookings_user_id_room_type_id_idx" ON "bookings"("user_id", "room_type_id");
@@ -334,10 +316,7 @@ CREATE INDEX "_FacilityToRoomType_B_index" ON "_FacilityToRoomType"("B");
 ALTER TABLE "provinces" ADD CONSTRAINT "provinces_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "districts" ADD CONSTRAINT "districts_province_id_fkey" FOREIGN KEY ("province_id") REFERENCES "provinces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "wards" ADD CONSTRAINT "wards_district_id_fkey" FOREIGN KEY ("district_id") REFERENCES "districts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wards" ADD CONSTRAINT "wards_province_id_fkey" FOREIGN KEY ("province_id") REFERENCES "provinces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

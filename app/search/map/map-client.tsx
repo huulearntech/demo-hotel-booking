@@ -50,10 +50,8 @@ function MapController({
         } else {
           const { centroidLat, centroidLng } = res;
           map.setView([centroidLat, centroidLng], map.getZoom());
-          console.log("Fetched initial center:", centroidLat, centroidLng);
         }
       } catch (err) {
-        console.error("Error fetching initial center:", err);
         // keep default center
       }
     })();

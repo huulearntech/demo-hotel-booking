@@ -17,9 +17,8 @@ export function randomQuarterTime({ minHour, maxHour }: { minHour:number, maxHou
 const today = new Date();
 async function seedBookings() {
   const USERS_PER_PAGE = 10;
-  const MAX_ROOM_TYPE_PAGES = 100;
-  const MAX_USER_PAGES = 100;
-
+  const MAX_ROOM_TYPE_PAGES = 50;
+  const MAX_USER_PAGES = 10;
 
   let userCursor: string | undefined = undefined;
 
@@ -59,7 +58,6 @@ async function seedBookings() {
           roomTypeIdCursor,
         ));
 
-      console.log(`User page ${userPage + 1}, RoomType page ${roomTypePage + 1}: Found ${availableRoomTypes.length} available room types for booking.`);
       if (availableRoomTypes.length === 0) break;
 
       const bookingInputs: Prisma.BookingCreateManyInput[] = availableRoomTypes.flatMap((roomType) => ({
@@ -81,11 +79,15 @@ async function seedBookings() {
         status,
       }));
 
-      await prisma.booking.createMany({
-        data: bookingInputs,
-        skipDuplicates: true,
-      });
-    
+      try {
+        await prisma.booking.createMany({
+          data: bookingInputs,
+          skipDuplicates: true,
+        });
+
+      } catch (error) {
+        break; // stop if there's an error (e.g. not enough rooms to book), to avoid infinite loop
+      }
       roomTypeIdCursor = availableRoomTypes[availableRoomTypes.length - 1].id;
     }
     userCursor = users[users.length - 1].id;
@@ -94,8 +96,6 @@ async function seedBookings() {
 
 
 async function seedReviews() {
-  console.log("Seeding reviews (paginated, partial)");
-
   const PAGE = 50;
   let totalCreated = 0;
   let cursor: string | undefined = undefined;
@@ -130,7 +130,6 @@ async function seedReviews() {
     cursor = bookings[bookings.length - 1].id;
   }
 
-  console.log(`Seeding reviews completed. Created approx ${totalCreated} entries.`);
   return totalCreated;
 }
 

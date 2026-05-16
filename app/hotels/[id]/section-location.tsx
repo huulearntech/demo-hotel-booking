@@ -35,11 +35,7 @@ export default async function LocationSection({
         <h2 className="font-bold text-[1.25rem]">Xung quanh {hotel.name} có gì</h2>
         <div className="flex gap-x-2 text-sm items-center">
           <MapPin className="size-4"/>
-          <div> {
-            hotel.ward.name + ", "
-            + hotel.ward.district.name + ", "
-            + hotel.ward.district.province.name
-          } </div>
+          <div> {hotel.ward.name + ", " + hotel.ward.province.name} </div>
         </div>
 
         <div className="relative rounded-[2rem] w-full h-60 bg-gray-200 overflow-hidden">

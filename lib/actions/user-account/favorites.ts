@@ -40,7 +40,6 @@ export async function user_upsertFavoriteHotel(
     }
     return { ok: true, data: response };
   } catch (error) {
-    console.error("Error upserting favorite:", error);
     return { ok: false, error: "Internal server error", status: 500 };
   }
 }
@@ -149,7 +148,7 @@ export async function user_getFavoriteHotels(
           imageUrls: true,
           rating: true,
           numberOfReviews: true,
-          ward: { select: { name: true, district: { select: { province: { select: { name: true }}}} } },
+          ward: { select: { name: true, province: { select: { name: true } } } },
           facilities: { select: { name: true } },
           roomTypes: { select: { price: true }, orderBy: { price: "asc" }, take: 1 },
           type: true,
@@ -169,7 +168,7 @@ export async function user_getFavoriteHotels(
     rating: r.hotel.rating,
     numberOfReviews: r.hotel.numberOfReviews,
     wardName: r.hotel.ward.name,
-    provinceName: r.hotel.ward.district.province.name,
+    provinceName: r.hotel.ward.province.name,
     facilityNames: r.hotel.facilities.map(f => f.name),
     price: r.hotel.roomTypes.length > 0 ? r.hotel.roomTypes[0].price.toNumber() : 0,
     type: r.hotel.type,

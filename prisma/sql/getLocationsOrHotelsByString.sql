@@ -20,15 +20,6 @@ WITH locations AS (
   ) t
   UNION ALL
   SELECT * FROM (
-    SELECT id, name, 'district' AS type,
-      similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
-    FROM districts
-    WHERE name IS NOT NULL AND name <> ''
-    ORDER BY sim DESC
-    LIMIT 10
-  ) t
-  UNION ALL
-  SELECT * FROM (
     SELECT id, name, 'ward' AS type,
       similarity(unaccent(lower(name)), unaccent(lower($1))) AS sim
     FROM wards
@@ -42,3 +33,4 @@ FROM locations
 WHERE sim >= COALESCE($2::double precision, 0.2)
 ORDER BY sim DESC, name
 LIMIT 10;
+-- TODO: select the actual type of the thing.

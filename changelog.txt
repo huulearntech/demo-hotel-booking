@@ -1,12 +1,6 @@
-rate limiting these path (not limited to): bookings, change password,...  
-
-Date object: fix mismatch between server and client, and especially in Nextjs.
-
-sign up otp: handle resend otp (limit times, after e.g. 3 mins) and expriration of OTP.
+Date object: fix mismatch between server and client, especially in Nextjs.
 
 TODO: payment result page.
 
-after booking: block user to back to the payment success (only show for a while).
-TODO: on searching: instead of joining room, go check the inventory
-
-// TODO: search bar: get the default from the section top destination.
+TODO: on searching: instead of joining room, go check the inventory. But inventory updating requires cron job,
+and that requires database waking up all day.

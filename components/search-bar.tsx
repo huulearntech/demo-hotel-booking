@@ -124,7 +124,7 @@ export function SearchBarForm({
       if (
         defaultSearchBarLocation.id &&
         defaultSearchBarLocation.type &&
-        ["province", "district", "ward", "hotel"].includes(defaultSearchBarLocation.type)
+        ["province", "ward", "hotel"].includes(defaultSearchBarLocation.type)
       ) {
         const locationName = await user_getLocationNameOrHotelNameById(defaultSearchBarLocation.id, defaultSearchBarLocation.type);
         setLocationQuery(locationName || "");
@@ -204,7 +204,7 @@ export function SearchBarForm({
                     // FIXME: fix render mismatch between server and client due to new Date().
                     disabled={{
                       before: new Date(),
-                      after: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+                      after: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                     }}
                   />
                 </FormControl>
@@ -348,6 +348,8 @@ function LocationAutocomplete({
   setQuery: Dispatch<SetStateAction<string>>;
   onValueChange: (value: Location) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const debouncedQuery = useDebounced(query, 500);
 
   const swrKey: readonly [string, string | null] =
@@ -381,21 +383,49 @@ function LocationAutocomplete({
     prefetchDefault();
   }, []);
 
-  const isTypingOrLoading = (query !== debouncedQuery) || isLoading;
+  // Only auto-open when input is focused. This prevents the list from being visible
+  // when the input is not focused while keeping the behavior of showing defaults
+  // for an empty query when focused.
+  useEffect(() => {
+    if (query.trim() === "" && isFocused && data.length > 0) {
+      setIsOpen(true);
+    }
+  }, [query, data.length, isFocused]);
+
+  // When the query becomes empty but the input is focused, show defaults.
+  useEffect(() => {
+    if (query.trim() === "" && isFocused) {
+      setIsOpen(true);
+    }
+  }, [query, isFocused]);
+
+  const isTypingOrLoading = (query !== debouncedQuery && query.trim() !== "") || isLoading;
 
   const handleRetry = () => {
     mutate(swrKey);
   };
 
   return (
-    <Autocomplete
-      modal={false}
-      items={data}
+    <Autocomplete<{ id: string; type: SearchBar_LocationType; name: string }>
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      items={data as { id: string; type: SearchBar_LocationType; name: string }[]}
       filter={null}
-      limit={MAX_LOCATION_AUTOCOMPLETE_RESULTS} // use or not?
+      limit={MAX_LOCATION_AUTOCOMPLETE_RESULTS}
       itemToStringValue={item => item.name}
       value={query}
-      onValueChange={setQuery}
+      onValueChange={(v) => {
+        // Autocomplete may pass either a string (query) or an item; normalize to string query
+        if (typeof v === "string") {
+          setQuery(v);
+          // typing should open the list (only if focused)
+          if (v.trim() !== "" && isFocused) setIsOpen(true);
+        } else if (v && typeof v === "object") {
+          setQuery((v as { name?: string }).name ?? "");
+        } else {
+          setQuery("");
+        }
+      }}
     >
       <AutocompleteInput
         id="location-input"
@@ -403,6 +433,17 @@ function LocationAutocomplete({
         showTrigger={false}
         showClear
         className="w-full hover:bg-accent"
+        onFocus={() => {
+          setIsFocused(true);
+          // When focused, open the list (respecting whether query is empty or not)
+          setIsOpen(true);
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+          // Let Autocomplete's onOpenChange decide closing, but still ensure we don't
+          // leave the list open when input is not focused and there's a non-empty query.
+          // We do not forcibly close here to avoid interfering with item clicks.
+        }}
       />
       <AutocompleteContent>
         {isTypingOrLoading && (
@@ -443,11 +484,13 @@ function LocationAutocomplete({
                 className="h-9"
                 onClick={() => {
                   onValueChange({ id: item.id, type: item.type as SearchBar_LocationType });
+                  // close when an item is selected
+                  setIsOpen(false);
                 }}
               >
                 {item.name}
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-accent text-primary py-0.5 px-2 rounded-full">
-                  {item.type === "hotel" ? "Khách sạn" : item.type === "province" ? "Tỉnh/Thành phố" : item.type === "district" ? "Quận/Huyện" : item.type === "ward" ? "Phường/Xã" : ""}
+                  {item.type === "hotel" ? "Khách sạn" : item.type === "province" ? "Tỉnh/Thành phố" : item.type === "ward" ? "Phường/Xã" : ""}
                 </span>
               </AutocompleteItem>
             ))}

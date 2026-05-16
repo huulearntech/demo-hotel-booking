@@ -2,7 +2,7 @@
 import { differenceInDays } from "date-fns";
 import { z } from "zod";
 
-const locationTypes = ["none", "province", "district", "ward", "hotel", "nearby"] as const;
+const locationTypes = ["none", "province", "ward", "hotel", "nearby"] as const;
 export type SearchBar_LocationType = typeof locationTypes[number];
 
 export const schema_searchBar = z.object({

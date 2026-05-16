@@ -2,8 +2,7 @@ WITH top5 AS (
   SELECT p.id AS province_id
   FROM hotels h
   JOIN wards     w ON h.ward_id     = w.id
-  JOIN districts d ON w.district_id = d.id
-  JOIN provinces p ON d.province_id = p.id
+  JOIN provinces p ON w.province_id = p.id
   GROUP BY p.id
   ORDER BY COUNT(*) DESC
   LIMIT 5
@@ -33,8 +32,7 @@ ranked_hotels AS (
     ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY h.rating DESC NULLS LAST) AS rn
   FROM hotels h
   JOIN wards     w ON h.ward_id     = w.id
-  JOIN districts d ON w.district_id = d.id
-  JOIN provinces p ON d.province_id = p.id
+  JOIN provinces p ON w.province_id = p.id
   WHERE p.id IN (SELECT province_id FROM top5)
 )
 SELECT

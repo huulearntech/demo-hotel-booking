@@ -18,6 +18,7 @@ export const MAX_RATING = 5;
 export const MAX_LOCATION_AUTOCOMPLETE_RESULTS = 10;
 
 export const MAX_OTP_ATTEMPTS = 5;
+export const MIN_RESEND_OTP_MS = 180_000; // don't allow resending more than once per 3 minutes
 
 export const DEFAULT_PAGE_SIZE = 20;
 

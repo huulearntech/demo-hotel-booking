@@ -88,7 +88,7 @@ DECLARE
   tbl text;
   idx text;
 BEGIN
-  FOR tbl IN SELECT unnest(ARRAY['hotels', 'wards', 'districts', 'provinces']) LOOP
+  FOR tbl IN SELECT unnest(ARRAY['hotels', 'wards', 'provinces']) LOOP
     -- add column if not exists
     EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS name_tsv tsvector;', tbl);
 

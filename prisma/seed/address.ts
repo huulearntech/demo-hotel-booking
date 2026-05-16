@@ -6,11 +6,11 @@ import prisma from "@/lib/prisma";
 type AddressRecord = {
   code: string;
   name: string;
+  type: string;
   centroid: [number, number];
 };
 
 type ProvinceRecords = AddressRecord[];
-type DistrictRecords = Record<string, AddressRecord[]>;
 type WardRecords = Record<string, AddressRecord[]>;
 
 function loadAddressRecords<T>(fileName: string): T {
@@ -20,7 +20,6 @@ function loadAddressRecords<T>(fileName: string): T {
 }
 
 async function seedAddress() {
-  console.log("Seeding country: Vietnam");
   const { id: countryId } = await prisma.country.upsert({
     where: { name: "Việt Nam" },
     update: {},
@@ -29,13 +28,13 @@ async function seedAddress() {
   });
 
 
-  console.log("Seeding provinces from JSON");
   const provinces = loadAddressRecords<ProvinceRecords>("provinces.json");
   await prisma.province.createMany({
     data: provinces.map((province) => ({
       countryId,
       name: province.name,
       code: province.code,
+      type: province.type,
       centroidLng: province.centroid[0],
       centroidLat: province.centroid[1],
     })),
@@ -43,53 +42,23 @@ async function seedAddress() {
   });
 
 
-  console.log("Seeding districts from JSON");
-  const districtsByProvince = loadAddressRecords<DistrictRecords>("districts.json");
-  for (const provinceCode in districtsByProvince) {
-    const province = await prisma.province.findUnique({
-      where: {
-        code_countryId: {
-          code: provinceCode,
-          countryId,
-        }
-      }
+  const wardsByProvince = loadAddressRecords<WardRecords>("wards.json");
+  for (const provinceCode in wardsByProvince) {
+    const province = await prisma.province.findFirst({
+      where: { code: provinceCode },
+      select: { id: true },
     });
     if (!province) {
-      console.warn(`Province with code ${provinceCode} not found. Skipping its districts.`);
       continue;
     }
 
-    const districts = districtsByProvince[provinceCode];
-    await prisma.district.createMany({
-      data: districts.map((district) => ({
-        provinceId: province.id,
-        name: district.name,
-        code: district.code,
-        centroidLng: district.centroid[0],
-        centroidLat: district.centroid[1],
-      })),
-      skipDuplicates: true,
-    });
-  }
-
-
-  console.log("Seeding wards from JSON");
-  const wardsByDistrict = loadAddressRecords<WardRecords>("wards.json");
-  for (const districtCode in wardsByDistrict) {
-    const district = await prisma.district.findFirst({
-      where: { code: districtCode },
-    });
-    if (!district) {
-      console.warn(`District with code ${districtCode} not found. Skipping its wards.`);
-      continue;
-    }
-
-    const wards = wardsByDistrict[districtCode];
+    const wards = wardsByProvince[provinceCode];
     await prisma.ward.createMany({
       data: wards.map((ward) => ({
-        districtId: district.id,
+        provinceId: province.id,
         name: ward.name,
         code: ward.code,
+        type: ward.type,
         centroidLng: ward.centroid[0],
         centroidLat: ward.centroid[1],
       })),

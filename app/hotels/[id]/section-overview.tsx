@@ -31,18 +31,15 @@ export default async function OverviewSection({
     ward: {
       id: wardId,
       name: wardName,
-      district: {
-        id: districtId,
-        name: districtName,
-        province: {
-          id: provinceId,
-          name: provinceName
-        } } },
+      province: {
+        id: provinceId,
+        name: provinceName
+      }
+    },
   } = hotel;
 
   const stringifiedSearchParams = new URLSearchParams(searchParams).toString();
   const provinceUrl = `${PATHS.search}?locationId=${provinceId}&locationType=province&${stringifiedSearchParams}`;
-  const districtUrl = `${PATHS.search}?locationId=${districtId}&locationType=district&${stringifiedSearchParams}`;
   const wardUrl = `${PATHS.search}?locationId=${wardId}&locationType=ward&${stringifiedSearchParams}`;
 
   const places = Object.values(poiCategoriesWithPlaces).flatMap(category => category.places).slice(0, 5); // pick 5
@@ -55,16 +52,6 @@ export default async function OverviewSection({
             <BreadcrumbLink asChild>
               <Link href={provinceUrl}>
                 {provinceName}
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-
-          <BreadcrumbSeparator />
-
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href={districtUrl}>
-                {districtName}
               </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>

@@ -78,14 +78,6 @@ export async function getCentroidOfRegion({
         centroidLng: true,
       }
     });
-  } else if (type === "district") {
-    return prisma.district.findUnique({
-      where: { id },
-      select: {
-        centroidLat: true,
-        centroidLng: true,
-      }
-    });
   } else if (type === "ward") {
     return prisma.ward.findUnique({
       where: { id },

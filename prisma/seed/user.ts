@@ -4,7 +4,6 @@ import prisma from "@/lib/prisma";
 import { fakerVI as faker } from "@faker-js/faker";
 
 async function seedRegularUsers(count = 10) {
-  console.log("Seeding regular users");
   const users = Array.from({ length: count }, () => ({
     name: `${faker.person.lastName()} ${faker.person.firstName()}`, // Vietnamese name order
     email: faker.internet.email(),
@@ -37,7 +36,6 @@ async function seedHotelOwners(count = 5) {
 }
 
 async function seedAdmin() {
-  console.log("Seeding admin user");
   if (process.env.FAKE_ADMIN_NAME && process.env.FAKE_ADMIN_EMAIL && process.env.FAKE_ADMIN_PASSWORD) {
     const admin = {
       name: process.env.FAKE_ADMIN_NAME,

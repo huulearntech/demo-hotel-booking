@@ -3,7 +3,7 @@ import { Decimal } from "@prisma/client/runtime/client";
 import fs from "fs";
 import path from "path";
 
-import { BedType, Hotel, HotelType, FacilityType, RoomType } from "@/lib/generated/prisma/client";
+import { BedType, HotelType, FacilityType } from "@/lib/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
 
@@ -13,10 +13,8 @@ import { seedHotelOwners } from "./user";
 // if Hotel model has a field of Unsupported (geolocation), Prisma will not allow to use create
 
 async function seedHotels() {
-  console.log("Seeding hotels (batched)");
-
   const wardCodes: string[] = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "address-json", "ward-codes-quan-thanh-pho.json"), "utf-8")
+    fs.readFileSync(path.join(__dirname, "address-json", "wards-of-type-phuong.json"), "utf-8")
   );
   const wards = await prisma.ward.findMany({
     where: { code: { in: wardCodes } },
@@ -83,7 +81,6 @@ async function seedHotels() {
 }
 
 async function seedRoomTypes() {
-  console.log("Seeding room types (paginated by cursor)");
   const BATCH_SIZE = 20;
   let lastId: string | undefined = undefined;
 
@@ -137,7 +134,6 @@ async function seedRoomTypes() {
   }
 }
 async function seedRooms() {
-  console.log("Seeding rooms (paginated by cursor)");
   const BATCH_SIZE = 20;
   let lastId: string | undefined = undefined;
 
@@ -210,46 +206,6 @@ const inRoomFacilities: { name: string, type: FacilityType, iconUrl?: string }[]
     type: "IN_ROOM",
     iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2018/08/13/1534147032878-74c93691dc0791ceb2fd76093c27b200.png"
   },
-  {
-    name: "Mini Fridge",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Wardrobe",
-    type: "IN_ROOM",
-  },
-  {
-    name: "TV",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Coffee / Tea Maker",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Hair Dryer",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Iron & Ironing Board",
-    type: "IN_ROOM",
-  },
-  {
-    name: "In-room Safe",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Work Desk",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Room Heater",
-    type: "IN_ROOM",
-  },
-  {
-    name: "Microwave",
-    type: "IN_ROOM",
-  },
 ];
 
 const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl?: string }[] = [
@@ -283,16 +239,9 @@ const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl?: string 
     type: "PUBLIC",
     iconUrl: "https://s3-ap-southeast-1.amazonaws.com/cntres-assets-ap-southeast-1-250226768838-cf675839782fd369/imageResource/2017/06/07/1496833756238-56e24fb64a964d38b8f393bf093a77a9.png"
   },
-  { name: "Laundry Service", type: "HOTEL_SERVICES" },
-  { name: "Fitness Center", type: "PUBLIC" },
-  { name: "Spa", type: "PUBLIC" },
-  { name: "Conference / Meeting Rooms", type: "PUBLIC" },
-  { name: "Airport Shuttle", type: "HOTEL_SERVICES" },
-  { name: "Dry Cleaning", type: "HOTEL_SERVICES" },
 ];
 
 async function seedFacilities() {
-  console.log("Seeding facilities");
   await prisma.facility.createMany({
     data: [...inRoomFacilities, ...nonInRoomFacilities],
     skipDuplicates: true,
@@ -300,7 +249,6 @@ async function seedFacilities() {
 }
 
 async function seedConnectionHotelsOnFacilities() {
-  console.log("Seeding hotel-facility connections (paginated by cursor)");
   const BATCH_SIZE = 20;
   const allFacilities = await prisma.facility.findMany({ select: { id: true, name: true, type: true } });
   const nonInRoomFacilities = allFacilities.filter(f => f.type !== "IN_ROOM");
@@ -316,7 +264,6 @@ async function seedConnectionHotelsOnFacilities() {
     });
 
     if (hotels.length === 0) {
-      if (!lastId) console.warn("No hotels found for seeding hotel-facility connections.");
       break;
     }
     const endId = hotels[hotels.length - 1].id;
@@ -352,7 +299,6 @@ async function seedConnectionHotelsOnFacilities() {
 }
 
 async function seedConnectionRoomTypesOnFacilities() {
-  console.log("Seeding roomType-facility connections (paginated by cursor)");
   const BATCH_SIZE = 20;
   let lastId: string | undefined = undefined;
 
@@ -365,7 +311,6 @@ async function seedConnectionRoomTypesOnFacilities() {
     });
 
     if (roomTypes.length === 0) {
-      if (!lastId) console.warn("No room types found for seeding roomType-facility connections.");
       break;
     }
 

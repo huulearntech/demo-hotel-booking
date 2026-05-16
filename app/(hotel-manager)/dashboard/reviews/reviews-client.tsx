@@ -99,10 +99,19 @@ export default function ReviewsClient() {
 
   return (
     <Tabs value={tab} className="w-full" onValueChange={(v) => setTab(v as "unreplied" | "replied")}>
-      <TabsList className="mb-4">
-        <TabsTrigger value="unreplied">Chưa phản hồi</TabsTrigger>
-        <TabsTrigger value="replied">Đã phản hồi</TabsTrigger>
-      </TabsList>
+      <header className="flex justify-between items-center mb-2">
+        <div className="flex flex-col gap-y-2">
+          <h1 className="font-semibold">Đánh giá từ khách hàng</h1>
+          <p className="text-sm text-muted-foreground">
+            Xem và quản lý các đánh giá mà khách hàng đã gửi về khách sạn của bạn.
+          </p>
+        </div>
+
+        <TabsList className="mb-4">
+          <TabsTrigger value="unreplied">Chưa phản hồi</TabsTrigger>
+          <TabsTrigger value="replied">Đã phản hồi</TabsTrigger>
+        </TabsList>
+      </header>
 
       <TabsContent value="unreplied">
         <ScrollArea className="max-h-120 pr-2">

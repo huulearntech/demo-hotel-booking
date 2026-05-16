@@ -44,6 +44,16 @@ export default function OtpForm({ id, email, name }: { id: string, email: string
     }
   };
 
+  const handleResendOtp = async () => {
+    try {
+      const response = await resendOtpToEmail(id, "REGISTRATION");
+      router.replace(`${PATHS.otp}/${response.data.id}`);
+      
+    } catch (error) {
+      toast.error("Gửi lại mã OTP thất bại. Vui lòng thử lại sau.");
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-7">
       <CardHeader className="p-0">
@@ -65,7 +75,7 @@ export default function OtpForm({ id, email, name }: { id: string, email: string
             variant="outline"
             size="sm"
             disabled={true}
-            // onClick={() => resendOtpToEmail()}
+            onClick={handleResendOtp}
           >
             <RotateCwIcon /> Gửi lại mã sau 
           </Button>

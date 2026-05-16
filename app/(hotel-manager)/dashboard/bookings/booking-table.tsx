@@ -4,8 +4,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { columns } from "../tmp-components/booking-columns";
 import { hotelowner_getBookings } from "@/lib/actions/hotel-manager/bookings";
-
-import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -17,28 +16,35 @@ import {
 } from "@/components/ui/select";
 
 type BookingTimeRangeOptions = "past" | "current" | "upcoming";
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 2;
 
 export default function BookingsTable() {
   const [timeRange, setTimeRange] = useState<BookingTimeRangeOptions>("upcoming");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageHistory, setPageHistory] = useState<Array<{ prevCursor: { checkInDate: Date; id: string } | null; nextCursor: { checkInDate: Date; id: string } | null }>>([
+    { prevCursor: null, nextCursor: null },
+  ]);
+  const [direction, setDirection] = useState<"next" | "prev">("next");
 
-  const {
-    data,
-    isLoading,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ["hotelowner_bookings", timeRange, PAGE_SIZE],
-    queryFn: async ({ pageParam }: { pageParam: { checkInDate: Date, id: string} | null }) =>
-      (await hotelowner_getBookings(timeRange, PAGE_SIZE, pageParam)),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    initialPageParam: null,
+  const currentPage = pageHistory[pageIndex];
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["hotelowner_bookings", timeRange, PAGE_SIZE, currentPage, direction],
+    queryFn: async () => {
+      return hotelowner_getBookings(
+        timeRange,
+        PAGE_SIZE,
+        currentPage.prevCursor,
+        currentPage.nextCursor,
+        direction,
+      );
+    },
     placeholderData: keepPreviousData,
   });
 
-  const items = data?.pages?.flatMap((p) => p.items) ?? [];
+  const items = data?.items ?? [];
+  // const pageCount = data
+  //   ? pageHistory.length + (data.nextCursor ? 1 : 0)
+  //   : 1;
 
   if (isLoading)
     return (
@@ -126,7 +132,28 @@ export default function BookingsTable() {
         </div>
       </div>
 
-      <DataTable columns={columns} data={items} />
+      <DataTable
+        columns={columns}
+        data={items}
+        // pageCount={pageCount}
+        onPaginationChange={({ pageIndex: newIndex }) => {
+          if (newIndex === pageIndex) return;
+
+          if (newIndex > pageIndex) {
+            if (!data?.nextCursor || newIndex !== pageHistory.length) return;
+            setDirection("next");
+            setPageHistory((current) => [
+              ...current,
+              { prevCursor: data?.prevCursor ?? null, nextCursor: data.nextCursor! },
+            ]);
+            setPageIndex(newIndex);
+          } else {
+            if (!pageHistory[newIndex]) return;
+            setDirection("prev");
+            setPageIndex(newIndex);
+          }
+        }}
+      />
     </div>
   );
 }

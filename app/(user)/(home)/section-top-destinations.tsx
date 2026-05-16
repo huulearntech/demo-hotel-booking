@@ -1,149 +1,65 @@
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import {
-  bg_dalat,
   bg_danang,
   bg_halong,
   bg_hanoi,
   bg_hochiminh,
-  bg_hoian,
   bg_hue,
   bg_nhatrang,
-  bg_phanthiet,
-  bg_phuquoc,
-  bg_quynhon,
-  bg_vungtau,
 } from "@/public/images";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { DEFAULT_SEARCH_BAR_VALUES, PATHS } from "@/lib/constants";
 import { codec_SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 
+type TopProvince = {
+  id: string;
+  code: string;
+  type: string;
+  name: string;
+  backgroundImage: StaticImageData;
+};
 
-const top_destinations_provinces = [
-  {
-    name: "Đà Nẵng",
-    backgroundImage: bg_danang,
-    code: "48",
-    type: "province"
-  },
-  {
-    name: "Hà Nội",
-    backgroundImage: bg_hanoi,
-    code: "01",
-    type: "province"
-  },
-  {
-    name: "Hồ Chí Minh",
-    backgroundImage: bg_hochiminh,
-    code: "79",
-    type: "province",
-  },
-];
-
-const top_destinations_districts = [
-  {
-    name: "Huế",
-    backgroundImage: bg_hue,
-    type: "province",
-    code: "474",
-  },
-  {
-    name: "Vũng Tàu",
-    backgroundImage: bg_vungtau,
-    type: "vungtau",
-    code: "747"
-  },
-  {
-    name: "Nha Trang",
-    backgroundImage: bg_nhatrang,
-    code: "568",
-    type: "district"
-  },
-  {
-    name: "Phan Thiết",
-    backgroundImage: bg_phanthiet,
-    code: "593",
-    type: "district"
-  },
-  {
-    name: "Phú Quốc",
-    backgroundImage: bg_phuquoc,
-    code: "911",
-    type: "district"
-  },
-  {
-    name: "Đà Lạt",
-    backgroundImage: bg_dalat,
-    code: "672",
-    type: "district"
-  },
-  {
-    name: "Hội An",
-    backgroundImage: bg_hoian,
-    code: "503",
-    type: "district"
-  },
-  {
-    name: "Quy Nhơn",
-    backgroundImage: bg_quynhon,
-    code: "540",
-    type: "district"
-  },
-  {
-    name: "Hạ Long",
-    backgroundImage: bg_halong,
-    code: "193",
-    type: "district"
-  },
-];
+const top_province_codes_and_bg: Record<string, StaticImageData> = {
+  "01": bg_hanoi,
+  "22": bg_halong,
+  "46": bg_hue,
+  "48": bg_danang,
+  "56": bg_nhatrang,
+  "79": bg_hochiminh,
+};
 
 export default async function TopDestinationsSection () {
-  const top_provinces = await prisma.province.findMany({
+  const top_provinces: TopProvince[] = await prisma.province.findMany({
     where: {
       code: {
-        in: top_destinations_provinces.map(dest => dest.code)
+        in: Object.keys(top_province_codes_and_bg)
       }
     },
     select: {
       id: true,
       code: true,
+      type: true,
+      name: true,
     }
   }).then(provinces => {
-    const provinceIdByCode = provinces.reduce((acc, province) => {
-      acc[province.code] = province.id;
+    const provinceByCode = provinces.reduce((acc, province) => {
+      acc[province.code] = province;
       return acc;
-    }, {} as Record<string, string>);
+    }, {} as Record<string, { id: string; code: string; type: string; name: string }>);
 
-    return top_destinations_provinces.map(dest => ({
-      ...dest,
-      id: provinceIdByCode[dest.code],
-    }));
+    return Object.entries(top_province_codes_and_bg).map(([code, backgroundImage]) => {
+      const province = provinceByCode[code];
+      return {
+        id: province.id,
+        code: province.code,
+        type: province.type,
+        name: province.name,
+        backgroundImage,
+      } as TopProvince;
+    });
   });
 
-
-  const top_districts = await prisma.district.findMany({
-    where: {
-      code: {
-        in: top_destinations_districts.map(dest => dest.code)
-      }
-    },
-    select: {
-      id: true,
-      code: true,
-    }
-  }).then(districts => {
-    const districtIdByCode = districts.reduce((acc, district) => {
-      acc[district.code] = district.id;
-      return acc;
-    }, {} as Record<string, string>);
-
-    return top_destinations_districts.map(dest => ({
-      ...dest,
-      id: districtIdByCode[dest.code],
-    }));
-  });
-
-  const destinations = [...top_provinces, ...top_districts];
 
   const { location, ...defaultSpecWithoutLocation } = DEFAULT_SEARCH_BAR_VALUES;
   
@@ -152,7 +68,7 @@ export default async function TopDestinationsSection () {
       <h2 className="text-[26px] font-bold"> Ưu đãi khách sạn tốt nhất tại các điểm đến phổ biến </h2>
       <div className="flex justify-center">
         <ul className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
-          {destinations.map(dest => (
+          {top_provinces.map(dest => (
             <li key={dest.id} className="group relative rounded-[10px] overflow-hidden flex flex-col hover:cursor-pointer h-40">
               <Link href={{
                 pathname: PATHS.search,

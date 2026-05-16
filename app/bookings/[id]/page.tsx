@@ -88,7 +88,6 @@ async function user_getRoomTypeById(id: string): Promise<OperationResult<
 
     return { ok: true, data: result };
   } catch (err) {
-    console.error("Error fetching room type:", err);
     return { ok: false, error: "An error occurred while fetching room type", status: 500 };
   }
 }

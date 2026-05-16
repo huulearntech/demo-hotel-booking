@@ -83,7 +83,7 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
           {/* Demo Notice */}
           <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
             <div className="flex items-start gap-2">
-              <div className="w-4 h-4 mt-0.5 flex-shrink-0">
+              <div className="w-4 h-4 mt-0.5 shrink-0">
                 <svg
                   className="w-4 h-4 text-blue-600"
                   fill="currentColor"
@@ -237,8 +237,6 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
       </div>
     );
   } catch (error) {
-    console.error("Payment verification error:", error);
-
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">

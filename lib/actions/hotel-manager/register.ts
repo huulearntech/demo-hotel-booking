@@ -14,19 +14,9 @@ export async function getProvinces() {
   });
 };
 
-export async function getDistrictsByProvinceId(provinceId: string) {
-  return prisma.district.findMany({
-    where: { provinceId },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
-};
-
-export async function getWardsByDistrictId(districtId: string) {
+export async function getWardsByProvinceId(provinceId: string) {
   return prisma.ward.findMany({
-    where: { districtId },
+    where: { provinceId },
     select: {
       id: true,
       name: true,

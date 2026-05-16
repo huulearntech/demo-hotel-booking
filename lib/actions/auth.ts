@@ -12,7 +12,7 @@ import nodemailer from "nodemailer";
 
 import { Prisma, VerificationType } from "@/lib/generated/prisma/client";
 import { SignUpData, SignInData, schemaSignUp, schemaSignIn } from "@/lib/zod_schemas/auth";
-import { MAX_OTP_ATTEMPTS } from "../constants";
+import { MAX_OTP_ATTEMPTS, MIN_RESEND_OTP_MS } from "../constants";
 
 
 type Response__SignUp = {
@@ -141,39 +141,79 @@ export async function signInUserWithOptionalCallback(
 }
 
 
-// TODO: lot of edge cases.
+// TODO: lots of edge cases.
 export async function user_verifyOTP(id: string, code: string, verificationType: VerificationType) {
   return await prisma.$transaction(async (tx) => {
     const tokenRecord = await tx.verificationToken.findUnique({
-      where: {
-        id,
-        code,
-        expiresAt: { gte: new Date() },
-        type: verificationType,
-        used: false,
-        attempts: { lt: MAX_OTP_ATTEMPTS },
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        code: true,
+        attempts: true,
+        expiresAt: true,
+        used: true,
+        type: true,
+        user: { select: { role: true } },
       },
-      select: { id: true, userId: true, user: { select: { role: true } } },
     });
 
-    if (!tokenRecord) {
+    if (
+      !tokenRecord ||
+      tokenRecord.used ||
+      tokenRecord.type !== verificationType ||
+      tokenRecord.expiresAt < new Date()
+    ) {
       return { success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn." };
     }
 
-
-    if (verificationType === "REGISTRATION") {
-      await tx.user.update({
-        where: { id: tokenRecord.userId },
-        data: { status: tokenRecord.user.role === "HOTEL_OWNER" ? "HOTEL_OWNER_FILLING_INFORMATION" : "ACTIVE" },
+    if (tokenRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      // Already exhausted attempts
+      await tx.verificationToken.update({
+        where: { id: tokenRecord.id },
+        data: { used: true },
       });
+      return { success: false, message: "Bạn đã vượt quá số lần thử. Vui lòng yêu cầu mã mới." };
     }
 
-    await tx.verificationToken.update({
-      data: { used: true },
-      where: { id: tokenRecord.id },
-    });
+    if (tokenRecord.code === code) {
+      // Correct code
+      if (verificationType === "REGISTRATION") {
+        await tx.user.update({
+          where: { id: tokenRecord.userId },
+          data: {
+            status:
+              tokenRecord.user.role === "HOTEL_OWNER"
+                ? "HOTEL_OWNER_FILLING_INFORMATION"
+                : "ACTIVE",
+          },
+        });
+      }
 
-    return { success: true };
+      await tx.verificationToken.update({
+        where: { id: tokenRecord.id },
+        data: { used: true },
+      });
+
+      return { success: true };
+    } else {
+      // Incorrect code -> increment attempts
+      const newAttempts = tokenRecord.attempts + 1;
+      await tx.verificationToken.update({
+        where: { id: tokenRecord.id },
+        data: {
+          attempts: newAttempts,
+          used: newAttempts >= MAX_OTP_ATTEMPTS ? true : false,
+        },
+      });
+
+      if (newAttempts >= MAX_OTP_ATTEMPTS) {
+        return { success: false, message: "Bạn đã vượt quá số lần thử. Vui lòng yêu cầu mã mới." };
+      }
+
+      const remaining = MAX_OTP_ATTEMPTS - newAttempts;
+      return { success: false, message: `Mã OTP không chính xác. Bạn còn ${remaining} lần thử.` };
+    }
   });
 }
 
@@ -239,38 +279,67 @@ async function sendOtpToEmail(name: string, email: string, otpCode: string) {
   });
 }
 
-// TODO: if there is already a valid OTP, first disable it, then create a new one. But do not allow user to request too many.
-export async function resendOtpToEmail(name: string, email: string, otpCode: string) {
+export async function resendOtpToEmail(referenceId: string, verificationType: VerificationType) {
+
   const existingToken = await prisma.verificationToken.findFirst({
     where: {
-      user: { email },
-      type: "REGISTRATION",
+      id: referenceId,
+      type: verificationType,
       expiresAt: { gte: new Date() },
+      used: false,
+      attempts: { lt: MAX_OTP_ATTEMPTS },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  if (existingToken) {
-    await prisma.verificationToken.update({
-      where: { id: existingToken.id },
-      data: {
-        code: otpCode,
-        expiresAt: addMinutes(new Date(), 5),
-        used: false,
-      },
-    });
-  } else {
-    const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-    if (!user) throw new Error("User not found for OTP resend");
-    await prisma.verificationToken.create({
-      data: {
-        userId: user.id,
-        code: otpCode,
-        type: "REGISTRATION",
-        expiresAt: addMinutes(new Date(), 5),
-      },
-    });
+  if (!existingToken) {
+    throw new Error("Không tìm thấy mã OTP hợp lệ để gửi lại. Vui lòng thử lại sau.");
   }
 
-  return sendOtpToEmail(name, email, otpCode);
+  // throttle by creation time to avoid rapid repeated requests
+  if (Date.now() - existingToken.createdAt.getTime() < MIN_RESEND_OTP_MS) {
+    throw new Error(`Vui lòng đợi ít nhất ${MIN_RESEND_OTP_MS / 1000} giây trước khi gửi lại mã OTP.`);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: existingToken.userId },
+    select: { email: true, name: true },
+  });
+
+  if (!user) {
+    throw new Error("Không tìm thấy người dùng liên quan đến mã OTP. Vui lòng thử lại sau.");
+  }
+
+  const newOtpCode = generateOTP();
+
+  // Use a transaction so the previous token is consumed and a new token is created atomically
+  const created = await prisma.$transaction(async (tx) => {
+    await tx.verificationToken.update({
+      where: { id: existingToken.id },
+      data: { used: true },
+    });
+
+    return tx.verificationToken.create({
+      data: {
+        userId: existingToken.userId,
+        code: newOtpCode,
+        type: verificationType,
+        expiresAt: addMinutes(new Date(), 5),
+        attempts: (existingToken.attempts ?? 0) + 1, // increment attempts
+      },
+      select: { id: true },
+    });
+  });
+
+  try {
+    await sendOtpToEmail(user.name, user.email, newOtpCode);
+    return { success: true, data: created };
+  } catch (sendErr) {
+    // rollback DB changes if sending failed so the attempt isn't consumed
+    await prisma.$transaction([
+      prisma.verificationToken.delete({ where: { id: created.id } }),
+      prisma.verificationToken.update({ where: { id: existingToken.id }, data: { used: false } }),
+    ]);
+    throw sendErr;
+  }
 }

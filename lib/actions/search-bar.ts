@@ -23,11 +23,6 @@ export async function user_getLocationNameOrHotelNameById(id: string, type: Sear
       .findUnique({ where: { id }, select: { name: true } })
       .then(province => province?.name ?? null);
   }
-  else if (type === "district") {
-    result = await prisma.district
-      .findUnique({ where: { id }, select: { name: true } })
-      .then(district => district?.name ?? null);
-  }
   else if (type === "ward") {
     result = await prisma.ward
       .findUnique({ where: { id }, select: { name: true } })
@@ -40,7 +35,7 @@ export async function user_getDefaultSearchBarLocations() {
   const top_destinations = await prisma.province.findMany({
     where: {
       code: {
-        in: ["48", "01", "79", "24", "20"]
+        in: ["48", "01", "79", "31", "92"]
       }
     },
     select: {
