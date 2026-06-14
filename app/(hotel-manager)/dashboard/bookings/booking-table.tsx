@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import { columns } from "../tmp-components/booking-columns";
 import { hotelowner_getBookings } from "@/lib/actions/hotel-manager/bookings";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -16,35 +16,51 @@ import {
 } from "@/components/ui/select";
 
 type BookingTimeRangeOptions = "past" | "current" | "upcoming";
-const PAGE_SIZE = 2;
+const PAGE_SIZE = 25;
 
 export default function BookingsTable() {
   const [timeRange, setTimeRange] = useState<BookingTimeRangeOptions>("upcoming");
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageHistory, setPageHistory] = useState<Array<{ prevCursor: { checkInDate: Date; id: string } | null; nextCursor: { checkInDate: Date; id: string } | null }>>([
-    { prevCursor: null, nextCursor: null },
-  ]);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
+  const [pageParams, setPageParams] = useState<Record<BookingTimeRangeOptions, {
+    queryPrevCursor: { checkInDate: Date, id: string } | null;
+    queryNextCursor: { checkInDate: Date, id: string } | null;
+    directionIsNext: boolean;
+  }>>({
+    upcoming: {
+      queryPrevCursor: null,
+      queryNextCursor: null,
+      directionIsNext: true,
+    },
+    current: {
+      queryPrevCursor: null,
+      queryNextCursor: null,
+      directionIsNext: true,
+    },
+    past: {
+      queryPrevCursor: null,
+      queryNextCursor: null,
+      directionIsNext: true,
+    },
+  });
 
-  const currentPage = pageHistory[pageIndex];
+  const currentPageParam = pageParams[timeRange];
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["hotelowner_bookings", timeRange, PAGE_SIZE, currentPage, direction],
+    queryKey: ["hotelowner_bookings", timeRange, currentPageParam],
     queryFn: async () => {
       return hotelowner_getBookings(
         timeRange,
         PAGE_SIZE,
-        currentPage.prevCursor,
-        currentPage.nextCursor,
-        direction,
+        currentPageParam.queryPrevCursor,
+        currentPageParam.queryNextCursor,
+        currentPageParam.directionIsNext,
       );
     },
     placeholderData: keepPreviousData,
   });
 
   const items = data?.items ?? [];
-  // const pageCount = data
-  //   ? pageHistory.length + (data.nextCursor ? 1 : 0)
-  //   : 1;
+  const hasNextPage = Boolean(data?.nextCursor);
+  const hasPreviousPage = Boolean(data?.prevCursor);
 
   if (isLoading)
     return (
@@ -132,28 +148,42 @@ export default function BookingsTable() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={items}
-        // pageCount={pageCount}
-        onPaginationChange={({ pageIndex: newIndex }) => {
-          if (newIndex === pageIndex) return;
-
-          if (newIndex > pageIndex) {
-            if (!data?.nextCursor || newIndex !== pageHistory.length) return;
-            setDirection("next");
-            setPageHistory((current) => [
-              ...current,
-              { prevCursor: data?.prevCursor ?? null, nextCursor: data.nextCursor! },
-            ]);
-            setPageIndex(newIndex);
-          } else {
-            if (!pageHistory[newIndex]) return;
-            setDirection("prev");
-            setPageIndex(newIndex);
-          }
-        }}
-      />
+      <div>
+        <DataTable
+          columns={columns}
+          data={items}
+        />
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <DataTablePagination
+            hasNextPage={hasNextPage}
+            hasPreviousPage={hasPreviousPage}
+            previousPage={() => {
+              if (data?.prevCursor) {
+                setPageParams((prev) => ({
+                  ...prev,
+                  [timeRange]: {
+                    queryPrevCursor: data.prevCursor,
+                    queryNextCursor: data.nextCursor,
+                    directionIsNext: false,
+                  },
+                }));
+              }
+            }}
+            nextPage={() => {
+              if (data?.nextCursor) {
+                setPageParams((prev) => ({
+                  ...prev,
+                  [timeRange]: {
+                    queryPrevCursor: data.prevCursor,
+                    queryNextCursor: data.nextCursor,
+                    directionIsNext: true,
+                  },
+                }));
+              }
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

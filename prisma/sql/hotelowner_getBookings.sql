@@ -26,10 +26,11 @@ WITH base AS (
   FROM bookings b
   JOIN room_types rt ON b.room_type_id = rt.id
   WHERE rt.hotel_id = $1::uuid
-     AND (
-       ($2 = 'past' AND b.status IN ('PAID', 'CHECKED_IN', 'CHECKED_OUT') AND b.check_out_date < now())
-       OR ($2 = 'current' AND b.status IN ('PAID', 'CHECKED_IN') AND b.check_in_date <= now() AND b.check_out_date >= now())
-       OR ($2 = 'upcoming' AND b.status = 'PAID' AND b.check_in_date > now())
+     AND ( -- TODO: This turn to just filter by status.
+       ($2 = 'past' AND b.status = 'CHECKED_OUT')
+       OR ($2 = 'current' AND b.status = 'CHECKED_IN')
+       OR ($2 = 'upcoming' AND b.status = 'PAID')
+       OR ($2 = 'cancelled' AND b.status = 'CANCELLED')
      )
  )
  SELECT

@@ -16,7 +16,7 @@ export default function ReviewCard({
 }) {
   const [open, setOpen] = useState(false);
 
-  const timeAgo = formatDistanceToNow(new Date(review.createdAt), { addSuffix: true, locale: vi });
+  const timeAgo = formatDistanceToNow(review.createdAt, { addSuffix: true, locale: vi });
 
   const reply = review.reply ?? null;
   const hasReply = !!reply;
@@ -79,7 +79,13 @@ export default function ReviewCard({
 
                 {review.repliedAt && (
                   <div className="text-xs text-muted-foreground mt-2 hidden data-[open=true]:block">
-                    {new Date(review.repliedAt).toLocaleString()}
+                    {new Intl.DateTimeFormat("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(review.repliedAt)}
                   </div>
                 )}
               </div>

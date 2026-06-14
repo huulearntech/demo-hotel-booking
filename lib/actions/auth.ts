@@ -1,18 +1,19 @@
 "use server";
 
-import { signIn } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import z from "zod";
 import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
 import { randomInt } from "crypto";
 import { addMinutes } from "date-fns";
-import nodemailer from "nodemailer";
 
 
 import { Prisma, VerificationType } from "@/lib/generated/prisma/client";
+import { sendOtpToEmail } from "@/lib/mailgun";
 import { SignUpData, SignInData, schemaSignUp, schemaSignIn } from "@/lib/zod_schemas/auth";
-import { MAX_OTP_ATTEMPTS, MIN_RESEND_OTP_MS } from "../constants";
+import { MAX_OTP_ATTEMPTS, MIN_RESEND_OTP_MS, PATHS } from "../constants";
+import { redirect } from "next/navigation";
 
 
 type Response__SignUp = {
@@ -34,6 +35,17 @@ type Response__SignUp = {
 
 
 export async function signUpUser(userData: SignUpData, isSigningUpForHotelOwner = false): Promise<Response__SignUp> {
+  const session = await auth();
+  if (session && session.user) {
+    return {
+      success: false,
+      errors: {
+        fieldErrors: {},
+        formErrors: ["Bạn đã đăng nhập, vui lòng đăng xuất để tạo tài khoản mới."],
+      },
+    };
+  }
+
   const safeParsedUserData = schemaSignUp.safeParse(userData);
 
   if (!safeParsedUserData.success) {
@@ -44,41 +56,43 @@ export async function signUpUser(userData: SignUpData, isSigningUpForHotelOwner 
     };
   }
 
-  const isDevelopment = process.env.NODE_ENV === "development";
-  let hashedPassword = safeParsedUserData.data.password;
-  if (isDevelopment) {
-    console.warn("Running in development mode, storing password in plaintext. DO NOT USE THIS IN PRODUCTION!");
-  } else {
-    // Hash the password before storing it in the database
-    const saltRounds = 10;
-    hashedPassword = await bcrypt.hash(safeParsedUserData.data.password, saltRounds);
-  }
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(safeParsedUserData.data.password, saltRounds);
+
   const otpCode = generateOTP();
+  const role = isSigningUpForHotelOwner ? "HOTEL_OWNER" : "USER";
+  const status = "PENDING";
 
   try {
-    const verificationId = await prisma.$transaction(async (tx) => {
-      const { id: userId } = await tx.user.create({
+    const { verificationId } = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
         data: {
           ...safeParsedUserData.data,
           password: hashedPassword,
-          role: isSigningUpForHotelOwner ? "HOTEL_OWNER" : "USER",
-          status: isSigningUpForHotelOwner ? "HOTEL_OWNER_FILLING_INFORMATION" : "ACTIVE",
+          role,
+          status,
         },
         select: { id: true },
       });
-      const { id: verificationId } = await tx.verificationToken.create({
+
+      const verification = await tx.verificationToken.create({
         data: {
-          userId,
+          userId: user.id,
           code: otpCode,
           type: "REGISTRATION",
-          expiresAt: addMinutes(new Date(), 5), // OTP expires in 5 minutes
+          expiresAt: addMinutes(new Date(), 5),
         },
+        select: { id: true },
       });
 
-      return verificationId;
+      return { verificationId: verification.id };
     });
 
-    await sendOtpToEmail(safeParsedUserData.data.name, safeParsedUserData.data.email, otpCode);
+    await sendOtpToEmail({
+      email: safeParsedUserData.data.email,
+      name: safeParsedUserData.data.name,
+      otpCode: otpCode
+    });
 
     return {
       success: true,
@@ -107,8 +121,8 @@ export async function signUpUser(userData: SignUpData, isSigningUpForHotelOwner 
   }
 }
 
-// NOTE: signing in with google requires google cloud accout, which requires credit card.
-export async function signInUserWithOptionalCallback(
+// NOTE: signing in with google requires google cloud account, which requires credit card.
+export async function signInUser(
   formData: SignInData,
   callbackUrl?: string
 ) {
@@ -121,7 +135,49 @@ export async function signInUserWithOptionalCallback(
     };
   }
 
-  try {
+  const { email, password } = safeParsedSignInData.data;
+  const user = await prisma.user.findUnique({
+    where: { email, status: "PENDING" },
+    select: { name: true, password: true },
+  });
+
+  if (user) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+  if (!passwordMatch) return { error: "Thông tin đăng nhập không chính xác!" };
+  const lastToken = await prisma.verificationToken.findFirst({
+    where: {
+      user: { email },
+      type: "REGISTRATION",
+      used: false,
+      expiresAt: { gte: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+
+    if (lastToken) {
+      redirect(`${PATHS.otp}/${lastToken.id}`);
+    } else {
+      const otpCode = generateOTP();
+      const newToken = await prisma.verificationToken.create({
+        data: {
+          user: { connect: { email } },
+          code: otpCode,
+          type: "REGISTRATION",
+          expiresAt: addMinutes(new Date(), 5),
+        },
+        select: { id: true },
+      });
+
+      await sendOtpToEmail({
+        email: email,
+        name: user.name,
+        otpCode: otpCode
+      });
+      redirect(`${PATHS.otp}/${newToken.id}`);
+    }
+  } else try {
     await signIn("credentials", {
       email: formData.email,
       password: formData.password,
@@ -142,51 +198,65 @@ export async function signInUserWithOptionalCallback(
 
 
 // TODO: lots of edge cases.
-export async function user_verifyOTP(id: string, code: string, verificationType: VerificationType) {
-  return await prisma.$transaction(async (tx) => {
-    const tokenRecord = await tx.verificationToken.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        userId: true,
-        code: true,
-        attempts: true,
-        expiresAt: true,
-        used: true,
-        type: true,
-        user: { select: { role: true } },
-      },
-    });
-
-    if (
-      !tokenRecord ||
-      tokenRecord.used ||
-      tokenRecord.type !== verificationType ||
-      tokenRecord.expiresAt < new Date()
-    ) {
-      return { success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn." };
-    }
-
-    if (tokenRecord.attempts >= MAX_OTP_ATTEMPTS) {
-      // Already exhausted attempts
-      await tx.verificationToken.update({
-        where: { id: tokenRecord.id },
-        data: { used: true },
+export async function user_verifyOTP(id: string, code: string, verificationType: VerificationType): Promise<{
+  success: boolean;
+  message?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    status: string;
+  };
+}> {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const tokenRecord = await tx.verificationToken.findUnique({
+        where: {
+          id,
+          used: false,
+          type: verificationType,
+          expiresAt: { gte: new Date() },
+        },
+        select: {
+          id: true,
+          userId: true,
+          code: true,
+          attempts: true,
+          user: { select: { role: true, status: true } },
+        },
       });
-      return { success: false, message: "Bạn đã vượt quá số lần thử. Vui lòng yêu cầu mã mới." };
-    }
 
-    if (tokenRecord.code === code) {
-      // Correct code
+      if (!tokenRecord) {
+        return { success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn." };
+      }
+
+      if (tokenRecord.code !== code) {
+        const newAttempts = tokenRecord.attempts + 1;
+        await tx.verificationToken.update({
+          where: { id: tokenRecord.id },
+          data: { attempts: newAttempts },
+        });
+
+        if (newAttempts >= MAX_OTP_ATTEMPTS) {
+          return { success: false, message: "Bạn đã vượt quá số lần thử. Vui lòng yêu cầu mã mới." };
+        }
+
+        const remaining = MAX_OTP_ATTEMPTS - newAttempts;
+        return { success: false, message: `Mã OTP không chính xác. Bạn còn ${remaining} lần thử.` };
+      }
+
+      const updatedUserStatus =
+        verificationType === "REGISTRATION"
+          ? tokenRecord.user.role === "HOTEL_OWNER"
+            ? "HOTEL_OWNER_FILLING_INFORMATION"
+            : "ACTIVE"
+          : tokenRecord.user.status;
+
       if (verificationType === "REGISTRATION") {
         await tx.user.update({
           where: { id: tokenRecord.userId },
-          data: {
-            status:
-              tokenRecord.user.role === "HOTEL_OWNER"
-                ? "HOTEL_OWNER_FILLING_INFORMATION"
-                : "ACTIVE",
-          },
+          data: { status: updatedUserStatus },
         });
       }
 
@@ -196,25 +266,14 @@ export async function user_verifyOTP(id: string, code: string, verificationType:
       });
 
       return { success: true };
-    } else {
-      // Incorrect code -> increment attempts
-      const newAttempts = tokenRecord.attempts + 1;
-      await tx.verificationToken.update({
-        where: { id: tokenRecord.id },
-        data: {
-          attempts: newAttempts,
-          used: newAttempts >= MAX_OTP_ATTEMPTS ? true : false,
-        },
-      });
+    });
 
-      if (newAttempts >= MAX_OTP_ATTEMPTS) {
-        return { success: false, message: "Bạn đã vượt quá số lần thử. Vui lòng yêu cầu mã mới." };
-      }
-
-      const remaining = MAX_OTP_ATTEMPTS - newAttempts;
-      return { success: false, message: `Mã OTP không chính xác. Bạn còn ${remaining} lần thử.` };
-    }
-  });
+    return result;
+  }
+  catch (error) {
+    console.error("user_verifyOTP error:", error);
+    return { success: false, message: "Đã có lỗi xảy ra khi xác thực OTP. Vui lòng thử lại." };
+  }
 }
 
 
@@ -223,91 +282,31 @@ function generateOTP() {
   return otp;
 }
 
-async function sendOtpToEmail(name: string, email: string, otpCode: string) {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`Development mode: OTP for ${email} is ${otpCode}`);
-    return;
-  }
-  
-  if (!email) {
-    throw new Error("Recipient email must be provided to send OTP.");
-  }
-
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-    throw new Error("GMAIL_USER and GMAIL_PASS must be set in environment variables to send OTP emails");
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS },
-  });
-
-  const htmlContent = `
-      <div style="font-family: Arial, sans-serif; background:#f6f9fc; padding:24px;">
-        <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:8px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
-          <h2 style="margin:0 0 8px 0; color:#333;">Mã xác thực (OTP)</h2>
-          <p style="margin:0 0 16px 0; color:#555;">
-            Xin chào ${name || 'khách hàng'},<br />
-            Hệ thống đã gửi cho bạn mã OTP gồm 6 chữ số để xác thực.
-          </p>
-
-          <div style="display:flex; align-items:center; justify-content:center; margin:18px 0;">
-            <span style="font-size:28px; letter-spacing:4px; font-weight:700; background:#f1f5f9; padding:12px 20px; border-radius:6px; color:#111;">
-              ${otpCode}
-            </span>
-          </div>
-
-          <p style="margin:0 0 8px 0; color:#555;">
-            Mã có hiệu lực trong <strong>5 phút</strong>. Vui lòng không chia sẻ mã này với bất kỳ ai.
-          </p>
-
-          <hr style="border:none; border-top:1px solid #eee; margin:18px 0;" />
-
-          <p style="margin:0; font-size:12px; color:#999;">
-            Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.
-          </p>
-        </div>
-      </div>
-    `;
-
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to: email,
-    subject: `Mã OTP của bạn`,
-    text: `Mã OTP của bạn là ${otpCode}. Mã có hiệu lực trong 5 phút.`,
-    html: htmlContent,
-  });
-}
 
 export async function resendOtpToEmail(referenceId: string, verificationType: VerificationType) {
-
   const existingToken = await prisma.verificationToken.findFirst({
     where: {
       id: referenceId,
       type: verificationType,
       expiresAt: { gte: new Date() },
       used: false,
-      attempts: { lt: MAX_OTP_ATTEMPTS },
     },
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { email: true, name: true } },
+      createdAt: true,
+    }
   });
 
   if (!existingToken) {
-    throw new Error("Không tìm thấy mã OTP hợp lệ để gửi lại. Vui lòng thử lại sau.");
+    throw new Error("Có lỗi xảy ra. Vui lòng thử lại sau.");
   }
 
   // throttle by creation time to avoid rapid repeated requests
   if (Date.now() - existingToken.createdAt.getTime() < MIN_RESEND_OTP_MS) {
     throw new Error(`Vui lòng đợi ít nhất ${MIN_RESEND_OTP_MS / 1000} giây trước khi gửi lại mã OTP.`);
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: existingToken.userId },
-    select: { email: true, name: true },
-  });
-
-  if (!user) {
-    throw new Error("Không tìm thấy người dùng liên quan đến mã OTP. Vui lòng thử lại sau.");
   }
 
   const newOtpCode = generateOTP();
@@ -325,14 +324,17 @@ export async function resendOtpToEmail(referenceId: string, verificationType: Ve
         code: newOtpCode,
         type: verificationType,
         expiresAt: addMinutes(new Date(), 5),
-        attempts: (existingToken.attempts ?? 0) + 1, // increment attempts
       },
       select: { id: true },
     });
   });
 
   try {
-    await sendOtpToEmail(user.name, user.email, newOtpCode);
+    await sendOtpToEmail({
+      email: existingToken.user.email,
+      name: existingToken.user.name,
+      otpCode: newOtpCode
+    });
     return { success: true, data: created };
   } catch (sendErr) {
     // rollback DB changes if sending failed so the attempt isn't consumed

@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { Prisma } from "../generated/prisma/client";
 import { getReviewsOfHotel } from "../generated/prisma/sql";
 import { OperationResult } from "../types/utils";
+import { DEFAULT_PAGE_SIZE } from "../constants";
 
 export type ReviewCursor = { createdAt: Date; id: string };
 
@@ -56,7 +57,7 @@ export async function user_createReviewForBooking(
 
 export async function user_getReviewsOfHotel(
   hotelId: string,
-  limit: number = 10,
+  limit: number = DEFAULT_PAGE_SIZE,
   queryPrevCursor: ReviewCursor | null = null,
   queryNextCursor: ReviewCursor | null = null,
   directionIsNext: boolean = true,

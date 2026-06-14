@@ -1,6 +1,4 @@
 // BUG: sometimes this shit doesn't appear, especially when just signing in.
-"use client"
-
 import {
   EllipsisVerticalIcon,
   LogOutIcon,
@@ -26,10 +24,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 
-import { useSession } from "next-auth/react"
+import { auth } from "@/auth"
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -42,12 +39,13 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import SignOutButton from "@/components/button-signout"
+import { user_getInfoById } from "@/lib/actions/user-account"
 
-export function NavUser() {
-  const { isMobile } = useSidebar()
-  const { data: session } = useSession();
+export async function NavUser() {
+  const session = await auth();
   if (!session?.user) return null; // proxy already handled this.
-  const user = session.user;
+  const user = await user_getInfoById(session.user.id); // TODO: we should have image fetch from database, instead of another call.
+  if (!user) return null; // this should not happen, but just in case.
 
   return (
     <AlertDialog>
@@ -61,7 +59,7 @@ export function NavUser() {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <Avatar className="h-8 w-8 rounded-lg">
-                  {user.image && <AvatarImage src={user.image} alt={user.name ?? ""} />}
+                  {user.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={user.name} />}
                   <AvatarFallback className="rounded-lg">{user.name}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -75,14 +73,14 @@ export function NavUser() {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              side={isMobile ? "bottom" : "right"}
+              side="right"
               align="end"
               sideOffset={4}
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
-                    {user.image && <AvatarImage src={user.image} alt={user.name ?? ""} />}
+                    {user.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={user.name} />}
                     <AvatarFallback className="rounded-lg">{user.name}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">

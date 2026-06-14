@@ -101,10 +101,10 @@ function AvailableRoomTypeCard({
         <header className="flex items-start justify-between gap-x-4">
           <h2 className="text-lg font-bold line-clamp-2"> {name} </h2>
 
-          <div className="flex items-center gap-x-2 text-sm text-primary font-bold">
+          {/* <div className="flex items-center gap-x-2 text-sm text-primary font-bold">
             <ExternalLink className="size-4 shrink-0" aria-hidden />
             <span>Xem chi tiết phòng</span>
-          </div>
+          </div> */}
         </header>
 
         <section>

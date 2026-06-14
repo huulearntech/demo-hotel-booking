@@ -6,14 +6,17 @@ import {
 } from "lucide-react";
 import { vnpay } from "@/lib/vnpay";
 import { type VerifyReturnUrl, parseDate } from "vnpay";
+import { verifyReturnUrl } from "@/lib/vnpay";
 import Link from "next/link";
 import { PrintButton } from "./button-print";
+import { Button } from "@/components/ui/button";
+import { PATHS } from "@/lib/constants";
 
 // Mark this route as dynamic since it uses searchParams
 export const dynamic = "force-dynamic";
 
 interface PaymentReturnProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[]>>;
 }
 
 function PaymentResultSkeleton() {
@@ -40,7 +43,7 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
     const params = await searchParams;
 
     // Verify the return URL
-    const verify = vnpay.verifyReturnUrl(params as unknown as VerifyReturnUrl);
+    const verify = verifyReturnUrl(params);
 
     const isSuccess = verify.isVerified && verify.isSuccess;
     const Icon = isSuccess ? CheckCircleIcon : XCircleIcon;
@@ -48,7 +51,6 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
     const bgColor = isSuccess ? "bg-green-50" : "bg-red-50";
     const borderColor = isSuccess ? "border-green-200" : "border-red-200";
 
-    // Format payment date
     const paymentDate = verify.vnp_PayDate
       ? parseDate(verify.vnp_PayDate).toLocaleString("vi-VN", {
           year: "numeric",
@@ -63,7 +65,6 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Header */}
           <div className={`${bgColor} ${borderColor} border-b px-6 py-4`}>
             <div className="flex items-center">
               <Icon className={`w-8 h-8 ${iconColor} mr-3`} />
@@ -80,59 +81,8 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
             </div>
           </div>
 
-          {/* Demo Notice */}
-          <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
-            <div className="flex items-start gap-2">
-              <div className="w-4 h-4 mt-0.5 shrink-0">
-                <svg
-                  className="w-4 h-4 text-blue-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-blue-800 leading-relaxed">
-                  <strong>Mục đích Demo:</strong> Trang này hiển thị kết quả
-                  thanh toán chỉ để demo giao diện. Trong thực tế, bạn phải chờ
-                  và lắng nghe IPN (Instant Payment Notification) để xác minh
-                  giao dịch đã được xử lý thành công hay chưa và cập nhật hệ
-                  thống của bạn.
-                </p>
-                <div className="mt-2 space-y-1">
-                  <div>
-                    <a
-                      href="https://vnpay.js.org/ipn/verify-ipn-call"
-                      target="_blank"
-                      rel="noopener"
-                      className="text-blue-600 hover:text-blue-800 underline font-medium text-xs"
-                    >
-                      📚 Hướng dẫn VNPay.js IPN →
-                    </a>
-                  </div>
-                  <div>
-                    <a
-                      href="https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html#code-ipn-url"
-                      target="_blank"
-                      rel="noopener"
-                      className="text-blue-600 hover:text-blue-800 underline font-medium text-xs"
-                    >
-                      📖 Tài liệu chính thức VNPay IPN →
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Content */}
           <div className="px-6 py-4 space-y-4">
-            {/* Transaction Details */}
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-600">
@@ -207,7 +157,6 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
               )}
             </div>
 
-            {/* Status Message */}
             {!verify.isVerified && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                 <div className="flex items-center">
@@ -221,15 +170,11 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
             )}
           </div>
 
-          {/* Footer */}
           <div className="px-6 py-4 bg-gray-50 border-t">
             <div className="flex space-x-3">
-              <Link
-                href="/"
-                className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                Quay về trang chủ
-              </Link>
+              <Button asChild className="flex-1">
+                <Link href={PATHS.home}> Quay về trang chủ </Link>
+              </Button>
               {isSuccess && <PrintButton />}
             </div>
           </div>
@@ -249,12 +194,9 @@ async function PaymentResult({ searchParams }: PaymentReturnProps) {
               Không thể xử lý kết quả thanh toán. Vui lòng thử lại hoặc liên hệ
               hỗ trợ.
             </p>
-            <Link
-              href="/"
-              className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Quay về trang chủ
-            </Link>
+            <Button asChild className="inline-block">
+              <Link href={PATHS.home}> Quay về trang chủ </Link>
+            </Button>
           </div>
         </div>
       </div>

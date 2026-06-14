@@ -306,7 +306,10 @@ function RepliedItem({ review }: { review: ReviewType }) {
 
             {review.repliedAt && (
               <div className="text-xs text-muted-foreground mt-2 hidden data-[open=true]:block">
-                {new Date(review.repliedAt).toLocaleString()}
+                {new Intl.DateTimeFormat("vi-VN", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                }).format(review.repliedAt)}
               </div>
             )}
           </div>

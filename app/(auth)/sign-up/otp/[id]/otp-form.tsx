@@ -38,8 +38,7 @@ export default function OtpForm({ id, email, name }: { id: string, email: string
     if (result.success) {
       toast.success("Xác thực OTP thành công! Bạn đã có thể đăng nhập vào tài khoản của mình.");
       router.push(PATHS.signIn);
-    }
-    else {
+    } else {
       toast.error(result.message || "Xác thực OTP thất bại. Vui lòng thử lại.");
     }
   };
@@ -74,7 +73,6 @@ export default function OtpForm({ id, email, name }: { id: string, email: string
             type="button"
             variant="outline"
             size="sm"
-            disabled={true}
             onClick={handleResendOtp}
           >
             <RotateCwIcon /> Gửi lại mã sau 

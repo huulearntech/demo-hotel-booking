@@ -27,6 +27,7 @@ const pathsRequiringRole: Record<string, (UserRole | "UNAUTH")[]> = {
   // Hotel dashboard sub-routes
   [PATHS.hotelDashboard]: ['HOTEL_OWNER'],
   [PATHS.hotelRooms]: ['HOTEL_OWNER'],
+  [PATHS.hotelRoomTypes]: ['HOTEL_OWNER'],
   [PATHS.hotelStatistics]: ['HOTEL_OWNER'],
   [PATHS.hotelBookings]: ['HOTEL_OWNER'],
   [PATHS.hotelReviews]: ['HOTEL_OWNER'],

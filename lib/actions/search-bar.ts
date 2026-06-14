@@ -8,7 +8,16 @@ export async function user_getLocationOrHotelByQueryString(query: string, simila
   const result = await prisma.$queryRawTyped(getLocationsOrHotelsByString(query, similarity));
   // FIXME: Don't have any fucking idea why the result can contain items with null id, type, or name.
   // It seems to be result of using UNION.
-  return result.filter(item => item.id !== null && item.type !== null && item.name !== null) as Array<{ id: string, type: string, name: string }>;
+  return result.filter(item => item.id !== null &&
+    item.type !== null &&
+    item.name !== null) as Array<{
+      id: string,
+      type: string,
+      name: string,
+      type_name: string,
+      ward_name: string | null,
+      province_name: string | null
+    }>;
 }
 
 export async function user_getLocationNameOrHotelNameById(id: string, type: SearchBar_LocationType) {
@@ -48,5 +57,8 @@ export async function user_getDefaultSearchBarLocations() {
     id: dest.id,
     name: dest.name,
     type: "province" as SearchBar_LocationType,
+    type_name: "Thành phố",
+    ward_name: null,
+    province_name: null,
   }));
 }

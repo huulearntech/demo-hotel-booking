@@ -38,8 +38,8 @@ async function seedHotels() {
     }
   }
 
-  for (const ward of wards) {
-    const hotelCount = faker.number.int({ min: 5, max: 7 });
+  for (const ward of wards.slice(0, 50)) { // TODO: remove test.
+    const hotelCount = faker.number.int({ min: 3, max: 5 });
     const owners = await seedHotelOwners(hotelCount);
 
     const { centroidLng, centroidLat } = ward;

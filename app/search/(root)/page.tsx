@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import Filter from "../filter";
 import { FilterFormProvider } from "../filter-form-context";
 import FilterSheetProvider from "../filter-sheet-context";
-import Results from "./results";
+import Results, { ResultsSkeleton } from "./results";
 
 import SearchBar from "@/components/search-bar";
 import { SearchSpec_Params, codec_SearchSpec_Params } from "@/lib/zod_schemas/search-bar";
+import { Suspense } from "react";
 
 export default async function SearchPage(props: { searchParams: Promise<SearchSpec_Params> }) {
   const searchParams = await props.searchParams;
@@ -21,7 +22,9 @@ export default async function SearchPage(props: { searchParams: Promise<SearchSp
       <FilterSheetProvider>
         <main className="flex gap-x-6 content my-6">
           <Filter />
-          <Results searchBarFormValues={safeDecodedParams.data} />
+          <Suspense fallback={<div className="flex-1"><ResultsSkeleton /></div>}>
+            <Results searchBarFormValues={safeDecodedParams.data} />
+          </Suspense>
         </main>
       </FilterSheetProvider>
     </FilterFormProvider>

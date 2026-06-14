@@ -1,7 +1,8 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
-import { TagIcon } from "lucide-react";
+import { Loader2Icon, TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInformationForm  } from "./information-form-context";
 import { createBookingThenRedirectToVNPay } from "@/lib/actions/payment";
@@ -32,6 +33,35 @@ export default function PriceDetail({
   snapshotRoomTypeName: string;
 }) {
   const { handleSubmit } = useInformationForm();
+  const [isPending, startTransition] = useTransition();
+
+  const onSubmit = () => {
+    startTransition(() => {
+      handleSubmit(async (form) => {
+        try {
+          await createBookingThenRedirectToVNPay(
+            roomTypeId,
+            checkInDate,
+            checkOutDate,
+            numAdults,
+            numChildren,
+            numRooms,
+            snapshotRoomPrice,
+            form.name,
+            form.email,
+            form.phone,
+            form.notes,
+          );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Có lỗi xảy ra. Vui lòng thử lại.";
+          if (typeof message === "string" && message.includes("NEXT_REDIRECT")) {
+            return;
+          }
+          toast.error(message);
+        }
+      });
+    });
+  };
 
   return (
     <div className="flex flex-col rounded-4xl bg-white shadow-lg">
@@ -80,27 +110,11 @@ export default function PriceDetail({
 
       <Button
         className="m-4 rounded-full h-12 font-semibold"
-        onClick={() => {
-          try {
-            handleSubmit((form) => createBookingThenRedirectToVNPay(
-              roomTypeId,
-              checkInDate,
-              checkOutDate,
-              numAdults,
-              numChildren,
-              numRooms,
-              snapshotRoomPrice,
-              form.name,
-              form.email,
-              form.phone,
-              form.notes,
-            ));
-          } catch (error) {
-            toast.error((error as Error).message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
-          }
-        }}
+        disabled={isPending}
+        onClick={onSubmit}
       >
-        Tiếp tục
+        {isPending && <Loader2Icon className="size-4 animate-spin mr-2" />}
+        {isPending ? "Đang xử lý..." : "Thanh toán với VNPay"}
       </Button>
       <div className="text-xs text-gray-500 px-4 pb-4">
         {"Bằng cách tiến hành thanh toán, bạn đã đồng ý với "}

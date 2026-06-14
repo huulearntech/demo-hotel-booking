@@ -53,6 +53,8 @@ async function hotelowner_getRoomTypes(): Promise<RoomTypeRow[]> {
 
   return roomTypes as RoomTypeRow[];
 }
+
+
 export default async function RoomsGrid() {
   const roomTypes = await hotelowner_getRoomTypes();
 
@@ -148,7 +150,7 @@ function RoomTypeCard({ roomType }: { roomType: RoomTypeRow }) {
 
       <CardFooter className="px-4 pb-4 justify-end">
         <Button size="sm" asChild>
-          <Link href={`${PATHS.hotelRooms}/${roomType.id}`} aria-label={`Manage ${roomType.name}`}>
+          <Link href={`${PATHS.hotelRoomTypes}/${roomType.id}`} aria-label={`Manage ${roomType.name}`}>
             Quản lý
           </Link>
         </Button>

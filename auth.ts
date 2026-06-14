@@ -39,6 +39,8 @@ export const nextAuthConfig = {
         let passwordMatch = false;
         if (isDevelopment) passwordMatch = (password === user.password);
         else passwordMatch = await bcrypt.compare(
+
+        // const passwordMatch = await bcrypt.compare(
           password,
           user.password as string
         );

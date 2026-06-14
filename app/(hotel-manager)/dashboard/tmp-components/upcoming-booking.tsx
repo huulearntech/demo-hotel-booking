@@ -1,37 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import { columns } from "./booking-columns";
 import { hotelowner_getBookings } from "@/lib/actions/hotel-manager/bookings";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 25;
 
 export default function UpcomingBooking() {
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageHistory, setPageHistory] = useState<Array<{ prevCursor: { checkInDate: Date; id: string } | null; nextCursor: { checkInDate: Date; id: string } | null }>>([
-    { prevCursor: null, nextCursor: null },
-  ]);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
+  const [pageParam, setPageParam] = useState<{
+    queryPrevCursor: { checkInDate: Date, id: string } | null;
+    queryNextCursor: { checkInDate: Date, id: string } | null;
+    directionIsNext: boolean;
+  }>({
+    queryPrevCursor: null,
+    queryNextCursor: null,
+    directionIsNext: true
+  });
 
-  const currentPage = pageHistory[pageIndex];
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["hotelowner_bookings", "upcoming", PAGE_SIZE, currentPage, direction],
+    queryKey: ["hotelowner_bookings", "upcoming", pageParam],
     queryFn: async () => {
       return hotelowner_getBookings(
         "upcoming",
         PAGE_SIZE,
-        direction === "prev" ? currentPage.prevCursor : null,
-        direction === "next" ? currentPage.nextCursor : null,
-        direction,
+        pageParam.queryPrevCursor,
+        pageParam.queryNextCursor,
+        pageParam.directionIsNext,
       );
     },
     placeholderData: keepPreviousData,
   });
 
   const items = data?.items ?? [];
-  const pageCount = data ? pageHistory.length + (data.nextCursor ? 1 : 0) : 1;
+  const hasNextPage = Boolean(data?.nextCursor);
+  const hasPreviousPage = Boolean(data?.prevCursor);
 
   if (isLoading) {
     return (
@@ -49,27 +53,49 @@ export default function UpcomingBooking() {
   }
 
   return (
-    <DataTable
-      columns={columns}
-      data={items}
-      pageCount={pageCount}
-      onPaginationChange={({ pageIndex: newIndex }) => {
-        if (newIndex === pageIndex) return;
-
-        if (newIndex > pageIndex) {
-          if (!data?.nextCursor || newIndex !== pageHistory.length) return;
-          setDirection("next");
-          setPageHistory((current) => [
-            ...current,
-            { prevCursor: data?.prevCursor ?? null, nextCursor: data.nextCursor! },
-          ]);
-          setPageIndex(newIndex);
-        } else {
-          if (!pageHistory[newIndex]) return;
-          setDirection("prev");
-          setPageIndex(newIndex);
-        }
-      }}
-    />
+    <div>
+      <DataTable
+        columns={columns}
+        data={items}
+      />
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <DataTablePagination
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          previousPage={() => {
+            if (data?.prevCursor) {
+              setPageParam({
+                queryPrevCursor: data.prevCursor,
+                queryNextCursor: data.nextCursor,
+                directionIsNext: false
+              });
+            }
+          }}
+          nextPage={() => {
+            if (data?.nextCursor) {
+              setPageParam({
+                queryPrevCursor: data.prevCursor,
+                queryNextCursor: data.nextCursor,
+                directionIsNext: true
+              });
+            }
+          }}
+        />
+      </div>
+    </div>
   );
+}
+
+
+import { Skeleton } from "@/components/ui/skeleton";
+
+export function UpcomingBookingSkeleton() {
+  return (
+    <div className="space-y-2">
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+    </div>
+  )
 }

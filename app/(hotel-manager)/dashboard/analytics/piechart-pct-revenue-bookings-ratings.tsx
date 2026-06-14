@@ -116,7 +116,7 @@ export default function PiechartPctRevenueBookings({
     error: errorRev,
   } = useQuery({
     queryKey: ["analytics", "revenue90"],
-    queryFn: fetchRevenueByRoomTypeLast90Days,
+    queryFn: async () => { return await fetchRevenueByRoomTypeLast90Days() },
     select: (res: any) => {
       if (!res?.ok) throw new Error(res?.error ?? "Failed to load revenue data");
       return res.data ?? [];
@@ -130,7 +130,7 @@ export default function PiechartPctRevenueBookings({
     error: errorBookings,
   } = useQuery({
     queryKey: ["analytics", "bookings90"],
-    queryFn: fetchBookingsCountByRoomTypeLast90Days,
+    queryFn: async () => { return await fetchBookingsCountByRoomTypeLast90Days() },
     select: (res: any) => {
       if (!res?.ok) throw new Error(res?.error ?? "Failed to load bookings data");
       return res.data ?? [];

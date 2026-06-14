@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { vnpay } from "@/lib/vnpay";
+// import { vnpay } from "@/lib/vnpay";
+
+import { verifyIpn } from "@/lib/vnpay";
 
 // Typo? Lmao. Inp -> Ipn
 import {
@@ -13,6 +15,7 @@ import {
 } from "vnpay";
 import prisma from "@/lib/prisma";
 import { differenceInDays } from "date-fns";
+import { BookingStatus } from "@/lib/generated/prisma/enums";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,14 +23,16 @@ export async function GET(request: NextRequest) {
     const queryParams = Object.fromEntries(searchParams.entries());
 
     // Verify the IPN call
-    const verify = vnpay.verifyIpnCall(queryParams as unknown as VerifyIpnCall);
+    const verify = verifyIpn(queryParams);
 
     // Check if the verification is successful
     if (!verify.isVerified) {
+      updateBookingStatus(verify.vnp_TxnRef, "PAYMENT_FAILED");
       return NextResponse.json(IpnFailChecksum);
     }
 
     if (!verify.isSuccess) {
+      updateBookingStatus(verify.vnp_TxnRef, "PAYMENT_FAILED");
       return NextResponse.json(IpnUnknownError);
     }
 
@@ -36,11 +41,13 @@ export async function GET(request: NextRequest) {
 
     // Check if order exists
     if (!booking || verify.vnp_TxnRef !== booking.id) {
+      // updateBookingStatus(verify.vnp_TxnRef, "PAYMENT_FAILED");
       return NextResponse.json(IpnOrderNotFound);
     }
 
     // Check if the payment amount matches
     if (verify.vnp_Amount !== booking.amount) {
+      updateBookingStatus(verify.vnp_TxnRef, "PAYMENT_FAILED");
       return NextResponse.json(IpnInvalidAmount);
     }
 
@@ -50,7 +57,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Update the order status to paid
-    await updateBookingStatusToPaid(booking.id);
+    await updateBookingStatus(booking.id, "PAID");
 
     // Return success response to VNPay
     return NextResponse.json(IpnSuccess);
@@ -91,12 +98,13 @@ async function findBookingById(bookingId: string) {
   });
 }
 
-async function updateBookingStatusToPaid(
+async function updateBookingStatus(
   bookingId: string,
+  newStatus: BookingStatus,
 ) {
   return prisma.booking.update({
     where: { id: bookingId },
-    data: { status: "PAID"},
+    data: { status: newStatus },
     select: { id: true, status: true },
   });
 }

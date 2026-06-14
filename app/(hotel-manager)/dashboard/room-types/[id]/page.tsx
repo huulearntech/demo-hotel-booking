@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { hotelowner_getRoomTypeById } from "@/lib/actions/hotel-manager/rooms";
+import { hotelowner_getRoomTypeById } from "@/lib/actions/hotel-manager/room-types";
 import RoomEditSingle from "./room-edit-single.client";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {

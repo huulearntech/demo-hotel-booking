@@ -52,7 +52,7 @@ export default async function HeaderAvatar({
         <DropdownMenuContent align="end" className="w-50">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="flex flex-col gap-1">
-              <p className="font-semibold truncate" title={name}>Xin chào, {name.split('')[-1]}</p>
+              <p className="font-semibold truncate" title={name}>Xin chào, {name.split(' ')[-1]}</p>
               <p className="font-normal text-muted-foreground truncate" title={email}>{email}</p>
               <Avatar className="size-16 mt-2 mx-auto items-center justify-center bg-muted">
                 {profileImageUrl

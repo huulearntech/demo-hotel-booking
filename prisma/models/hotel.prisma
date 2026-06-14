@@ -75,7 +75,7 @@ model Facility {
 
 model Room {
   id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String     @unique
+  name       String
   typeId     String     @map("type_id") @db.Uuid
   type       RoomType   @relation(fields: [typeId], references: [id], onDelete: Cascade)
   status     RoomStatus @default(ACTIVE)
@@ -85,6 +85,7 @@ model Room {
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt      @map("updated_at")
 
+  @@unique([typeId, name])
   @@index([typeId])
   @@map("rooms")
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { user_getRecentlyViewedHotels as core_user_getRecentlyViewedHotels } from "@/lib/generated/prisma/sql";
 import prisma from "@/lib/prisma";
 
@@ -8,7 +9,7 @@ import { HotelCardProps } from "@/lib/types/hotel-card";
 
 
 export async function user_getRecentlyViewedHotels(
-  limit: number = 10,
+  limit: number = DEFAULT_PAGE_SIZE,
   cursor: { viewedAt: Date, id: string } | null
 ): Promise<{ items: HotelCardProps[]; nextCursor: { viewedAt: Date, id: string } | null }> {
   const session = await auth();

@@ -5,7 +5,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import HotelCard from '@/components/hotel-card';
 import { useInView } from 'react-intersection-observer';
 import { user_getFavoriteHotels } from '@/lib/actions/user-account/favorites';
-import { PATHS, DEFAULT_SEARCH_BAR_VALUES } from '@/lib/constants';
+import { PATHS, DEFAULT_SEARCH_BAR_VALUES, DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { codec_SearchSpecWithoutLocation_Params } from '@/lib/zod_schemas/search-bar';
 
 export default function FavoritesList() {
@@ -28,7 +28,7 @@ export default function FavoritesList() {
     queryFn: async ({ pageParam }: { pageParam?: string | null }) => {
       // NOTE: I don't like the throw mechanism in general, at the point of writing this,
       // but tanstack uses it, so I have to conform to it.
-      const res = await user_getFavoriteHotels({ limit: 12, cursor: pageParam ?? undefined });
+      const res = await user_getFavoriteHotels({ limit: DEFAULT_PAGE_SIZE, cursor: pageParam ?? undefined });
       if (!res.ok) throw new Error(res.error || 'Failed to fetch');
       return res.data; // { items, nextCursor }
     },

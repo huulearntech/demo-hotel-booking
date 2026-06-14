@@ -7,6 +7,14 @@ import {
   hotelowner_getRatingCountGroupedByStars
 } from "@/lib/generated/prisma/sql";
 
+import { OperationResult, Override } from "@/lib/types/utils";
+import {
+  hotelowner_getRevenueByRoomTypeLast90Days,
+  hotelowner_getLast90DaysRatingByTypes,
+  hotelowner_getLast90DaysBookings
+} from "@/lib/generated/prisma/sql";
+
+
 export async function fetchLast90DaysRevenueAndNumberOfBookings() {
   const session = await auth();
   if (!session) {
@@ -54,14 +62,6 @@ export async function hotelowner_getRatingDistribution() {
   const result = await prisma.$queryRawTyped(hotelowner_getRatingCountGroupedByStars(hotel.id));
   return result;
 }
-
-
-import { OperationResult, Override } from "@/lib/types/utils";
-import {
-  hotelowner_getRevenueByRoomTypeLast90Days,
-  hotelowner_getLast90DaysRatingByTypes,
-  hotelowner_getLast90DaysBookings
-} from "@/lib/generated/prisma/sql";
 
 export async function fetchRevenueByRoomTypeLast90Days():
   Promise<OperationResult<Override<

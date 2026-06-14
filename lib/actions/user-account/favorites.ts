@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { OperationResult } from "@/lib/types/utils";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 
 
 export async function user_upsertFavoriteHotel(
@@ -100,7 +101,7 @@ export async function user_getFavoriteHotels(
     return { ok: false, error: "Forbidden", status: 403 };
   }
 
-  const limit = Math.max(1, Math.min(50, opts?.limit ?? 10)); // clamp limit
+  const limit = Math.max(1, Math.min(50, opts?.limit ?? DEFAULT_PAGE_SIZE)); // clamp limit
   const fetchCount = limit + 1; // fetch one extra to detect next page
 
   let cursorCreatedAt: Date | undefined;

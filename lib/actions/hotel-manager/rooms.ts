@@ -3,43 +3,28 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-import { MultiRoomType_FormValues, RoomType_FormOutput } from "@/lib/zod_schemas/create-room";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { OperationResult, Override } from "@/lib/types/utils";
+import { OperationResult } from "@/lib/types/utils";
 import { revalidatePath } from "next/cache";
 import { PATHS } from "@/lib/constants";
+import {
+  schema_Room,
+  type RoomFormOutput,
+} from "@/lib/zod_schemas/create-room";
 
-export async function hotelowner_updateRoomTypeById(id: string, data: RoomType_FormOutput): Promise<OperationResult> {
-  const session = await auth();
-  if (session?.user.role !== "HOTEL_OWNER") {
-    return { ok: false, error: "Unauthorized", status: 401 };
-  }
 
-  try {
-    const updated = await prisma.roomType.update({
-      where: { id, hotel: { ownerId: session.user.id } },
-      data,
-      // select: {},
-    }).then((roomType) => ({
-      ...roomType,
-      price: roomType.price.toNumber(),
-    }));
-    return { ok: true, data: updated };
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      return { ok: false, error: "Room type not found", status: 404 };
-    }
-    return { ok: false, error: "Failed to update room type" };
-  }
-}
-
-export async function hotelowner_createManyRoomTypes(formData: MultiRoomType_FormValues): Promise<OperationResult> {
+export async function hotelowner_createRoom(formData: RoomFormOutput) {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthorized", status: 401 };
   }
   if (session.user.role !== "HOTEL_OWNER") {
     return { ok: false, error: "Forbidden", status: 403 };
+  }
+
+  const validData = schema_Room.safeParse(formData);
+  if (!validData.success) {
+    return { ok: false, error: "Thông tin không hợp lệ.", status: 400 };
   }
 
   const hotel = await prisma.hotel.findUnique({
@@ -51,33 +36,14 @@ export async function hotelowner_createManyRoomTypes(formData: MultiRoomType_For
     return { ok: false, error: "Hotel not found for the owner", status: 404 };
   }
 
-  const result =  prisma.roomType.createMany({ // only need to return the batch count
-    data: formData.map(roomType => ({ ...roomType, hotelId: hotel.id })),
-  });
+  const result = prisma.room.create({ data: formData });
   if (!result) {
-    return { ok: false, error: "Failed to create room types" };
+    return { ok: false, error: "Failed to create rooms" };
   }
-  revalidatePath(PATHS.hotelRooms);
   return { ok: true, data: result };
 }
 
-
-export async function hotelowner_getRoomById(roomId: string):
-  Promise<OperationResult<Prisma.RoomGetPayload<{
-    include: {
-      type: {
-        select: {
-          hotel: { select: { name: true } },
-          name: true,
-          adultCapacity: true,
-          childrenCapacity: true,
-          imageUrls: true,
-          bedType: true,
-          price: true,
-        },
-      },
-    },
-  }>>> {
+export async function hotelowner_getRoomById(roomId: string) {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthorized", status: 401 };
@@ -91,19 +57,15 @@ export async function hotelowner_getRoomById(roomId: string):
       type: { hotel: { ownerId: session.user.id } },
       id: roomId,
     },
-    include: {
+    select: {
+      name: true,
       type: {
         select: {
-          hotel: { select: { name: true } },
+          id: true,
           name: true,
-          adultCapacity: true,
-          childrenCapacity: true,
-          imageUrls: true,
-          bedType: true,
-          price: true,
-        },
-      },
-    },
+        }
+      }
+    }
   });
   if (!result) {
     return { ok: false, error: "Room not found", status: 404 };
@@ -112,21 +74,8 @@ export async function hotelowner_getRoomById(roomId: string):
 }
 
 
-export async function hotelowner_getRoomTypeById(roomTypeId: string):
-  Promise<OperationResult<Prisma.RoomTypeGetPayload<{
-    select: {
-      hotel: { select: { name: true, id: true } },
-      name: true,
-      adultCapacity: true,
-      childrenCapacity: true,
-      imageUrls: true,
-      areaM2: true,
-      bedType: true,
-      price: true,
-      description: true,
-      _count: { select: { rooms: true } },
-    }
-  }>>> {
+export async function hotelowner_getRoomsOfType(typeId?: string, cursorId?: string):
+  Promise<OperationResult<{ id: string, name: string, typeId: string, type: { name: string } }[]>> {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthorized", status: 401 };
@@ -135,82 +84,48 @@ export async function hotelowner_getRoomTypeById(roomTypeId: string):
     return { ok: false, error: "Forbidden", status: 403 };
   }
 
-  const result = await prisma.roomType.findUnique({
-    where: {
-      hotel: { ownerId: session.user.id },
-      id: roomTypeId,
-    },
-    select: {
-      hotel: { select: { name: true, id: true } },
-      name: true,
-      adultCapacity: true,
-      childrenCapacity: true,
-      imageUrls: true,
-      bedType: true,
-      areaM2: true,
-      price: true,
-      description: true,
-      _count: { select: { rooms: true } },
-    }
-  });
-  if (!result) {
-    return { ok: false, error: "Room Type not found", status: 404 };
-  }
-  return { ok: true, data: result };
-}
-
-// TODO: name this better
-export type RoomType = Override<Prisma.RoomTypeGetPayload<{
-  select: {
-    id: true,
-    hotelId: true,
-    name: true,
-    price: true,
-    adultCapacity: true,
-    childrenCapacity: true,
-    imageUrls: true,
-    createdAt: true,
-    bedType: true,
-  }
-}>, { price: number }>;
-
-export async function hotelowner_getRoomTypes():
-  Promise<OperationResult<RoomType[]>>
-{
-  const session = await auth();
-  if (!session) {
-    return { ok: false, error: "Unauthorized", status: 401 };
-  }
-  if (session.user.role !== "HOTEL_OWNER") {
-    return { ok: false, error: "Forbidden", status: 403 };
-  }
-
-  const result = await prisma.roomType.findMany({
-    where: { hotel: { ownerId: session.user.id } },
+  const result = await prisma.room.findMany({
+    where: { type: { id: typeId, hotel: { ownerId: session.user.id } } },
     select: {
       id: true,
-      hotelId: true,
       name: true,
-      price: true,
-      adultCapacity: true,
-      childrenCapacity: true,
-      imageUrls: true,
-      createdAt: true,
-      bedType: true,
+      typeId: true,
+      type: { select: { name: true } }
     },
-    orderBy: { createdAt: "desc" },
-  }).then((rooms) => rooms.map((room) => ({
-    ...room,
-    price: room.price.toNumber(),
-  })));
+    cursor: cursorId ? { id: cursorId } : undefined,
+    orderBy: { id: "asc" },
+  });
   if (!result) {
-    return { ok: false, error: "Failed to fetch room types" };
+    return { ok: false, error: `Failed to fetch rooms of type ${typeId}` };
   }
   return { ok: true, data: result };
 }
 
-export async function
-  hotelowner_deleteRoomTypeById(id: string):
+
+export async function hotelowner_updateRoomById(id: string, data: RoomFormOutput) {
+  const session = await auth();
+  if (session?.user.role !== "HOTEL_OWNER") {
+    return { ok: false, error: "Unauthorized", status: 401 };
+  }
+
+  try {
+    const updated = await prisma.room.update({
+      where: { id, type: { hotel: { ownerId: session.user.id } } },
+      data,
+      select: { id: true }
+    });
+    return { ok: true, data: updated };
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return { ok: false, error: "Room not found", status: 404 };
+    }
+    return { ok: false, error: "Failed to update room" };
+  }
+}
+
+
+
+export async function hotelowner_deleteRoomById(id: string):
   Promise<OperationResult<{ id: string }>>
 {
   const session = await auth();
@@ -221,12 +136,12 @@ export async function
     return { ok: false, error: "Forbidden", status: 403 };
   }
 
-  const response = await prisma.roomType.delete({
-    where: { id, hotel: { ownerId: session.user.id } },
+  const response = await prisma.room.delete({
+    where: { id, type: { hotel: { ownerId: session.user.id } } },
     select: { id: true },
   })
   if (!response) {
-    return { ok: false, error: "Failed to delete room type" };
+    return { ok: false, error: "Failed to delete room" };
   }
 
   return { ok: true, data: response };

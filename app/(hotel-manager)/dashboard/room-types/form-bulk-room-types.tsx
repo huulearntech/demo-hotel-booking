@@ -21,7 +21,7 @@ import { schema_MultiRoomType, type MultiRoomType_FormInput, MultiRoomType_FormO
 import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { hotelowner_createManyRoomTypes } from "@/lib/actions/hotel-manager/rooms";
+import { hotelowner_createManyRoomTypes } from "@/lib/actions/hotel-manager/room-types";
 
 type MultiRoomFormType = ReturnType<typeof useForm<MultiRoomType_FormInput, unknown, MultiRoomType_FormOutput>>;
 

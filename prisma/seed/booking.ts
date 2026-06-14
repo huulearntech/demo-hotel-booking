@@ -17,8 +17,8 @@ export function randomQuarterTime({ minHour, maxHour }: { minHour:number, maxHou
 const today = new Date();
 async function seedBookings() {
   const USERS_PER_PAGE = 10;
-  const MAX_ROOM_TYPE_PAGES = 50;
-  const MAX_USER_PAGES = 10;
+  const MAX_ROOM_TYPE_PAGES = 10;
+  const MAX_USER_PAGES = 1;
 
   let userCursor: string | undefined = undefined;
 
@@ -54,7 +54,7 @@ async function seedBookings() {
           numAdults,
           numChildren,
           numRooms,
-          20,
+          10,
           roomTypeIdCursor,
         ));
 
@@ -96,7 +96,7 @@ async function seedBookings() {
 
 
 async function seedReviews() {
-  const PAGE = 50;
+  const PAGE = 20;
   let totalCreated = 0;
   let cursor: string | undefined = undefined;
 

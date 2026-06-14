@@ -4,12 +4,12 @@
 import "dotenv/config";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { vnpay } from "@/lib/vnpay";
+import { createVnpayUrl, vnpay } from "@/lib/vnpay";
 import { ProductCode, VnpLocale, VnpCurrCode, dateFormat } from "vnpay";
 
 import { schema_bookingForm } from "../zod_schemas/booking";
 import prisma from "../prisma";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, subMinutes } from "date-fns";
 import { auth } from "@/auth";
 import { user_getRoomTypeInventoryForUpdate } from "../generated/prisma/sql";
 import { schema_searchSpecWithoutLocation, toYYYY_MM_DD } from "../zod_schemas/search-bar";
@@ -76,11 +76,14 @@ export async function createBookingThenRedirectToVNPay(
       where: {
         userId: session.user.id,
         status: "PENDING_TO_PAY",
+        createdAt: {
+          gte: subMinutes(new Date(), 15), // Only consider bookings created in the last 15 minutes
+        },
       },
     });
 
     if (userHasAnotherPendingBooking) {
-      throw new Error("You have another pending booking. Please complete or cancel it before creating a new one.");
+      throw new Error("Bạn có một đơn đặt phòng đang chờ thanh toán. Vui lòng hoàn tất thanh toán hoặc hủy đơn đó trước khi tạo đơn mới.");
     }
 
     const roomType = await prisma.roomType.findUnique({
@@ -149,20 +152,34 @@ export async function createBookingThenRedirectToVNPay(
     });
     
 
-    const orderInfo = `Order ${createdBooking.id}: ${numRooms}x room(s) (${roomTypeId}) from ${toYYYY_MM_DD(checkInDate)} to ${toYYYY_MM_DD(checkOutDate)}, total ${totalPrice} VND`;
+    const orderInfo = `Order ${createdBooking.id}`;
 
     // Build payment URL
-    const clientIPAddr = await headers().then(getClientIP);
-    const paymentUrl = vnpay.buildPaymentUrl({
-      vnp_Amount: totalPrice,
-      vnp_CreateDate: dateFormat(new Date()),
-      vnp_CurrCode: VnpCurrCode.VND,
-      vnp_IpAddr: clientIPAddr,
-      vnp_Locale: VnpLocale.VN,
-      vnp_OrderInfo: orderInfo,
-      vnp_OrderType: ProductCode.Hotel_Tourism,
-      vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
-      vnp_TxnRef: createdBooking.id,
+    const clientIpAddr = await headers().then(getClientIP);
+    // const paymentUrl = vnpay.buildPaymentUrl({
+    //   vnp_Amount: totalPrice,
+    //   vnp_CreateDate: dateFormat(new Date()),
+    //   vnp_CurrCode: VnpCurrCode.VND,
+    //   vnp_IpAddr: clientIpAddr,
+    //   vnp_Locale: VnpLocale.VN,
+    //   vnp_OrderInfo: orderInfo,
+    //   vnp_OrderType: ProductCode.Hotel_Tourism,
+    //   vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
+    //   vnp_TxnRef: createdBooking.id,
+    // });
+
+    const paymentUrl = createVnpayUrl(
+      totalPrice,
+      createdBooking.id,
+      clientIpAddr,
+      orderInfo
+    );
+
+    await prisma.booking.update({
+      where: { id: createdBooking.id },
+      data: {
+        vnpayUrl: paymentUrl,
+      },
     });
 
     // Redirect to VNPay

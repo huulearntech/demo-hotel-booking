@@ -6,19 +6,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
-      },
-      {
-        protocol: 'https',
         hostname: 'picsum.photos',
       },
       {
         protocol: 'https',
-        hostname: 'cdn.jsdelivr.net',
+        hostname: 'avatars.githubusercontent.com',
       },
       {
         protocol: 'https',
-        hostname: 'avatars.githubusercontent.com',
+        hostname: 'cdn.jsdelivr.net',
       },
       {
         protocol: 'https',

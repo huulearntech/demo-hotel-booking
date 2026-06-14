@@ -74,7 +74,7 @@ export default async function TopDestinationsSection () {
                 pathname: PATHS.search,
                 query: {
                   locationId: dest.id,
-                  locationType: dest.type,
+                  locationType: "province",
                   ...codec_SearchSpecWithoutLocation_Params.encode(defaultSpecWithoutLocation)
                 }
               }} className="absolute inset-0 z-10" />

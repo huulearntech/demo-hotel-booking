@@ -1,17 +1,17 @@
 "use server";
 
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, subMinutes } from "date-fns";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { type OperationResult } from "@/lib/types/utils";
 import { UserUpdateNameData, userUpdateNameSchema } from "@/lib/zod_schemas/auth";
-import { CACHE_TAGS, PATHS } from "@/lib/constants";
+import { CACHE_TAGS, DEFAULT_PAGE_SIZE, PATHS } from "@/lib/constants";
 import { BookingStatus } from "@/lib/generated/prisma/enums";
 
 export async function user_getRecentBookings(
   lastCursor: string | null = null,
-  limit: number = 10,
+  limit: number = DEFAULT_PAGE_SIZE,
   status: BookingStatus = "PENDING_TO_PAY",
 ) {
   const session = await auth();
@@ -33,8 +33,22 @@ export async function user_getRecentBookings(
     pagination.skip = 1;
   }
 
+  const where =
+    status === "PENDING_TO_PAY"
+      ? {
+          userId: session.user.id,
+          status: BookingStatus.PENDING_TO_PAY,
+          createdAt: {
+            gte: subMinutes(new Date(), 15),
+          },
+        }
+      : {
+          userId: session.user.id,
+          status,
+        };
+
   const bookings = await prisma.booking.findMany({
-    where: { userId: session.user.id, status },
+    where: where,
     orderBy: { createdAt: "desc" },
     ...pagination,
     select: {
@@ -64,6 +78,7 @@ export async function user_getRecentBookings(
       snapshotRoomPrice: true,
       status: true,
       createdAt: true,
+      vnpayUrl: true,
     }
   });
 

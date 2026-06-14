@@ -1,11 +1,10 @@
-"use client"
-
 import { ComponentProps } from "react"
 import {
   BarChartBigIcon,
   LayoutDashboardIcon,
   TicketsIcon,
   DoorOpenIcon as RoomIcon,
+  Building as RoomsIcon,
   StarIcon
 } from "lucide-react"
 
@@ -37,6 +36,11 @@ const navMain = [
     title: "Thống kê",
     url: PATHS.hotelStatistics,
     icon: BarChartBigIcon,
+  },
+  {
+    title: "Loại phòng",
+    url: PATHS.hotelRoomTypes,
+    icon: RoomsIcon,
   },
   {
     title: "Phòng",

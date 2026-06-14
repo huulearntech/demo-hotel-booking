@@ -22,7 +22,7 @@ import { OperationResult } from "@/lib/types/utils";
 
 const getHHMMFromDate = (date: Date) => {
   console.log(date);
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  return `${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
 }
 
 async function user_getRoomTypeById(id: string): Promise<OperationResult<

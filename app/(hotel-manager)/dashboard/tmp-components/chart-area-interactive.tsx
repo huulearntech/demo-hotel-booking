@@ -56,8 +56,8 @@ export function ChartAreaInteractive() {
   const [chartData, setChartData] = useState<ChartDataItem[]>([])
 
   useEffect(() => {
-    let mounted = true
-    async function fetchData() {
+    let mounted = true;
+    (async () => {
       try {
         const data = await fetchLast90DaysRevenueAndNumberOfBookings();
         if (mounted) setChartData(data)
@@ -65,8 +65,8 @@ export function ChartAreaInteractive() {
         // swallow or log as needed
         // console.error(e)
       }
-    }
-    fetchData()
+    })();
+
     return () => {
       mounted = false
     }

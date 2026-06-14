@@ -247,7 +247,7 @@ BEGIN
     IF (OLD.status IS DISTINCT FROM NEW.status) THEN
       IF OLD.status <> 'PAID' AND NEW.status = 'PAID' THEN
         PERFORM reserve_booking(NEW.id::uuid);
-      ELSIF OLD.status = 'PAID' AND (NEW.status = 'CANCELLED' OR NEW.status = 'EXPIRED') THEN
+      ELSIF OLD.status = 'PAID' AND NEW.status = 'CANCELLED' THEN
         PERFORM release_booking(NEW.id::uuid);
       END IF;
     END IF;

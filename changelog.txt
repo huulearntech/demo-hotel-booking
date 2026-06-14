@@ -1,6 +1,1 @@
-Date object: fix mismatch between server and client, especially in Nextjs.
-
-TODO: payment result page.
-
-TODO: on searching: instead of joining room, go check the inventory. But inventory updating requires cron job,
-and that requires database waking up all day.
+NOTE: google blocked my mailing support account. That's why the otp doesn't work.

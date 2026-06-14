@@ -36,13 +36,15 @@ export default function ReviewSection({
 
   const { data, isFetching } = useQuery({
     queryKey: ["hotelReviews", hotelId, pageParam],
-    queryFn: () => user_getReviewsOfHotel(
-      hotelId,
-      DEFAULT_PAGE_SIZE,
-      pageParam.queryPrevCursor,
-      pageParam.queryNextCursor,
-      pageParam.directionIsNext
-    ),
+    queryFn: async () => {
+      return await user_getReviewsOfHotel(
+        hotelId,
+        DEFAULT_PAGE_SIZE,
+        pageParam.queryPrevCursor,
+        pageParam.queryNextCursor,
+        pageParam.directionIsNext
+      )
+    },
     placeholderData: keepPreviousData,
   });
 

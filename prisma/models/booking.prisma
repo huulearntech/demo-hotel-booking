@@ -1,6 +1,7 @@
 model Booking {
   id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   status       BookingStatus       @default(PENDING_TO_PAY)
+  vnpayUrl     String?             @map("vnpay_url") // URL for payment, for continuing
 
   userId       String              @map("user_id") @db.Uuid
   user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -56,6 +57,7 @@ model Review {
 enum BookingStatus {
   PENDING_TO_PAY
   PAID
+  PAYMENT_FAILED
   CANCELLED
   CHECKED_IN
   CHECKED_OUT

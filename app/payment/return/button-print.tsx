@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export function PrintButton() {
   const handlePrint = () => {
     if (typeof window !== "undefined") {
@@ -8,11 +10,8 @@ export function PrintButton() {
   };
 
   return (
-    <button
-      onClick={handlePrint}
-      className="flex-1 bg-gray-600 text-white text-center py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors"
-    >
+    <Button variant="outline" onClick={handlePrint} className="flex-1">
       In hóa đơn
-    </button>
+    </Button>
   );
 }

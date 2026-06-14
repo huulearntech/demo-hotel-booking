@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./leaflet-override.css";
@@ -39,6 +39,7 @@ function MapController({
   const timerRef = useRef<number | null>(null);
 
   const filter = useFilterForm();
+  const { getValues } = filter;
 
   
   useEffect(() => {
@@ -98,7 +99,7 @@ function MapController({
         }
       }, debounceMs);
     },
-    [onUpdateBBox, setDataState, filter, searchBarValues]
+    [onUpdateBBox, setDataState, getValues, searchBarValues?.location]
   );
 
   useMapEvents({
@@ -141,13 +142,12 @@ function MapController({
   useEffect(() => {
     if (!bboxRef.current) return; // skip if bbox not initialized yet
     scheduleFetch(bboxRef.current, true); // force fetch
-  }, [searchBarValues, scheduleFetch, filter]);
+  }, [searchBarValues?.location, scheduleFetch]);
 
   return null;
 }
 
 type MapClientProps = {
-  searchBarValues: SearchBar_FormOutput;
   initialCenter?: [number, number];
   zoom?: number;
   debounceMs?: number;
@@ -155,12 +155,53 @@ type MapClientProps = {
 };
 
 export default function MapClient({
-  searchBarValues,
   initialCenter = [21.003864,105.803041],
   zoom = 13,
   debounceMs = 800,
   minMoveMeters = 500,
 }: MapClientProps) {
+  const searchParams = useSearchParams();
+
+  const searchBarValuesFromSearchParams = useMemo(() => {
+    const locationId = searchParams.get("locationId") || "";
+    const locationType = (searchParams.get("locationType") || "none") as SearchBar_LocationType;
+    const checkInDate = searchParams.get("checkInDate") ?? "";
+    const checkOutDate = searchParams.get("checkOutDate") ?? "";
+    const numAdults = searchParams.get("numAdults") ? parseInt(searchParams.get("numAdults")!) : 2;
+    const numChildren = searchParams.get("numChildren") ? parseInt(searchParams.get("numChildren")!) : 0;
+    const numRooms = searchParams.get("numRooms") ? parseInt(searchParams.get("numRooms")!) : 1;
+
+    return {
+      location: {
+        id: locationId,
+        type: locationType,
+      },
+      inOutDates: {
+        from: new Date(checkInDate),
+        to: new Date(checkOutDate),
+      },
+      guestsAndRooms: {
+        numAdults,
+        numChildren,
+        numRooms,
+      },
+    } as SearchBar_FormInput;
+  }, [
+    searchParams,
+    searchParams?.get("locationId"),
+    searchParams?.get("locationType"),
+    searchParams?.get("checkInDate"),
+    searchParams?.get("checkOutDate"),
+    searchParams?.get("numAdults"),
+    searchParams?.get("numChildren"),
+    searchParams?.get("numRooms"),
+  ]);
+
+  const { success, data: searchBarValues } = useMemo(
+    () => schema_searchBar.safeParse(searchBarValuesFromSearchParams),
+    [searchBarValuesFromSearchParams]
+  );
+  if (!success) return null;
   const [dataState, setDataState] = useState<{ hotels: Map_HotelCardProps[]; loading: boolean; error: { message: string } | null }>({
     hotels: [],
     loading: true,
@@ -171,47 +212,62 @@ export default function MapClient({
   const stringifiedSearchParams = new URLSearchParams(codec_SearchSpecWithoutLocation_Params.encode(searchBarValuesWithoutLocation)).toString();
 
   return (
-    <div className="w-full flex-1">
-      <MapContainer center={initialCenter} zoom={zoom} style={{ height: "100%", width: "100%" }} zoomControl={false}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+    <div className="w-screen h-screen flex flex-col">
+      <div className="sticky top-0 w-full py-3 shadow-lg bg-white z-1000 flex items-end justify-center gap-x-2">
+        <ButtonOpenFilterSheet className="mb-0.5" />
+        <SearchBar
+          defaultValues={searchBarValues}
+          className="content mx-0"
+          collapsible
         />
+      </div>
+      <div className="w-full flex-1">
+        <MapContainer center={initialCenter} zoom={zoom} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          />
 
-        <MapController
-          searchBarValues={searchBarValues}
-          debounceMs={debounceMs}
-          minMoveMeters={minMoveMeters}
-          setDataState={setDataState}
-        />
+          <MapController
+            searchBarValues={searchBarValues}
+            debounceMs={debounceMs}
+            minMoveMeters={minMoveMeters}
+            setDataState={setDataState}
+          />
 
-        {dataState.loading && (
-          <div
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-1000
+          {dataState.loading && (
+            <div
+              className="absolute top-8 left-1/2 -translate-x-1/2 z-1000
                flex items-center gap-x-2 px-3 py-1 rounded-full
                bg-white shadow text-base font-semibold
                pointer-events-none"
-          >
-            <Loader2Icon className="animate-spin size-5" />
-            Đang tải...
-          </div>
-        )}
-        {dataState.error && (
-          <div
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-1000
+            >
+              <Loader2Icon className="animate-spin size-5" />
+              Đang tải...
+            </div>
+          )}
+          {dataState.error && (
+            <div
+              className="absolute top-8 left-1/2 -translate-x-1/2 z-1000
                flex items-center gap-x-2 px-3 py-1 rounded-full
                bg-destructive text-destructive shadow text-base font-semibold"
-          >
-            {dataState.error.message}
-          </div>
-        )}
+            >
+              {dataState.error.message}
+            </div>
+          )}
 
-        {dataState.hotels.map((hotel) => (
-          <MyMarker key={hotel.id} hotel={hotel} searchParams={stringifiedSearchParams} />
-        ))}
+          {dataState.hotels.map((hotel) => (
+            <MyMarker key={hotel.id} hotel={hotel} searchParams={stringifiedSearchParams} />
+          ))}
 
-        <ZoomControl position="topright" />
-      </MapContainer>
+          <ZoomControl position="topright" />
+        </MapContainer>
+      </div>
     </div>
   );
 }
+
+import { useSearchParams } from "next/navigation";
+import { SearchBar_FormInput, SearchBar_LocationType, schema_searchBar } from "@/lib/zod_schemas/search-bar";
+import SearchBar from "@/components/search-bar";
+import ButtonOpenFilterSheet from "../button-open-filter-sheet";

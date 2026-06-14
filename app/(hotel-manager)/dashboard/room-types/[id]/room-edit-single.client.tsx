@@ -13,7 +13,7 @@ import { CloudUploadIcon, SaveIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
 import { schema_RoomType, type RoomType_FormInput, type RoomType_FormOutput } from "@/lib/zod_schemas/create-room";
-import { hotelowner_updateRoomTypeById } from "@/lib/actions/hotel-manager/rooms";
+import { hotelowner_updateRoomTypeById } from "@/lib/actions/hotel-manager/room-types";
 import { toast } from "sonner";
 
 export default function RoomEditSingle({

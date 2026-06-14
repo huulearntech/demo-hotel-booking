@@ -69,6 +69,7 @@ CREATE TABLE "wards" (
 CREATE TABLE "bookings" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "status" "BookingStatus" NOT NULL DEFAULT 'PENDING_TO_PAY',
+    "vnpay_url" TEXT,
     "user_id" UUID NOT NULL,
     "room_type_id" UUID NOT NULL,
     "check_in_date" DATE NOT NULL,
@@ -286,10 +287,10 @@ CREATE UNIQUE INDEX "hotels_owner_id_key" ON "hotels"("owner_id");
 CREATE UNIQUE INDEX "facilities_name_key" ON "facilities"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "rooms_name_key" ON "rooms"("name");
+CREATE INDEX "rooms_type_id_idx" ON "rooms"("type_id");
 
 -- CreateIndex
-CREATE INDEX "rooms_type_id_idx" ON "rooms"("type_id");
+CREATE UNIQUE INDEX "rooms_type_id_name_key" ON "rooms"("type_id", "name");
 
 -- CreateIndex
 CREATE INDEX "room_types_hotel_id_idx" ON "room_types"("hotel_id");

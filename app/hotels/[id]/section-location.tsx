@@ -23,11 +23,10 @@ export default async function LocationSection({
     new URLSearchParams(searchParams).toString()
   }`;
 
-  // const staticMapApiKey = process.env.GEOAPIFY_MAPS_API_KEY;
-  // const staticMapWidth = 928;
-  // const staticMapHeight = 300;
-  // const staticMapSrc = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=${staticMapWidth}&height=${staticMapHeight}&center=lonlat:${hotel.longitude},${hotel.latitude}&zoom=14&pitch=0&marker=lonlat:${hotel.longitude},${hotel.latitude};type:awesome;color:%23e01401&apiKey=${staticMapApiKey}`;
-  const staticMapSrc = "https://placehold.co/928x300.webp?text=Static+Map+Placeholder&font=Roboto&bg=E0E0E0&fg=757575";
+  const staticMapApiKey = process.env.GEOAPIFY_MAPS_API_KEY;
+  const staticMapWidth = 928;
+  const staticMapHeight = 300;
+  const staticMapSrc = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=${staticMapWidth}&height=${staticMapHeight}&center=lonlat:${hotel.longitude},${hotel.latitude}&zoom=14&pitch=0&marker=lonlat:${hotel.longitude},${hotel.latitude};type:awesome;color:%23e01401&apiKey=${staticMapApiKey}`;
 
   return (
     <section id="location" className="w-full flex flex-col">

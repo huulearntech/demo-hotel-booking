@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hotelowner_getReviews as core_hotelowner_getReviews } from "@/lib/generated/prisma/sql";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 
 export async function hotelowner_replyToReview(reviewId: string, replyContent: string) {
   const session = await auth();
@@ -44,7 +45,7 @@ export async function hotelowner_replyToReview(reviewId: string, replyContent: s
 }
 
 export async function hotelowner_getReviews(
-  limit: number,
+  limit: number = DEFAULT_PAGE_SIZE,
   replied: boolean | null,
   cursor: {
     createdAt: Date,

@@ -90,3 +90,42 @@ export async function user_createBooking(
     return { ok: false, status: 500, error: "Internal Server Error: Failed to create booking" };
   }
 }
+
+export async function user_cancelBooking(bookingId: string): Promise<OperationResult<null>> {
+  const session = await auth();
+  if (!session || !session.user) {
+    return { ok: false, status: 401, error: "Bạn cần đăng nhập để hủy đặt phòng." };
+  }
+  
+  if (session.user.role !== "USER") {
+    return { ok: false, status: 403, error: "Bạn không có quyền thực hiện hành động này." }; 
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: { userId: true, status: true },
+  });
+
+  if (!booking) {
+    return { ok: false, status: 404, error: "Đặt phòng không tồn tại." };
+  }
+
+  if (booking.userId !== session.user.id) {
+    return { ok: false, status: 403, error: "Bạn không có quyền hủy đặt phòng này." };
+  }
+
+  if (booking.status !== "PENDING_TO_PAY") {
+    return { ok: false, status: 400, error: "Chỉ có thể hủy đặt phòng đang chờ thanh toán." };
+  }
+
+  try {
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED" },
+    });
+
+    return { ok: true, data: null };
+  } catch (err) {
+    return { ok: false, status: 500, error: "Internal Server Error: Failed to cancel booking" };
+  }
+}
