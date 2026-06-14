@@ -45,8 +45,8 @@ For hotel owners / managers:
 Clone the repository:
 
 ```bash
-git clone https://github.com/huulearntech/huu-learn-nextjs.git
-cd huu-learn-nextjs
+git clone https://github.com/huulearntech/demo-hotel-booking.git
+cd demo-hotel-booking
 ```
 
 Install dependencies:
