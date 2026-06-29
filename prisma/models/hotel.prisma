@@ -24,7 +24,10 @@ model Hotel {
   status                HotelStatus @default(PENDING_APPROVAL)
 
   roomTypes             RoomType[]
-  facilities            Facility[]
+
+  customFacilities            CustomFacility[]
+  facilities     CommonFacility[]
+
   favoritedBy           Favorite[]
   recentlyViewedBy      RecentlyViewed[]
 
@@ -56,9 +59,7 @@ enum FacilityType {
   OTHER
 }
 
-// There are two types of facilities: those that are universal and thus have icons (e.g., "Free Wi-Fi", "Swimming Pool"), and those that are specific to a hotel and thus do not have icons (e.g., "Located in a historic building", "Has a rooftop bar").
-// For the former, we can have a predefined list of facilities with icons. For the latter, we can allow hotel owners to create custom facilities without icons. To accommodate both types, we can make the iconUrl field optional. If it's null, it means it's a custom facility without an icon.
-model Facility {
+model CommonFacility {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique
   iconUrl   String?  @map("icon_url")
@@ -70,7 +71,27 @@ model Facility {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
-  @@map("facilities")
+  @@map("common_facilities")
+}
+
+// There are two types of facilities: those that are universal and thus have icons (e.g., "Free Wi-Fi", "Swimming Pool"), and those that are specific to a hotel and thus do not have icons (e.g., "Located in a historic building", "Has a rooftop bar").
+// For the former, we can have a predefined list of facilities with icons. For the latter, we can allow hotel owners to create custom facilities without icons. To accommodate both types, we can make the iconUrl field optional. If it's null, it means it's a custom facility without an icon.
+model CustomFacility {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique
+  // iconUrl     String?  @map("icon_url")
+  type        FacilityType
+
+  hotelId     String?   @map("hotel_id") @db.Uuid
+  hotel       Hotel?    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomTypes    RoomType[]
+
+  @@unique([hotelId, name])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@map("custom_facilities")
 }
 
 model Room {
@@ -123,7 +144,10 @@ model RoomType {
   imageUrls        String[] @map("image_urls")    // NOTE: may have videos in future.
 
   rooms            Room[]
-  facilities       Facility[]
+
+  customFacilities       CustomFacility[]
+  facilities       CommonFacility[]
+
   bookings         Booking[]
   inventories       RoomTypeInventory[]
 

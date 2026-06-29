@@ -25,6 +25,11 @@ export const DEFAULT_PAGE_SIZE = 25;
 
 export const CACHE_TAGS = {
   userInfo: "user_info",
+  hotelName: "hotel_name",
+  hotelowner_common_facilities: "hotelowner_common_facilities",
+  hotelowner_custom_facilities: "hotelowner_custom_facilities",
+  hotelowner_common_facilities_of_room_type: "hotelowner_common_facilities_of_room_type",
+  hotelowner_custom_facilities_of_room_type: "hotelowner_custom_facilities_of_room_type"
 }
 
 export const PATHS = {
@@ -43,8 +48,11 @@ export const PATHS = {
   forgotPassword: '/forgot-password',
 
   hotelDashboard: '/dashboard',
+  hotelAccount: '/dashboard/account',
   hotelRooms: '/dashboard/rooms',
+  hotelFacilities: '/dashboard/facilities',
   hotelRoomTypes: '/dashboard/room-types',
+  hotelRoomTypesNew: '/dashboard/room-types/new',
   hotelStatistics: '/dashboard/analytics',
   hotelBookings: '/dashboard/bookings',
   hotelReviews: '/dashboard/reviews',

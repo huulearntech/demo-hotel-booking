@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { hotelowner_getHotelName } from "@/lib/actions/hotel-manager/change-hotel-name";
 
 // import {
 //   Avatar,
@@ -24,17 +25,20 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 // import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // NOTE: user role must be enforced in the proxy route to avoid the awkwardness in these components.
+
 export default async function DashboardHeader() {
   const session = await auth();
   if (session?.user.role !== "HOTEL_OWNER") return null;
-  const user = session.user;
 
-  const hotel = await prisma.hotel.findUnique({
-    where: { ownerId: session.user.id },
-    select: { name: true },
-  });
+  // const hotel = await prisma.hotel.findUnique({
+  //   where: { ownerId: session.user.id },
+  //   select: { name: true },
+  // });
 
-  if (!hotel) return null;
+  // if (!hotel) return null;
+
+  const hotelName = await hotelowner_getHotelName(session.user.id);
+  if (!hotelName) return null; // NOTE: already protected by proxy
 
 
   return (
@@ -45,8 +49,24 @@ export default async function DashboardHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-semibold">{hotel.name}</h1>
+        <h1 className="text-base font-semibold">{hotelName.name}</h1>
       </div>
+    </header>
+  )
+}
+
+export function DashboardHeaderSkeleton() {
+  return (
+    <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b bg-muted/5 transition-[width,height] ease-linear animate-pulse">
+      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+        <span className="inline-flex h-8 w-8 rounded-lg bg-muted/10" />
+        <span className="mx-2 inline-block h-4 w-px rounded-full bg-muted/10" />
+        <span className="h-5 w-32 rounded-md bg-muted/10" />
+      </div>
+    </header>
+  )
+}
+
 {/* 
       <DropdownMenu>
         <DropdownMenuTrigger className="px-4 lg:px-6" >
@@ -98,6 +118,3 @@ export default async function DashboardHeader() {
           </AlertDialogTrigger>
         </DropdownMenuContent>
       </DropdownMenu> */}
-    </header>
-  )
-}

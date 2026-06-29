@@ -390,7 +390,8 @@ export const ModelName = {
   Booking: 'Booking',
   Review: 'Review',
   Hotel: 'Hotel',
-  Facility: 'Facility',
+  CommonFacility: 'CommonFacility',
+  CustomFacility: 'CustomFacility',
   Room: 'Room',
   RoomType: 'RoomType',
   RoomTypeInventory: 'RoomTypeInventory',
@@ -413,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "country" | "province" | "ward" | "booking" | "review" | "hotel" | "facility" | "room" | "roomType" | "roomTypeInventory" | "user" | "favorite" | "recentlyViewed" | "verificationToken"
+    modelProps: "country" | "province" | "ward" | "booking" | "review" | "hotel" | "commonFacility" | "customFacility" | "room" | "roomType" | "roomTypeInventory" | "user" | "favorite" | "recentlyViewed" | "verificationToken"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -861,77 +862,151 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    Facility: {
-      payload: Prisma.$FacilityPayload<ExtArgs>
-      fields: Prisma.FacilityFieldRefs
+    CommonFacility: {
+      payload: Prisma.$CommonFacilityPayload<ExtArgs>
+      fields: Prisma.CommonFacilityFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.FacilityFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload> | null
+          args: Prisma.CommonFacilityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.FacilityFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>
+          args: Prisma.CommonFacilityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>
         }
         findFirst: {
-          args: Prisma.FacilityFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload> | null
+          args: Prisma.CommonFacilityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.FacilityFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>
+          args: Prisma.CommonFacilityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>
         }
         findMany: {
-          args: Prisma.FacilityFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>[]
+          args: Prisma.CommonFacilityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>[]
         }
         create: {
-          args: Prisma.FacilityCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>
+          args: Prisma.CommonFacilityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>
         }
         createMany: {
-          args: Prisma.FacilityCreateManyArgs<ExtArgs>
+          args: Prisma.CommonFacilityCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.FacilityCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>[]
+          args: Prisma.CommonFacilityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>[]
         }
         delete: {
-          args: Prisma.FacilityDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>
+          args: Prisma.CommonFacilityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>
         }
         update: {
-          args: Prisma.FacilityUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>
+          args: Prisma.CommonFacilityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>
         }
         deleteMany: {
-          args: Prisma.FacilityDeleteManyArgs<ExtArgs>
+          args: Prisma.CommonFacilityDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.FacilityUpdateManyArgs<ExtArgs>
+          args: Prisma.CommonFacilityUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.FacilityUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>[]
+          args: Prisma.CommonFacilityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>[]
         }
         upsert: {
-          args: Prisma.FacilityUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$FacilityPayload>
+          args: Prisma.CommonFacilityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CommonFacilityPayload>
         }
         aggregate: {
-          args: Prisma.FacilityAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateFacility>
+          args: Prisma.CommonFacilityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCommonFacility>
         }
         groupBy: {
-          args: Prisma.FacilityGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.FacilityGroupByOutputType>[]
+          args: Prisma.CommonFacilityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommonFacilityGroupByOutputType>[]
         }
         count: {
-          args: Prisma.FacilityCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.FacilityCountAggregateOutputType> | number
+          args: Prisma.CommonFacilityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CommonFacilityCountAggregateOutputType> | number
+        }
+      }
+    }
+    CustomFacility: {
+      payload: Prisma.$CustomFacilityPayload<ExtArgs>
+      fields: Prisma.CustomFacilityFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CustomFacilityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CustomFacilityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>
+        }
+        findFirst: {
+          args: Prisma.CustomFacilityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CustomFacilityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>
+        }
+        findMany: {
+          args: Prisma.CustomFacilityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>[]
+        }
+        create: {
+          args: Prisma.CustomFacilityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>
+        }
+        createMany: {
+          args: Prisma.CustomFacilityCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CustomFacilityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>[]
+        }
+        delete: {
+          args: Prisma.CustomFacilityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>
+        }
+        update: {
+          args: Prisma.CustomFacilityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>
+        }
+        deleteMany: {
+          args: Prisma.CustomFacilityDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CustomFacilityUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CustomFacilityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>[]
+        }
+        upsert: {
+          args: Prisma.CustomFacilityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFacilityPayload>
+        }
+        aggregate: {
+          args: Prisma.CustomFacilityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomFacility>
+        }
+        groupBy: {
+          args: Prisma.CustomFacilityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomFacilityGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CustomFacilityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomFacilityCountAggregateOutputType> | number
         }
       }
     }
@@ -1598,7 +1673,7 @@ export const HotelScalarFieldEnum = {
 export type HotelScalarFieldEnum = (typeof HotelScalarFieldEnum)[keyof typeof HotelScalarFieldEnum]
 
 
-export const FacilityScalarFieldEnum = {
+export const CommonFacilityScalarFieldEnum = {
   id: 'id',
   name: 'name',
   iconUrl: 'iconUrl',
@@ -1607,7 +1682,19 @@ export const FacilityScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type FacilityScalarFieldEnum = (typeof FacilityScalarFieldEnum)[keyof typeof FacilityScalarFieldEnum]
+export type CommonFacilityScalarFieldEnum = (typeof CommonFacilityScalarFieldEnum)[keyof typeof CommonFacilityScalarFieldEnum]
+
+
+export const CustomFacilityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  hotelId: 'hotelId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomFacilityScalarFieldEnum = (typeof CustomFacilityScalarFieldEnum)[keyof typeof CustomFacilityScalarFieldEnum]
 
 
 export const RoomScalarFieldEnum = {
@@ -2033,7 +2120,8 @@ export type GlobalOmitConfig = {
   booking?: Prisma.BookingOmit
   review?: Prisma.ReviewOmit
   hotel?: Prisma.HotelOmit
-  facility?: Prisma.FacilityOmit
+  commonFacility?: Prisma.CommonFacilityOmit
+  customFacility?: Prisma.CustomFacilityOmit
   room?: Prisma.RoomOmit
   roomType?: Prisma.RoomTypeOmit
   roomTypeInventory?: Prisma.RoomTypeInventoryOmit

@@ -2,7 +2,6 @@ import { user_getAvailableRoomTypeOfHotel } from "@/lib/actions/hotel";
 
 import Image from "next/image";
 import {
-  ExternalLink,
   RulerDimensionLineIcon,
   BedDoubleIcon,
   UserIcon,
@@ -139,7 +138,7 @@ function AvailableRoomTypeCard({
           <ul>
             {Array.isArray(facilities) ? (
               (facilities as { id: string; iconUrl?: string; name: string }[])
-                .filter(f => f.iconUrl)
+                // .filter(f => f.iconUrl)
                 .map((facility) => (
                   <li key={facility.id}>
                     {facility.iconUrl ? (

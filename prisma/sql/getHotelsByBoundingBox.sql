@@ -77,8 +77,8 @@ WHERE
     OR cardinality($12::text[]) = 0
     OR EXISTS (
       SELECT 1
-      FROM "_FacilityToHotel" f2h
-      JOIN facilities fac ON fac.id = f2h."A"
+      FROM "_CommonFacilityToHotel" f2h
+      JOIN common_facilities fac ON fac.id = f2h."A"
       WHERE f2h."B" = h.id
         AND fac.name = ANY($12::text[])
     )

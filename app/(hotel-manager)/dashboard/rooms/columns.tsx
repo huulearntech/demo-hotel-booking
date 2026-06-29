@@ -2,11 +2,13 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { schema_Room, type RoomFormValues } from "@/lib/zod_schemas/create-room";
 import { hotelowner_updateRoomById, hotelowner_deleteRoomById } from "@/lib/actions/hotel-manager/rooms";
+
+
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Copy, Edit, MoreHorizontalIcon, Trash2 } from "lucide-react";
@@ -16,7 +18,50 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { hotelowner_getRoomTypesNameAndId } from "@/lib/actions/hotel-manager/room-types";
 
+
+export const columns: ColumnDef<RoomRow>[] = [
+  {
+    accessorKey: "name",
+    header: "Tên phòng",
+    cell: ({ row }) => row.original.name,
+  },
+  {
+    accessorKey: "typeId",
+    header: "Loại phòng",
+    cell: ({ row }) => row.original.type.name,
+  },
+  {
+    accessorKey: "actions",
+    header: "Hành động",
+    cell: ({ row }) => (
+      <div className="flex items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost" aria-label="Mở hành động">
+              <MoreHorizontalIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                navigator.clipboard.writeText(row.original.id);
+                toast("Đã chép ID vào bảng tạm");
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" /> Chép ID
+            </DropdownMenuItem>
+
+            <EditRoomDialog room={row.original} />
+            <DeleteRoomDialog roomId={row.original.id} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    )
+  }
+];
 
 export type RoomRow = {
   id: string,
@@ -25,63 +70,17 @@ export type RoomRow = {
   type: { name: string },
 }
 
-type RoomType = {
-  id: string,
-  name: string,
-}
 
-export function createColumns(
-  roomTypes: RoomType[],
-  // handleDelete: (roomId: string) => void,
-): ColumnDef<RoomRow>[] {
-  return [
-    {
-      accessorKey: "name",
-      header: "Tên phòng",
-      cell: ({ row }) => row.original.name,
-    },
-    {
-      accessorKey: "typeId",
-      header: "Loại phòng",
-      cell: ({ row }) => row.original.type.name,
-    },
-    {
-      accessorKey: "actions",
-      header: "Hành động",
-      cell: ({ row }) => (
-        <div className="flex items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" aria-label="Mở hành động">
-                <MoreHorizontalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  navigator.clipboard.writeText(row.original.id);
-                  toast("Đã chép ID vào bảng tạm");
-                }}
-              >
-                <Copy className="mr-2 h-4 w-4" /> Chép ID
-              </DropdownMenuItem>
-
-              <EditRoomDialog room={row.original} roomTypes={roomTypes} />
-              <DeleteRoomDialog roomId={row.original.id} />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
-    }
-  ];
-};
-
-function EditRoomDialog({ room, roomTypes }: { room: RoomRow; roomTypes: RoomType[] }) {
+function EditRoomDialog({ room }: { room: RoomRow }) {
+  // NOTE: Why dont get roomTypes in here?
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { data: roomTypes = [], isLoading: isRoomTypesLoading } = useQuery({
+    queryKey: ["hotelowner_roomTypes"],
+    queryFn: async () => { return hotelowner_getRoomTypesNameAndId(); },
+  });
 
   const {
     register,
@@ -129,7 +128,7 @@ function EditRoomDialog({ room, roomTypes }: { room: RoomRow; roomTypes: RoomTyp
           <DialogTitle>Chỉnh sửa phòng</DialogTitle>
           <DialogDescription>Cập nhật tên phòng hoặc loại phòng.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+        <form className="grid gap-6">
           <div className="grid gap-2">
             <Label htmlFor="room-name">Tên phòng</Label>
             <Input id="room-name" {...register("name")} placeholder="Nhập tên phòng" />
@@ -159,7 +158,7 @@ function EditRoomDialog({ room, roomTypes }: { room: RoomRow; roomTypes: RoomTyp
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <DialogFooter className="mt-4">
-            <Button type="submit" disabled={isSaving}>
+            <Button type="button" disabled={isSaving} onClick={handleSubmit(onSubmit)}>
               {isSaving ? "Đang lưu..." : "Lưu"}
             </Button>
           </DialogFooter>

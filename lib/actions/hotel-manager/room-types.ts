@@ -3,8 +3,8 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-import { MultiRoomType_FormValues, RoomType_FormOutput } from "@/lib/zod_schemas/create-room";
-import { Prisma } from "@/lib/generated/prisma/client";
+import { MultiRoomType_FormValues, RoomType_FormInput, RoomType_FormOutput } from "@/lib/zod_schemas/create-room";
+import { FacilityType, Prisma } from "@/lib/generated/prisma/client";
 import { OperationResult, Override } from "@/lib/types/utils";
 import { revalidatePath } from "next/cache";
 import { PATHS } from "@/lib/constants";
@@ -16,20 +16,33 @@ export async function hotelowner_updateRoomTypeById(id: string, data: RoomType_F
   }
 
   try {
+    const { facilities, customFacilities, ...restData } = data;
     const updated = await prisma.roomType.update({
       where: { id, hotel: { ownerId: session.user.id } },
-      data,
-      // select: {},
-    }).then((roomType) => ({
-      ...roomType,
-      price: roomType.price.toNumber(),
-    }));
+      data: {
+        ...restData,
+        facilities: {
+          set: facilities.map((facility) => ({ id: facility.id })),
+        },
+        customFacilities: {
+          set: customFacilities.map((facility) => ({ id: facility.id })),
+        }
+      },
+      select: { id: true },
+    });
     return { ok: true, data: updated };
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
       return { ok: false, error: "Room type not found", status: 404 };
     }
-    return { ok: false, error: "Failed to update room type" };
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return {
+        ok: false,
+        error: "Room type name already exists",
+        status: 409,
+      };
+    }
+    return { ok: false, error: (err as Error).message ?? "Failed to update room type" };
   }
 }
 
@@ -51,34 +64,73 @@ export async function hotelowner_createManyRoomTypes(formData: MultiRoomType_For
     return { ok: false, error: "Hotel not found for the owner", status: 404 };
   }
 
-  const result =  prisma.roomType.createMany({ // only need to return the batch count
-    data: formData.map(roomType => ({ ...roomType, hotelId: hotel.id })),
-  });
-  if (!result) {
+  const nameToFacilities = new Map<string, {
+    facilities: { id: string }[],
+    customFacilities: { id: string }[],
+  }>()
+  formData.forEach(data => {
+    if (nameToFacilities.has(data.name)) {
+      return { ok: false, error: "Room type names must be unique", status: 409 };
+    }
+
+    nameToFacilities.set(data.name, {
+      facilities: data.facilities,
+      customFacilities: data.customFacilities
+    });
+  })
+
+  try {
+    const result = await prisma.$transaction(async tx => {
+      const roomTypeNamesAndIDs = await tx.roomType.createManyAndReturn({
+        data: formData.map((roomType) => {
+          const { facilities, customFacilities, ...rest } = roomType;
+          return { ...rest, hotelId: hotel.id };
+        }),
+        select: { id: true, name: true }
+      });
+
+      await Promise.all(
+        roomTypeNamesAndIDs.map(({id, name}) => {
+          return tx.roomType.update({
+          where: {id},
+          data: {
+            facilities: {
+              connect: nameToFacilities.get(name)?.facilities ?? []
+            },
+            customFacilities: {
+              connect: nameToFacilities.get(name)?.customFacilities ?? []
+            }
+          },
+          select: {
+            facilities: true,
+            customFacilities: true,
+          }
+        })
+      })
+    );
+
+      return roomTypeNamesAndIDs;
+    });
+
+    console.log(result);
+
+    revalidatePath(PATHS.hotelRoomTypes);
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return {
+        ok: false,
+        error: "Room type name must be unique for this hotel",
+        status: 409,
+      };
+    }
     return { ok: false, error: "Failed to create room types" };
   }
-  revalidatePath(PATHS.hotelRoomTypes);
-  return { ok: true, data: result };
 }
 
 
-// TODO: Move to rooms.ts
-export async function hotelowner_getRoomById(roomId: string):
-  Promise<OperationResult<Prisma.RoomGetPayload<{
-    include: {
-      type: {
-        select: {
-          hotel: { select: { name: true } },
-          name: true,
-          adultCapacity: true,
-          childrenCapacity: true,
-          imageUrls: true,
-          bedType: true,
-          price: true,
-        },
-      },
-    },
-  }>>> {
+export async function hotelowner_getRoomTypeById (roomTypeId: string):
+  Promise<OperationResult<RoomType_FormInput>> {
   const session = await auth();
   if (!session) {
     return { ok: false, error: "Unauthorized", status: 401 };
@@ -87,54 +139,8 @@ export async function hotelowner_getRoomById(roomId: string):
     return { ok: false, error: "Forbidden", status: 403 };
   }
 
-  const result = await prisma.room.findUnique({
-    where: {
-      type: { hotel: { ownerId: session.user.id } },
-      id: roomId,
-    },
-    include: {
-      type: {
-        select: {
-          hotel: { select: { name: true } },
-          name: true,
-          adultCapacity: true,
-          childrenCapacity: true,
-          imageUrls: true,
-          bedType: true,
-          price: true,
-        },
-      },
-    },
-  });
-  if (!result) {
-    return { ok: false, error: "Room not found", status: 404 };
-  }
-  return { ok: true, data: result };
-}
-
-
-export async function hotelowner_getRoomTypeById(roomTypeId: string):
-  Promise<OperationResult<Prisma.RoomTypeGetPayload<{
-    select: {
-      hotel: { select: { name: true, id: true } },
-      name: true,
-      adultCapacity: true,
-      childrenCapacity: true,
-      imageUrls: true,
-      areaM2: true,
-      bedType: true,
-      price: true,
-      description: true,
-      _count: { select: { rooms: true } },
-    }
-  }>>> {
-  const session = await auth();
-  if (!session) {
-    return { ok: false, error: "Unauthorized", status: 401 };
-  }
-  if (session.user.role !== "HOTEL_OWNER") {
-    return { ok: false, error: "Forbidden", status: 403 };
-  }
+  // 'use cache'
+  // cacheTag("hotelowner_getRoomTypeById");
 
   const result = await prisma.roomType.findUnique({
     where: {
@@ -151,13 +157,24 @@ export async function hotelowner_getRoomTypeById(roomTypeId: string):
       areaM2: true,
       price: true,
       description: true,
+      facilities: { select: { id: true, name: true, type: true } },
+      customFacilities: { select: { id: true, name: true, type: true } },
       _count: { select: { rooms: true } },
     }
   });
   if (!result) {
     return { ok: false, error: "Room Type not found", status: 404 };
   }
-  return { ok: true, data: result };
+  return {
+    ok: true, data: {
+      ...result,
+      price: result.price.toNumber(),
+      imageUrls: result.imageUrls.map(url => ({ url })),
+      facilities: result.facilities.map(facility => ({ facility })),
+      customFacilities: result.customFacilities.map(facility => ({ facility })),
+      description: result.description ?? undefined
+    }
+  };
 }
 
 // TODO: name this better
@@ -252,5 +269,6 @@ export async function hotelowner_deleteRoomTypeById(id: string):
     return { ok: false, error: "Failed to delete room type" };
   }
 
+  revalidatePath(PATHS.hotelRoomTypes);
   return { ok: true, data: response };
 }

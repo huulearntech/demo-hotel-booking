@@ -48,10 +48,15 @@ export type Review = Prisma.ReviewModel
  */
 export type Hotel = Prisma.HotelModel
 /**
- * Model Facility
+ * Model CommonFacility
  * 
  */
-export type Facility = Prisma.FacilityModel
+export type CommonFacility = Prisma.CommonFacilityModel
+/**
+ * Model CustomFacility
+ * 
+ */
+export type CustomFacility = Prisma.CustomFacilityModel
 /**
  * Model Room
  * 

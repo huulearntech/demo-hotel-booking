@@ -32,8 +32,8 @@ LEFT JOIN LATERAL (
 ) AS available ON true
 LEFT JOIN LATERAL (
   SELECT array_agg(fac.name ORDER BY fac.name) AS facility_names
-  FROM "_FacilityToHotel" f2h
-  JOIN facilities fac ON fac.id = f2h."A"
+  FROM "_CommonFacilityToHotel" f2h
+  JOIN common_facilities fac ON fac.id = f2h."A"
   WHERE f2h."B" = h.id
 ) AS facility_list ON true
 WHERE rv.user_id = $1::uuid

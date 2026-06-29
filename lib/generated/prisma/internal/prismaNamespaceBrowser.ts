@@ -57,7 +57,8 @@ export const ModelName = {
   Booking: 'Booking',
   Review: 'Review',
   Hotel: 'Hotel',
-  Facility: 'Facility',
+  CommonFacility: 'CommonFacility',
+  CustomFacility: 'CustomFacility',
   Room: 'Room',
   RoomType: 'RoomType',
   RoomTypeInventory: 'RoomTypeInventory',
@@ -185,7 +186,7 @@ export const HotelScalarFieldEnum = {
 export type HotelScalarFieldEnum = (typeof HotelScalarFieldEnum)[keyof typeof HotelScalarFieldEnum]
 
 
-export const FacilityScalarFieldEnum = {
+export const CommonFacilityScalarFieldEnum = {
   id: 'id',
   name: 'name',
   iconUrl: 'iconUrl',
@@ -194,7 +195,19 @@ export const FacilityScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type FacilityScalarFieldEnum = (typeof FacilityScalarFieldEnum)[keyof typeof FacilityScalarFieldEnum]
+export type CommonFacilityScalarFieldEnum = (typeof CommonFacilityScalarFieldEnum)[keyof typeof CommonFacilityScalarFieldEnum]
+
+
+export const CustomFacilityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  hotelId: 'hotelId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomFacilityScalarFieldEnum = (typeof CustomFacilityScalarFieldEnum)[keyof typeof CustomFacilityScalarFieldEnum]
 
 
 export const RoomScalarFieldEnum = {

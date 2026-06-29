@@ -71,8 +71,8 @@ WITH base AS (
   ) AS available ON true
   JOIN LATERAL (
     SELECT COALESCE(array_agg(fac.name), ARRAY[]::text[]) AS facility_names
-    FROM "_FacilityToHotel" f2h
-    JOIN facilities fac ON fac.id = f2h."A"
+    FROM "_CommonFacilityToHotel" f2h
+    JOIN common_facilities fac ON fac.id = f2h."A"
     WHERE f2h."B" = h.id
   ) AS facility_list ON true
   WHERE ( -- prisma cuid -> postgres text.

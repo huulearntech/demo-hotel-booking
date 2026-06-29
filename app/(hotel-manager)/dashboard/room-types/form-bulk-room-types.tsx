@@ -22,6 +22,8 @@ import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/for
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { hotelowner_createManyRoomTypes } from "@/lib/actions/hotel-manager/room-types";
+import CreateFacilityDialog from "./create-facility-dialog";
+
 
 type MultiRoomFormType = ReturnType<typeof useForm<MultiRoomType_FormInput, unknown, MultiRoomType_FormOutput>>;
 
@@ -58,21 +60,26 @@ export default function RoomForm() {
     name: "roomTypes",
   });
 
-  // This is ugly. I wonder if isSubmitting from react hook form is good.
   async function onSubmitLocal(data: MultiRoomType_FormOutput) {
     startTransition(async () => {
       const result = await hotelowner_createManyRoomTypes(data);
       if (result.ok) {
         form.reset();
+        toast.success("Tạo mới loại phòng thành công!");
+        redirect(PATHS.hotelRoomTypes);
       } else {
-        setError("root", { message: result.error });
+        if (result.status === 409) {
+          setError("root", { message: "Tên loại phòng phải là duy nhất trong khách sạn này." });
+        } else {
+          setError("root", { message: result.error || "Đã xảy ra lỗi khi tạo loại phòng." });
+        }
       }
     });
   }
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={handleSubmit(onSubmitLocal)} className="space-y-4">
+      <form className="space-y-4">
         {roomFields.map((field, idx) => (
           <RoomFields
             key={field.id}
@@ -100,6 +107,8 @@ export default function RoomForm() {
                   childrenCapacity: 0,
                   areaM2: 0,
                   bedType: "SINGLE",
+                  facilities: [],
+                  customFacilities: [],
                   imageUrls: [],
                 })
               }
@@ -112,7 +121,11 @@ export default function RoomForm() {
 
           {roomFields.length > 0 &&
             <div className="w-1/3 flex justify-end">
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending}
+                onClick={handleSubmit(onSubmitLocal)} 
+              >
                 {isPending
                   ? <> <Loader2Icon className="size-4 animate-spin" /> Đang lưu...  </>
                   : <> <SaveAllIcon className="size-4" /> Lưu tất cả </>
@@ -130,8 +143,32 @@ export default function RoomForm() {
   which prevents inputs from being remounted and losing focus. */
 
 import { CldUploadWidget } from "next-cloudinary";
-import { CloudUploadIcon, Loader2Icon, PlusIcon, SaveAllIcon, SaveIcon, XIcon } from "lucide-react";
+import { CloudUploadIcon, Loader2Icon, PlusIcon, SaveAllIcon, Trash2Icon, XIcon } from "lucide-react";
 import Image from "next/image";
+import { Textarea } from "@/components/ui/textarea";
+import { FacilityType } from "@/lib/generated/prisma/enums";
+import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
+import { ComboboxFindCommonFacilities, ComboboxFindCustomFacilities } from "./combobox-find-common-facilities";
+import { redirect } from "next/navigation";
+import { PATHS } from "@/lib/constants";
 
 // Should rename to RoomCard or something. It's not just fields.
 export function RoomFields({
@@ -173,6 +210,25 @@ export function RoomFields({
     });
   };
 
+  // inside RoomFields before return
+  const {
+    fields: facilityFields,
+    append: appendFacility,
+    remove: removeFacility,
+  } = useFieldArray({
+    control,
+    name: `roomTypes.${index}.facilities` as const,
+  });
+
+  const {
+    fields: customFacilityFields,
+    append: appendCustomFacility,
+    remove: removeCustomFacility,
+  } = useFieldArray({
+    control,
+    name: `roomTypes.${index}.customFacilities` as const,
+  });
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -188,7 +244,7 @@ export function RoomFields({
 
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2 flex flex-col gap-1">
-          <Label htmlFor={`roomTypes.${index}.name`} className="text-sm font-medium">
+          <Label htmlFor={`roomTypes.${index}.name`} className="text-sm font-semibold">
             Tên loại phòng
           </Label>
           <Input id={`roomTypes.${index}.name`} className="w-full" {...register(`roomTypes.${index}.name` as const)} />
@@ -196,7 +252,7 @@ export function RoomFields({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`roomTypes.${index}.price`} className="text-sm font-medium">
+          <Label htmlFor={`roomTypes.${index}.price`} className="text-sm font-semibold">
             Giá mỗi đêm (VND)
           </Label>
           <Input
@@ -210,7 +266,7 @@ export function RoomFields({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`roomTypes.${index}.areaM2`} className="text-sm font-medium">
+          <Label htmlFor={`roomTypes.${index}.areaM2`} className="text-sm font-semibold">
             Diện tích (m²)
           </Label>
           <Input id={`roomTypes.${index}.areaM2`} type="number" className="w-full" {...register(`roomTypes.${index}.areaM2` as const)} />
@@ -218,7 +274,7 @@ export function RoomFields({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`roomTypes.${index}.adultCapacity`} className="text-sm font-medium">
+          <Label htmlFor={`roomTypes.${index}.adultCapacity`} className="text-sm font-semibold">
             Sức chứa người lớn
           </Label>
           <Input id={`roomTypes.${index}.adultCapacity`} type="number" className="w-full" {...register(`roomTypes.${index}.adultCapacity` as const)} />
@@ -226,7 +282,7 @@ export function RoomFields({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor={`roomTypes.${index}.childrenCapacity`} className="text-sm font-medium">
+          <Label htmlFor={`roomTypes.${index}.childrenCapacity`} className="text-sm font-semibold">
             Sức chứa trẻ em
           </Label>
           <Input id={`roomTypes.${index}.childrenCapacity`} type="number" className="w-full" {...register(`roomTypes.${index}.childrenCapacity` as const)} />
@@ -238,7 +294,7 @@ export function RoomFields({
           name={`roomTypes.${index}.bedType` as const}
           render={({ field }) => (
             <FormItem className="flex flex-col gap-1">
-              <FormLabel className="text-sm font-medium">Loại giường</FormLabel>
+              <FormLabel className="text-sm font-semibold">Loại giường</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -258,8 +314,304 @@ export function RoomFields({
           )}
         />
 
+        <div className="md:col-span-2">
+          {/* <div className="flex items-center justify-between mb-2">
+            <Label className="text-sm font-semibold">Tiện nghi</Label>
+            <CreateFacilityDialog
+              onCreate={(facility) => {
+                appendFacility({
+                  facility: {
+                    id: facility.id,
+                    name: facility.name,
+                    type: facility.type,
+                  },
+                });
+              }}
+            />
+          </div> */}
+
+
+                {/* <div className="md:col-span-2"> */}
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-semibold">Tiện nghi phổ biến</Label>
+                    <ComboboxFindCommonFacilities
+                      // roomTypeId={roomTypeId}
+                      onItemSelect={facility => appendFacility({ facility })}
+                    />
+                  </div>
+
+                  {facilityFields.length === 0 ? <p className="text-sm text-muted-foreground">Chưa có tiện nghi nào được thêm.</p> :
+                    <div className="overflow-hidden rounded-md border">
+                      <Table>
+                        <TableHeader className="bg-muted">
+                          <TableRow>
+                            <TableHead>Tên tiện nghi</TableHead>
+                            <TableHead>Loại tiện nghi</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {facilityFields.map((facility, facilityIndex) => (
+                            <TableRow key={facility.id}>
+                              <TableCell>{facility.facility.name}</TableCell>
+                              <TableCell>{
+                                facility.facility.type.charAt(0) +
+                                facility.facility.type.slice(1).toLowerCase().replace(/_/g, " ")
+                              }</TableCell>
+                              <TableCell>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button type="button" variant="outline" size="sm">
+                                      <Trash2Icon className="size-4" />
+                                      Xoá
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Xác nhận xoá tiện nghi "<strong>{facility.facility.name}</strong>" ?</AlertDialogTitle>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        variant="destructive"
+                                        onClick={() => {
+                                          removeFacility(facilityIndex);
+                                        }}
+                                      >
+                                        Xác nhận
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  }
+
+                {/* </div> */}
+
+
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-semibold">Tiện nghi của riêng khách sạn</Label>
+                    <div className="flex gap-x-2 items-center">
+                      {/* <ComboboxFindCommonFacilities roomTypeId={roomTypeId} /> */}
+                      <ComboboxFindCustomFacilities
+                        // roomTypeId={roomTypeId}
+                        onItemSelect={(facility) => appendCustomFacility({ facility })}
+                      />
+
+                      <CreateFacilityDialog
+                        // roomTypeId={roomTypeId}
+                        onCreate={(facility) => {
+                          appendCustomFacility({
+                            facility: {
+                              id: facility.id,
+                              name: facility.name,
+                              type: facility.type,
+                            },
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {customFacilityFields.length === 0 ? <p className="text-sm text-muted-foreground">Chưa có tiện nghi nào được thêm.</p> :
+                    <div className="overflow-hidden rounded-md border">
+                      <Table>
+                        <TableHeader className="bg-muted">
+                          <TableRow>
+                            <TableHead>Tên tiện nghi</TableHead>
+                            <TableHead>Loại tiện nghi</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {customFacilityFields.map((facility, facilityIndex) => (
+                            <TableRow key={facility.id}>
+                              <TableCell>{facility.facility.name}</TableCell>
+                              <TableCell>{
+                                facility.facility.type.charAt(0) +
+                                facility.facility.type.slice(1).toLowerCase().replace(/_/g, " ")
+                              }</TableCell>
+                              <TableCell>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button type="button" variant="outline" size="sm">
+                                      <Trash2Icon className="size-4" />
+                                      Xoá
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Xác nhận xoá tiện nghi "<strong>{facility.facility.name}</strong>" ?</AlertDialogTitle>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        variant="destructive"
+                                        onClick={() => {
+                                          removeCustomFacility(facilityIndex);
+                                        }}
+                                      >
+                                        Xác nhận
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  }
+
+                </div>
+
+
+
+
+
+
+            {/* {facilityFields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Chưa có tiện nghi nào được thêm.</p>
+          ) : (
+            <div className="overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader className="bg-muted">
+                  <TableRow>
+                    <TableHead>Tên tiện nghi</TableHead>
+                    <TableHead>Loại tiện nghi</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {facilityFields.map((facility, facilityIndex) => (
+                    <TableRow key={facility.id}>
+                      <TableCell>{facility.facility.name ?? "Chưa đặt tên"}</TableCell>
+                      <TableCell>
+                        {facility.facility.type
+                          .charAt(0)
+                          .concat(facility.facility.type.slice(1).toLowerCase().replace(/_/g, " "))
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button type="button" variant="outline" size="sm">
+                              <Trash2Icon className="size-4" />
+                              Xoá
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Xác nhận xoá tiện nghi "<strong>{facility.facility?.name}</strong>" ?
+                              </AlertDialogTitle>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Hủy</AlertDialogCancel>
+                              <AlertDialogAction
+                                variant="destructive"
+                                onClick={() => removeFacility(facilityIndex)}
+                              >
+                                Xác nhận
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )} */}
+
+          {/* <div className="flex flex-col gap-y-3">
+            {facilityFields.map((facility, facilityIndex) => {
+              const facilityError = roomErrors?.facilities?.[facilityIndex] as any;
+              return (
+                <div
+                  key={facility.id}
+                  className="w-full flex gap-3"
+                >
+                  <div className="w-full flex flex-col gap-1">
+                    <Label
+                      htmlFor={`roomTypes.${index}.facilities.${facilityIndex}.name`}
+                      className="text-sm font-medium"
+                    >
+                      Tên tiện nghi
+                    </Label>
+                    <Input
+                      id={`roomTypes.${index}.facilities.${facilityIndex}.name`}
+                      className="w-full"
+                      {...register(`roomTypes.${index}.facilities.${facilityIndex}.facility.name` as const)}
+                    />
+                    {facilityError?.name && (
+                      <p className="text-xs text-destructive mt-1">
+                        {facilityError.name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <FormField
+                    control={control}
+                    name={`roomTypes.${index}.facilities.${facilityIndex}.facility.type` as const}
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1 w-1/3">
+                        <FormLabel className="text-sm font-medium">Loại tiện nghi</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Chọn loại tiện nghi" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.values(FacilityType).map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 w-10 self-end"
+                    onClick={() => removeFacility(facilityIndex)}
+                  >
+                    <XIcon className="size-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div> */}
+
+          {roomErrors?.facilities && typeof (roomErrors.facilities as any).message === "string" && (
+            <p className="text-xs text-destructive mt-1">
+              {(roomErrors.facilities as any).message}
+            </p>
+          )}
+        </div>
+
+        <div className="md:col-span-2 flex flex-col gap-1">
+          <Label className="text-sm font-semibold">Mô tả</Label>
+          <Textarea {...register(`roomTypes.${index}.description` as const)} rows={4} />
+          {roomErrors?.description && <p className="text-xs text-destructive mt-1">{roomErrors?.description.message}</p>}
+        </div>
+
+
         <div className="md:col-span-2 flex flex-col gap-2">
-          <Label className="text-sm font-medium">Hình ảnh</Label>
+          <Label className="text-sm font-semibold">Hình ảnh</Label>
 
           <div className="flex flex-wrap gap-2">
             {imageFields.length === 0 && <p className="text-sm text-muted-foreground">Chưa tải ảnh nào lên.</p>}

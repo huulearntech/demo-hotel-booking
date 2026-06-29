@@ -13,7 +13,7 @@ SELECT
   rt.adult_capacity    AS "adultCapacity",
   rt.children_capacity AS "childrenCapacity",
   rt.bed_type          AS "bedType",
-  COALESCE(fac_list.facilities, '[]'::jsonb) AS "facilities"
+  COALESCE(fac_list.common_facilities, '[]'::jsonb) AS "common_facilities"
 FROM room_types rt
 
 -- total rooms for this room type (count actual rooms)
@@ -34,11 +34,11 @@ JOIN LATERAL (
     AND b.status IN ('PAID', 'PENDING_TO_PAY', 'CHECKED_IN')
 ) b ON true
 
--- aggregate facilities for this room type as a JSONB array of {id, name, iconUrl}
+-- aggregate common_facilities for this room type as a JSONB array of {id, name, iconUrl}
 JOIN LATERAL (
-  SELECT COALESCE(jsonb_agg(jsonb_build_object('id', fac.id, 'name', fac.name, 'iconUrl', fac.icon_url) ORDER BY fac.name), '[]'::jsonb) AS facilities
-  FROM "_FacilityToRoomType" f2r
-  JOIN facilities fac ON fac.id = f2r."A"
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('id', fac.id, 'name', fac.name, 'iconUrl', fac.icon_url) ORDER BY fac.name), '[]'::jsonb) AS common_facilities
+  FROM "_CommonFacilityToRoomType" f2r
+  JOIN common_facilities fac ON fac.id = f2r."A"
   WHERE f2r."B" = rt.id
 ) fac_list ON true
 

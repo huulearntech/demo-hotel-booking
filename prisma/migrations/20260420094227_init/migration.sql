@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "BookingStatus" AS ENUM ('PENDING_TO_PAY', 'PAID', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT');
+CREATE TYPE "BookingStatus" AS ENUM ('PENDING_TO_PAY', 'PAID', 'PAYMENT_FAILED', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT');
 
 -- CreateEnum
 CREATE TYPE "HotelType" AS ENUM ('HOTEL', 'MOTEL', 'RESORT', 'APARTMENT', 'HOSTEL');
@@ -128,7 +128,7 @@ CREATE TABLE "hotels" (
 );
 
 -- CreateTable
-CREATE TABLE "facilities" (
+CREATE TABLE "common_facilities" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "icon_url" TEXT,
@@ -136,7 +136,19 @@ CREATE TABLE "facilities" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "facilities_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "common_facilities_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "custom_facilities" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "name" TEXT NOT NULL,
+    "type" "FacilityType" NOT NULL,
+    "hotel_id" UUID,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "custom_facilities_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -238,19 +250,27 @@ CREATE TABLE "_BookingToRoom" (
 );
 
 -- CreateTable
-CREATE TABLE "_FacilityToHotel" (
+CREATE TABLE "_CommonFacilityToHotel" (
     "A" UUID NOT NULL,
     "B" UUID NOT NULL,
 
-    CONSTRAINT "_FacilityToHotel_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_CommonFacilityToHotel_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateTable
-CREATE TABLE "_FacilityToRoomType" (
+CREATE TABLE "_CommonFacilityToRoomType" (
     "A" UUID NOT NULL,
     "B" UUID NOT NULL,
 
-    CONSTRAINT "_FacilityToRoomType_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_CommonFacilityToRoomType_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "_CustomFacilityToRoomType" (
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL,
+
+    CONSTRAINT "_CustomFacilityToRoomType_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -284,7 +304,13 @@ CREATE INDEX "reviews_created_at_idx" ON "reviews"("created_at");
 CREATE UNIQUE INDEX "hotels_owner_id_key" ON "hotels"("owner_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "facilities_name_key" ON "facilities"("name");
+CREATE UNIQUE INDEX "common_facilities_name_key" ON "common_facilities"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "custom_facilities_name_key" ON "custom_facilities"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "custom_facilities_hotel_id_name_key" ON "custom_facilities"("hotel_id", "name");
 
 -- CreateIndex
 CREATE INDEX "rooms_type_id_idx" ON "rooms"("type_id");
@@ -308,10 +334,13 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 CREATE INDEX "_BookingToRoom_B_index" ON "_BookingToRoom"("B");
 
 -- CreateIndex
-CREATE INDEX "_FacilityToHotel_B_index" ON "_FacilityToHotel"("B");
+CREATE INDEX "_CommonFacilityToHotel_B_index" ON "_CommonFacilityToHotel"("B");
 
 -- CreateIndex
-CREATE INDEX "_FacilityToRoomType_B_index" ON "_FacilityToRoomType"("B");
+CREATE INDEX "_CommonFacilityToRoomType_B_index" ON "_CommonFacilityToRoomType"("B");
+
+-- CreateIndex
+CREATE INDEX "_CustomFacilityToRoomType_B_index" ON "_CustomFacilityToRoomType"("B");
 
 -- AddForeignKey
 ALTER TABLE "provinces" ADD CONSTRAINT "provinces_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -333,6 +362,9 @@ ALTER TABLE "hotels" ADD CONSTRAINT "hotels_owner_id_fkey" FOREIGN KEY ("owner_i
 
 -- AddForeignKey
 ALTER TABLE "hotels" ADD CONSTRAINT "hotels_ward_id_fkey" FOREIGN KEY ("ward_id") REFERENCES "wards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "custom_facilities" ADD CONSTRAINT "custom_facilities_hotel_id_fkey" FOREIGN KEY ("hotel_id") REFERENCES "hotels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "rooms" ADD CONSTRAINT "rooms_type_id_fkey" FOREIGN KEY ("type_id") REFERENCES "room_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -365,13 +397,19 @@ ALTER TABLE "_BookingToRoom" ADD CONSTRAINT "_BookingToRoom_A_fkey" FOREIGN KEY 
 ALTER TABLE "_BookingToRoom" ADD CONSTRAINT "_BookingToRoom_B_fkey" FOREIGN KEY ("B") REFERENCES "rooms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_FacilityToHotel" ADD CONSTRAINT "_FacilityToHotel_A_fkey" FOREIGN KEY ("A") REFERENCES "facilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_CommonFacilityToHotel" ADD CONSTRAINT "_CommonFacilityToHotel_A_fkey" FOREIGN KEY ("A") REFERENCES "common_facilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_FacilityToHotel" ADD CONSTRAINT "_FacilityToHotel_B_fkey" FOREIGN KEY ("B") REFERENCES "hotels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_CommonFacilityToHotel" ADD CONSTRAINT "_CommonFacilityToHotel_B_fkey" FOREIGN KEY ("B") REFERENCES "hotels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_FacilityToRoomType" ADD CONSTRAINT "_FacilityToRoomType_A_fkey" FOREIGN KEY ("A") REFERENCES "facilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_CommonFacilityToRoomType" ADD CONSTRAINT "_CommonFacilityToRoomType_A_fkey" FOREIGN KEY ("A") REFERENCES "common_facilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_FacilityToRoomType" ADD CONSTRAINT "_FacilityToRoomType_B_fkey" FOREIGN KEY ("B") REFERENCES "room_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_CommonFacilityToRoomType" ADD CONSTRAINT "_CommonFacilityToRoomType_B_fkey" FOREIGN KEY ("B") REFERENCES "room_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CustomFacilityToRoomType" ADD CONSTRAINT "_CustomFacilityToRoomType_A_fkey" FOREIGN KEY ("A") REFERENCES "custom_facilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CustomFacilityToRoomType" ADD CONSTRAINT "_CustomFacilityToRoomType_B_fkey" FOREIGN KEY ("B") REFERENCES "room_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,6 +1,7 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import DashboardSidebar from "./tmp-components/dashboard-sidebar";
-import DashboardHeader from "./tmp-components/header";
+import DashboardHeader, { DashboardHeaderSkeleton } from "./tmp-components/header";
+import { Suspense } from "react";
 
 export default function DashboardLayout({
   children,
@@ -11,7 +12,9 @@ export default function DashboardLayout({
     <SidebarProvider>
       <DashboardSidebar variant="inset"/>
       <SidebarInset>
-        <DashboardHeader />
+        <Suspense fallback={<DashboardHeaderSkeleton />}>
+          <DashboardHeader />
+        </Suspense>
         <div className="flex flex-col flex-1 px-4 py-3"> {children} </div>
       </SidebarInset>
     </SidebarProvider>

@@ -36,11 +36,22 @@ export async function hotelowner_createRoom(formData: RoomFormOutput) {
     return { ok: false, error: "Hotel not found for the owner", status: 404 };
   }
 
-  const result = prisma.room.create({ data: formData });
-  if (!result) {
-    return { ok: false, error: "Failed to create rooms" };
+  try {
+    const result = await prisma.room.create({ data: formData });
+    return { ok: true, data: result };
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return {
+        ok: false,
+        error: "A room with the same name already exists for this room type.",
+        status: 409,
+      };
+    }
+    return { ok: false, error: "Failed to create room" };
   }
-  return { ok: true, data: result };
 }
 
 export async function hotelowner_getRoomById(roomId: string) {

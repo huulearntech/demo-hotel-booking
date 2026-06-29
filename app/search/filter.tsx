@@ -24,9 +24,9 @@ export default function Filter() {
 
 function Filter__Desktop() {
   return (
-    <aside className="hidden sticky h-[calc(100vh-10rem)] overflow-y-auto top-23.5 lg:flex w-full max-w-62.5 flex-col gap-y-3 z-10">
+    <aside className="hidden sticky h-[calc(100vh-7rem)] top-23.5 lg:flex w-full max-w-62.5 flex-col gap-y-3 z-10">
       <FilterForm__Reset_and_Apply_Buttons />
-      <FilterForm />
+      <FilterForm className=" overflow-y-auto"/>
     </aside>
   );
 };
@@ -81,7 +81,7 @@ export function Filter__Mobile({
           <SheetDescription className='sr-only' > Tuỳ chỉnh bộ lọc tìm kiếm của bạn </SheetDescription>
         </SheetHeader>
 
-        <FilterForm isSheet />
+        <FilterForm isSheet className="overflow-y-auto" />
 
         <SheetFooter className='sticky bottom-0 left-0 right-0 backdrop-blur-md bg-white/20 z-10'>
           <FilterForm__Reset_and_Apply_Buttons />

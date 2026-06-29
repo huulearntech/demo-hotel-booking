@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import RoomsGrid from "./rooms-grid";
+import { PATHS } from "@/lib/constants";
 export default async function RoomsPage() {
   return (
     <div className="flex flex-col gap-y-6">
@@ -14,7 +15,7 @@ export default async function RoomsPage() {
           </p>
         </header>
 
-        <Link href="/dashboard/rooms/new">
+        <Link href={PATHS.hotelRoomTypesNew}>
           <Button variant="default" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Thêm loại phòng mới

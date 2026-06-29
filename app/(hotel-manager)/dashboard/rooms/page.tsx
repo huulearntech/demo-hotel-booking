@@ -1,6 +1,7 @@
-import RoomsTable from "./rooms-table";
+import RoomsTable, { RoomsTableSkeleton } from "./rooms-table";
 import { CreateRoomDialog } from "./create-room-dialog";
 import { hotelowner_getRoomTypesNameAndId } from "@/lib/actions/hotel-manager/room-types";
+import { Suspense } from "react";
 export default async function RoomsPage() {
   const roomTypes = await hotelowner_getRoomTypesNameAndId();
 
@@ -17,7 +18,9 @@ export default async function RoomsPage() {
         <CreateRoomDialog roomTypes={roomTypes} />
       </div>
 
-      <RoomsTable />
+      <Suspense fallback={<RoomsTableSkeleton />}>
+        <RoomsTable />
+      </Suspense>
     </div>
   );
 }

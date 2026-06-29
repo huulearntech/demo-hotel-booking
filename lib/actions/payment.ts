@@ -1,18 +1,16 @@
-// TODO: May need to store the payment url for the "PENDING_TO_PAY" booking for user to retry payment.
 "use server";
 
 import "dotenv/config";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createVnpayUrl, vnpay } from "@/lib/vnpay";
-import { ProductCode, VnpLocale, VnpCurrCode, dateFormat } from "vnpay";
+import { createVnpayUrl } from "@/lib/vnpay";
 
 import { schema_bookingForm } from "../zod_schemas/booking";
 import prisma from "../prisma";
 import { differenceInDays, subMinutes } from "date-fns";
 import { auth } from "@/auth";
 import { user_getRoomTypeInventoryForUpdate } from "../generated/prisma/sql";
-import { schema_searchSpecWithoutLocation, toYYYY_MM_DD } from "../zod_schemas/search-bar";
+import { schema_searchSpecWithoutLocation } from "../zod_schemas/search-bar";
 import z from "zod";
 
 

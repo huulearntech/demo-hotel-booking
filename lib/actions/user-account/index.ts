@@ -108,7 +108,7 @@ export async function user_updateName(formData_newName: UserUpdateNameData): Pro
   if (!session) {
     return { ok: false, error: "Unauthenticated", status: 401 };
   }
-  if ( session.user.role !== "USER") {
+  if (["USER", "HOTEL_OWNER"].indexOf(session.user.role) === -1) {
     return { ok: false, error: "Unauthorized", status: 403 };
   }
 

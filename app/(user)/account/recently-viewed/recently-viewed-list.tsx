@@ -5,9 +5,15 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import HotelCard from '@/components/hotel-card';
 import { useInView } from 'react-intersection-observer';
 import { user_getRecentlyViewedHotels } from '@/lib/actions/user-account/recently-viewed';
+import { DEFAULT_SEARCH_BAR_VALUES, PATHS } from '@/lib/constants';
+import { codec_SearchSpecWithoutLocation_Params } from '@/lib/zod_schemas/search-bar';
 
 export default function RecentlyViewedList() {
   const { ref: sentinelRef, inView } = useInView({ rootMargin: '200px' });
+  const { location, ...defaultSpecWithoutLocation } = DEFAULT_SEARCH_BAR_VALUES;
+  const stringifiedSearchSpecWithoutLocation = new URLSearchParams(
+    codec_SearchSpecWithoutLocation_Params.encode(defaultSpecWithoutLocation)
+  ).toString();
 
   const {
     data,
@@ -59,7 +65,7 @@ export default function RecentlyViewedList() {
           <HotelCard
             key={hotel.id}
             hotel={hotel}
-            href="#"
+            href={`${PATHS.hotels}/${hotel.id}?${stringifiedSearchSpecWithoutLocation}`}
           />
         ))}
       </div>

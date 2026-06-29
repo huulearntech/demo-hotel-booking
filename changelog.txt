@@ -1,1 +1,3 @@
-NOTE: google blocked my mailing support account. That's why the otp doesn't work.
+1. drop column icon url in facility.
+2. make new table "PopularFacility" with column icon_url
+3. in the room type form -> facility: 3 options: create new, get popular, get hotel has.

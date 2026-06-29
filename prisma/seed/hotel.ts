@@ -242,7 +242,7 @@ const nonInRoomFacilities: { name: string, type: FacilityType, iconUrl?: string 
 ];
 
 async function seedFacilities() {
-  await prisma.facility.createMany({
+  await prisma.commonFacility.createMany({
     data: [...inRoomFacilities, ...nonInRoomFacilities],
     skipDuplicates: true,
   });
@@ -250,7 +250,7 @@ async function seedFacilities() {
 
 async function seedConnectionHotelsOnFacilities() {
   const BATCH_SIZE = 20;
-  const allFacilities = await prisma.facility.findMany({ select: { id: true, name: true, type: true } });
+  const allFacilities = await prisma.commonFacility.findMany({ select: { id: true, name: true, type: true } });
   const nonInRoomFacilities = allFacilities.filter(f => f.type !== "IN_ROOM");
 
   let lastId: string | undefined = undefined;

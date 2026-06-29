@@ -20,10 +20,10 @@ ranked_hotels AS (
     p.name AS province_name,
     (
       SELECT json_agg(json_build_object('name', f.name))
-      FROM facilities f
-      JOIN "_FacilityToHotel" fth ON fth."A" = f.id
+      FROM common_facilities f
+      JOIN "_CommonFacilityToHotel" fth ON fth."A" = f.id
       WHERE fth."B" = h.id
-    ) AS facilities,
+    ) AS common_facilities,
     (
       SELECT MIN(rt.price)
       FROM room_types rt
@@ -45,7 +45,7 @@ SELECT
       'type', rh.type,
       'rating', rh.rating,
       'numberOfReviews', rh.number_of_reviews,
-      'facilities', rh.facilities,
+      'common_facilities', rh.common_facilities,
       'price', rh.min_price,
       'wardName', rh.ward_name,
       'provinceName', rh.province_name,

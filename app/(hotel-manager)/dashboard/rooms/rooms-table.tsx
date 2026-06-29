@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { createColumns, RoomRow } from "./columns";
+import { columns, RoomRow } from "./columns";
 import {
   hotelowner_getRoomsOfType
 } from "@/lib/actions/hotel-manager/rooms";
@@ -35,8 +35,6 @@ export default function RoomsTable() {
   }, []);
     
 
-  const columns = useMemo(() => createColumns(roomTypes), [roomTypes]);
-
   if (isLoadingRooms) {
     return <div className="py-8 text-center text-sm text-muted-foreground">Đang tải dữ liệu phòng…</div>;
   }
@@ -55,5 +53,34 @@ export default function RoomsTable() {
 
   return (
     <DataTable columns={columns} data={rooms} />
+  );
+}
+
+export function RoomsTableSkeleton() {
+  const columns = ["Phòng", "Loại", "Giá", "Trạng thái"];
+  const rows = Array.from({ length: 4 });
+
+  return (
+    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="grid grid-cols-[2fr_2fr_1fr_1fr] gap-4 border-b px-4 py-3 text-sm font-medium text-muted-foreground">
+        {columns.map((label) => (
+          <div key={label} className="h-4 w-full animate-pulse rounded bg-muted/50" />
+        ))}
+      </div>
+
+      <div className="divide-y">
+        {rows.map((_, index) => (
+          <div
+            key={index}
+            className="grid grid-cols-[2fr_2fr_1fr_1fr] gap-4 px-4 py-4"
+          >
+            <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -56,7 +56,7 @@ export async function user_getAvailableRoomTypeOfHotel(hotelId: string, checkInD
   return result.map(roomType => ({
     ...roomType,
     price: roomType.price.toNumber(),
-    facilities: Array.isArray(roomType.facilities) ? roomType.facilities : [],
+    facilities: Array.isArray(roomType.common_facilities) ? roomType.common_facilities : [],
   }));
 }
 

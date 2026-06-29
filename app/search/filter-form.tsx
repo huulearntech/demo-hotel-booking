@@ -15,13 +15,13 @@ import { FILTER_MAX_PRICE, FILTER_MIN_PRICE, FILTER_PRICE_STEP } from '@/lib/con
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
-export function FilterForm({ isSheet = false }: { isSheet?: boolean }) {
+export function FilterForm({ isSheet = false, className }: { isSheet?: boolean, className?: string }) {
   const { control } = useFilterForm();
 
   return (
     <div
       data-issheet={isSheet}
-      className="flex flex-col space-y-3 w-full max-w-sm data-[issheet=true]:px-3"
+      className={cn("flex flex-col space-y-3 w-full max-w-sm data-[issheet=true]:px-3", className)}
     >
       <Controller
         control={control}

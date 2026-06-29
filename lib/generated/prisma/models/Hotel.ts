@@ -315,7 +315,8 @@ export type HotelWhereInput = {
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   ward?: Prisma.XOR<Prisma.WardScalarRelationFilter, Prisma.WardWhereInput>
   roomTypes?: Prisma.RoomTypeListRelationFilter
-  facilities?: Prisma.FacilityListRelationFilter
+  customFacilities?: Prisma.CustomFacilityListRelationFilter
+  facilities?: Prisma.CommonFacilityListRelationFilter
   favoritedBy?: Prisma.FavoriteListRelationFilter
   recentlyViewedBy?: Prisma.RecentlyViewedListRelationFilter
 }
@@ -340,7 +341,8 @@ export type HotelOrderByWithRelationInput = {
   owner?: Prisma.UserOrderByWithRelationInput
   ward?: Prisma.WardOrderByWithRelationInput
   roomTypes?: Prisma.RoomTypeOrderByRelationAggregateInput
-  facilities?: Prisma.FacilityOrderByRelationAggregateInput
+  customFacilities?: Prisma.CustomFacilityOrderByRelationAggregateInput
+  facilities?: Prisma.CommonFacilityOrderByRelationAggregateInput
   favoritedBy?: Prisma.FavoriteOrderByRelationAggregateInput
   recentlyViewedBy?: Prisma.RecentlyViewedOrderByRelationAggregateInput
 }
@@ -368,7 +370,8 @@ export type HotelWhereUniqueInput = Prisma.AtLeast<{
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   ward?: Prisma.XOR<Prisma.WardScalarRelationFilter, Prisma.WardWhereInput>
   roomTypes?: Prisma.RoomTypeListRelationFilter
-  facilities?: Prisma.FacilityListRelationFilter
+  customFacilities?: Prisma.CustomFacilityListRelationFilter
+  facilities?: Prisma.CommonFacilityListRelationFilter
   favoritedBy?: Prisma.FavoriteListRelationFilter
   recentlyViewedBy?: Prisma.RecentlyViewedListRelationFilter
 }, "id" | "ownerId">
@@ -437,7 +440,8 @@ export type HotelCreateInput = {
   owner: Prisma.UserCreateNestedOneWithoutHotelInput
   ward: Prisma.WardCreateNestedOneWithoutHotelInput
   roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
 }
@@ -460,7 +464,8 @@ export type HotelUncheckedCreateInput = {
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityUncheckedCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
 }
@@ -483,7 +488,8 @@ export type HotelUpdateInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
   ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
   roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
 }
@@ -506,7 +512,8 @@ export type HotelUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
 }
@@ -653,14 +660,14 @@ export type HotelSumOrderByAggregateInput = {
   numberOfReviews?: Prisma.SortOrder
 }
 
-export type HotelScalarRelationFilter = {
-  is?: Prisma.HotelWhereInput
-  isNot?: Prisma.HotelWhereInput
-}
-
 export type HotelNullableScalarRelationFilter = {
   is?: Prisma.HotelWhereInput | null
   isNot?: Prisma.HotelWhereInput | null
+}
+
+export type HotelScalarRelationFilter = {
+  is?: Prisma.HotelWhereInput
+  isNot?: Prisma.HotelWhereInput
 }
 
 export type HotelCreateNestedManyWithoutWardInput = {
@@ -760,6 +767,22 @@ export type HotelUncheckedUpdateManyWithoutFacilitiesNestedInput = {
   deleteMany?: Prisma.HotelScalarWhereInput | Prisma.HotelScalarWhereInput[]
 }
 
+export type HotelCreateNestedOneWithoutCustomFacilitiesInput = {
+  create?: Prisma.XOR<Prisma.HotelCreateWithoutCustomFacilitiesInput, Prisma.HotelUncheckedCreateWithoutCustomFacilitiesInput>
+  connectOrCreate?: Prisma.HotelCreateOrConnectWithoutCustomFacilitiesInput
+  connect?: Prisma.HotelWhereUniqueInput
+}
+
+export type HotelUpdateOneWithoutCustomFacilitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.HotelCreateWithoutCustomFacilitiesInput, Prisma.HotelUncheckedCreateWithoutCustomFacilitiesInput>
+  connectOrCreate?: Prisma.HotelCreateOrConnectWithoutCustomFacilitiesInput
+  upsert?: Prisma.HotelUpsertWithoutCustomFacilitiesInput
+  disconnect?: Prisma.HotelWhereInput | boolean
+  delete?: Prisma.HotelWhereInput | boolean
+  connect?: Prisma.HotelWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.HotelUpdateToOneWithWhereWithoutCustomFacilitiesInput, Prisma.HotelUpdateWithoutCustomFacilitiesInput>, Prisma.HotelUncheckedUpdateWithoutCustomFacilitiesInput>
+}
+
 export type HotelCreateNestedOneWithoutRoomTypesInput = {
   create?: Prisma.XOR<Prisma.HotelCreateWithoutRoomTypesInput, Prisma.HotelUncheckedCreateWithoutRoomTypesInput>
   connectOrCreate?: Prisma.HotelCreateOrConnectWithoutRoomTypesInput
@@ -851,7 +874,8 @@ export type HotelCreateWithoutWardInput = {
   status?: $Enums.HotelStatus
   owner: Prisma.UserCreateNestedOneWithoutHotelInput
   roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
 }
@@ -873,7 +897,8 @@ export type HotelUncheckedCreateWithoutWardInput = {
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityUncheckedCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
 }
@@ -944,6 +969,7 @@ export type HotelCreateWithoutFacilitiesInput = {
   owner: Prisma.UserCreateNestedOneWithoutHotelInput
   ward: Prisma.WardCreateNestedOneWithoutHotelInput
   roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
   favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
 }
@@ -966,6 +992,7 @@ export type HotelUncheckedCreateWithoutFacilitiesInput = {
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
   favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
 }
@@ -991,6 +1018,114 @@ export type HotelUpdateManyWithWhereWithoutFacilitiesInput = {
   data: Prisma.XOR<Prisma.HotelUpdateManyMutationInput, Prisma.HotelUncheckedUpdateManyWithoutFacilitiesInput>
 }
 
+export type HotelCreateWithoutCustomFacilitiesInput = {
+  id?: string
+  name: string
+  longitude: number
+  latitude: number
+  type: $Enums.HotelType
+  description?: string | null
+  rating: number
+  numberOfReviews: number
+  checkInTime: Date | string
+  checkOutTime: Date | string
+  imageUrls?: Prisma.HotelCreateimageUrlsInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  status?: $Enums.HotelStatus
+  owner: Prisma.UserCreateNestedOneWithoutHotelInput
+  ward: Prisma.WardCreateNestedOneWithoutHotelInput
+  roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
+  favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
+  recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
+}
+
+export type HotelUncheckedCreateWithoutCustomFacilitiesInput = {
+  id?: string
+  name: string
+  ownerId: string
+  wardId: string
+  longitude: number
+  latitude: number
+  type: $Enums.HotelType
+  description?: string | null
+  rating: number
+  numberOfReviews: number
+  checkInTime: Date | string
+  checkOutTime: Date | string
+  imageUrls?: Prisma.HotelCreateimageUrlsInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  status?: $Enums.HotelStatus
+  roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
+  favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
+  recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
+}
+
+export type HotelCreateOrConnectWithoutCustomFacilitiesInput = {
+  where: Prisma.HotelWhereUniqueInput
+  create: Prisma.XOR<Prisma.HotelCreateWithoutCustomFacilitiesInput, Prisma.HotelUncheckedCreateWithoutCustomFacilitiesInput>
+}
+
+export type HotelUpsertWithoutCustomFacilitiesInput = {
+  update: Prisma.XOR<Prisma.HotelUpdateWithoutCustomFacilitiesInput, Prisma.HotelUncheckedUpdateWithoutCustomFacilitiesInput>
+  create: Prisma.XOR<Prisma.HotelCreateWithoutCustomFacilitiesInput, Prisma.HotelUncheckedCreateWithoutCustomFacilitiesInput>
+  where?: Prisma.HotelWhereInput
+}
+
+export type HotelUpdateToOneWithWhereWithoutCustomFacilitiesInput = {
+  where?: Prisma.HotelWhereInput
+  data: Prisma.XOR<Prisma.HotelUpdateWithoutCustomFacilitiesInput, Prisma.HotelUncheckedUpdateWithoutCustomFacilitiesInput>
+}
+
+export type HotelUpdateWithoutCustomFacilitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  longitude?: Prisma.FloatFieldUpdateOperationsInput | number
+  latitude?: Prisma.FloatFieldUpdateOperationsInput | number
+  type?: Prisma.EnumHotelTypeFieldUpdateOperationsInput | $Enums.HotelType
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rating?: Prisma.FloatFieldUpdateOperationsInput | number
+  numberOfReviews?: Prisma.IntFieldUpdateOperationsInput | number
+  checkInTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  checkOutTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  imageUrls?: Prisma.HotelUpdateimageUrlsInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
+  owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
+  ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
+  roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
+  favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
+  recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
+}
+
+export type HotelUncheckedUpdateWithoutCustomFacilitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  wardId?: Prisma.StringFieldUpdateOperationsInput | string
+  longitude?: Prisma.FloatFieldUpdateOperationsInput | number
+  latitude?: Prisma.FloatFieldUpdateOperationsInput | number
+  type?: Prisma.EnumHotelTypeFieldUpdateOperationsInput | $Enums.HotelType
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rating?: Prisma.FloatFieldUpdateOperationsInput | number
+  numberOfReviews?: Prisma.IntFieldUpdateOperationsInput | number
+  checkInTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  checkOutTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  imageUrls?: Prisma.HotelUpdateimageUrlsInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
+  roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
+  recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
+}
+
 export type HotelCreateWithoutRoomTypesInput = {
   id?: string
   name: string
@@ -1008,7 +1143,8 @@ export type HotelCreateWithoutRoomTypesInput = {
   status?: $Enums.HotelStatus
   owner: Prisma.UserCreateNestedOneWithoutHotelInput
   ward: Prisma.WardCreateNestedOneWithoutHotelInput
-  facilities?: Prisma.FacilityCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
 }
@@ -1030,7 +1166,8 @@ export type HotelUncheckedCreateWithoutRoomTypesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
-  facilities?: Prisma.FacilityUncheckedCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
 }
@@ -1068,7 +1205,8 @@ export type HotelUpdateWithoutRoomTypesInput = {
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
   ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
 }
@@ -1090,7 +1228,8 @@ export type HotelUncheckedUpdateWithoutRoomTypesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
-  facilities?: Prisma.FacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
 }
@@ -1112,7 +1251,8 @@ export type HotelCreateWithoutOwnerInput = {
   status?: $Enums.HotelStatus
   ward: Prisma.WardCreateNestedOneWithoutHotelInput
   roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
 }
@@ -1134,7 +1274,8 @@ export type HotelUncheckedCreateWithoutOwnerInput = {
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityUncheckedCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
 }
@@ -1172,7 +1313,8 @@ export type HotelUpdateWithoutOwnerInput = {
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
   roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
 }
@@ -1194,7 +1336,8 @@ export type HotelUncheckedUpdateWithoutOwnerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
 }
@@ -1217,7 +1360,8 @@ export type HotelCreateWithoutFavoritedByInput = {
   owner: Prisma.UserCreateNestedOneWithoutHotelInput
   ward: Prisma.WardCreateNestedOneWithoutHotelInput
   roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
   recentlyViewedBy?: Prisma.RecentlyViewedCreateNestedManyWithoutHotelInput
 }
 
@@ -1239,7 +1383,8 @@ export type HotelUncheckedCreateWithoutFavoritedByInput = {
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityUncheckedCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedCreateNestedManyWithoutHotelInput
 }
 
@@ -1277,7 +1422,8 @@ export type HotelUpdateWithoutFavoritedByInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
   ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
   roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
 }
 
@@ -1299,7 +1445,8 @@ export type HotelUncheckedUpdateWithoutFavoritedByInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
 }
 
@@ -1321,7 +1468,8 @@ export type HotelCreateWithoutRecentlyViewedByInput = {
   owner: Prisma.UserCreateNestedOneWithoutHotelInput
   ward: Prisma.WardCreateNestedOneWithoutHotelInput
   roomTypes?: Prisma.RoomTypeCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteCreateNestedManyWithoutHotelInput
 }
 
@@ -1343,7 +1491,8 @@ export type HotelUncheckedCreateWithoutRecentlyViewedByInput = {
   updatedAt?: Date | string
   status?: $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedCreateNestedManyWithoutHotelInput
-  facilities?: Prisma.FacilityUncheckedCreateNestedManyWithoutHotelsInput
+  customFacilities?: Prisma.CustomFacilityUncheckedCreateNestedManyWithoutHotelInput
+  facilities?: Prisma.CommonFacilityUncheckedCreateNestedManyWithoutHotelsInput
   favoritedBy?: Prisma.FavoriteUncheckedCreateNestedManyWithoutHotelInput
 }
 
@@ -1381,7 +1530,8 @@ export type HotelUpdateWithoutRecentlyViewedByInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
   ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
   roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
 }
 
@@ -1403,7 +1553,8 @@ export type HotelUncheckedUpdateWithoutRecentlyViewedByInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
 }
 
@@ -1442,7 +1593,8 @@ export type HotelUpdateWithoutWardInput = {
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
   roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
 }
@@ -1464,7 +1616,8 @@ export type HotelUncheckedUpdateWithoutWardInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
-  facilities?: Prisma.FacilityUncheckedUpdateManyWithoutHotelsNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
+  facilities?: Prisma.CommonFacilityUncheckedUpdateManyWithoutHotelsNestedInput
   favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
 }
@@ -1505,6 +1658,7 @@ export type HotelUpdateWithoutFacilitiesInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutHotelNestedInput
   ward?: Prisma.WardUpdateOneRequiredWithoutHotelNestedInput
   roomTypes?: Prisma.RoomTypeUpdateManyWithoutHotelNestedInput
+  customFacilities?: Prisma.CustomFacilityUpdateManyWithoutHotelNestedInput
   favoritedBy?: Prisma.FavoriteUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUpdateManyWithoutHotelNestedInput
 }
@@ -1527,6 +1681,7 @@ export type HotelUncheckedUpdateWithoutFacilitiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumHotelStatusFieldUpdateOperationsInput | $Enums.HotelStatus
   roomTypes?: Prisma.RoomTypeUncheckedUpdateManyWithoutHotelNestedInput
+  customFacilities?: Prisma.CustomFacilityUncheckedUpdateManyWithoutHotelNestedInput
   favoritedBy?: Prisma.FavoriteUncheckedUpdateManyWithoutHotelNestedInput
   recentlyViewedBy?: Prisma.RecentlyViewedUncheckedUpdateManyWithoutHotelNestedInput
 }
@@ -1557,6 +1712,7 @@ export type HotelUncheckedUpdateManyWithoutFacilitiesInput = {
 
 export type HotelCountOutputType = {
   roomTypes: number
+  customFacilities: number
   facilities: number
   favoritedBy: number
   recentlyViewedBy: number
@@ -1564,6 +1720,7 @@ export type HotelCountOutputType = {
 
 export type HotelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   roomTypes?: boolean | HotelCountOutputTypeCountRoomTypesArgs
+  customFacilities?: boolean | HotelCountOutputTypeCountCustomFacilitiesArgs
   facilities?: boolean | HotelCountOutputTypeCountFacilitiesArgs
   favoritedBy?: boolean | HotelCountOutputTypeCountFavoritedByArgs
   recentlyViewedBy?: boolean | HotelCountOutputTypeCountRecentlyViewedByArgs
@@ -1589,8 +1746,15 @@ export type HotelCountOutputTypeCountRoomTypesArgs<ExtArgs extends runtime.Types
 /**
  * HotelCountOutputType without action
  */
+export type HotelCountOutputTypeCountCustomFacilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomFacilityWhereInput
+}
+
+/**
+ * HotelCountOutputType without action
+ */
 export type HotelCountOutputTypeCountFacilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.FacilityWhereInput
+  where?: Prisma.CommonFacilityWhereInput
 }
 
 /**
@@ -1628,6 +1792,7 @@ export type HotelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   ward?: boolean | Prisma.WardDefaultArgs<ExtArgs>
   roomTypes?: boolean | Prisma.Hotel$roomTypesArgs<ExtArgs>
+  customFacilities?: boolean | Prisma.Hotel$customFacilitiesArgs<ExtArgs>
   facilities?: boolean | Prisma.Hotel$facilitiesArgs<ExtArgs>
   favoritedBy?: boolean | Prisma.Hotel$favoritedByArgs<ExtArgs>
   recentlyViewedBy?: boolean | Prisma.Hotel$recentlyViewedByArgs<ExtArgs>
@@ -1700,6 +1865,7 @@ export type HotelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   ward?: boolean | Prisma.WardDefaultArgs<ExtArgs>
   roomTypes?: boolean | Prisma.Hotel$roomTypesArgs<ExtArgs>
+  customFacilities?: boolean | Prisma.Hotel$customFacilitiesArgs<ExtArgs>
   facilities?: boolean | Prisma.Hotel$facilitiesArgs<ExtArgs>
   favoritedBy?: boolean | Prisma.Hotel$favoritedByArgs<ExtArgs>
   recentlyViewedBy?: boolean | Prisma.Hotel$recentlyViewedByArgs<ExtArgs>
@@ -1720,7 +1886,8 @@ export type $HotelPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     owner: Prisma.$UserPayload<ExtArgs>
     ward: Prisma.$WardPayload<ExtArgs>
     roomTypes: Prisma.$RoomTypePayload<ExtArgs>[]
-    facilities: Prisma.$FacilityPayload<ExtArgs>[]
+    customFacilities: Prisma.$CustomFacilityPayload<ExtArgs>[]
+    facilities: Prisma.$CommonFacilityPayload<ExtArgs>[]
     favoritedBy: Prisma.$FavoritePayload<ExtArgs>[]
     recentlyViewedBy: Prisma.$RecentlyViewedPayload<ExtArgs>[]
   }
@@ -2138,7 +2305,8 @@ export interface Prisma__HotelClient<T, Null = never, ExtArgs extends runtime.Ty
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   ward<T extends Prisma.WardDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WardDefaultArgs<ExtArgs>>): Prisma.Prisma__WardClient<runtime.Types.Result.GetResult<Prisma.$WardPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   roomTypes<T extends Prisma.Hotel$roomTypesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Hotel$roomTypesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RoomTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  facilities<T extends Prisma.Hotel$facilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Hotel$facilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FacilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  customFacilities<T extends Prisma.Hotel$customFacilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Hotel$customFacilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomFacilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  facilities<T extends Prisma.Hotel$facilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Hotel$facilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommonFacilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   favoritedBy<T extends Prisma.Hotel$favoritedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Hotel$favoritedByArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FavoritePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recentlyViewedBy<T extends Prisma.Hotel$recentlyViewedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Hotel$recentlyViewedByArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecentlyViewedPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -2606,27 +2774,51 @@ export type Hotel$roomTypesArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
+ * Hotel.customFacilities
+ */
+export type Hotel$customFacilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomFacility
+   */
+  select?: Prisma.CustomFacilitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomFacility
+   */
+  omit?: Prisma.CustomFacilityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomFacilityInclude<ExtArgs> | null
+  where?: Prisma.CustomFacilityWhereInput
+  orderBy?: Prisma.CustomFacilityOrderByWithRelationInput | Prisma.CustomFacilityOrderByWithRelationInput[]
+  cursor?: Prisma.CustomFacilityWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomFacilityScalarFieldEnum | Prisma.CustomFacilityScalarFieldEnum[]
+}
+
+/**
  * Hotel.facilities
  */
 export type Hotel$facilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Facility
+   * Select specific fields to fetch from the CommonFacility
    */
-  select?: Prisma.FacilitySelect<ExtArgs> | null
+  select?: Prisma.CommonFacilitySelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Facility
+   * Omit specific fields from the CommonFacility
    */
-  omit?: Prisma.FacilityOmit<ExtArgs> | null
+  omit?: Prisma.CommonFacilityOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.FacilityInclude<ExtArgs> | null
-  where?: Prisma.FacilityWhereInput
-  orderBy?: Prisma.FacilityOrderByWithRelationInput | Prisma.FacilityOrderByWithRelationInput[]
-  cursor?: Prisma.FacilityWhereUniqueInput
+  include?: Prisma.CommonFacilityInclude<ExtArgs> | null
+  where?: Prisma.CommonFacilityWhereInput
+  orderBy?: Prisma.CommonFacilityOrderByWithRelationInput | Prisma.CommonFacilityOrderByWithRelationInput[]
+  cursor?: Prisma.CommonFacilityWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.FacilityScalarFieldEnum | Prisma.FacilityScalarFieldEnum[]
+  distinct?: Prisma.CommonFacilityScalarFieldEnum | Prisma.CommonFacilityScalarFieldEnum[]
 }
 
 /**

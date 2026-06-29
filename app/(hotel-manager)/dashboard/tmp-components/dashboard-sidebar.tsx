@@ -1,11 +1,12 @@
-import { ComponentProps } from "react"
+import { ComponentProps, Suspense } from "react"
 import {
   BarChartBigIcon,
   LayoutDashboardIcon,
   TicketsIcon,
   DoorOpenIcon as RoomIcon,
   Building as RoomsIcon,
-  StarIcon
+  StarIcon,
+  HousePlugIcon
 } from "lucide-react"
 
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 
 import { NavMain } from "./nav-main"
-import { NavUser } from "./nav-user"
+import { NavUser, NavUserSkeleton } from "./nav-user"
 
 import { PATHS } from "@/lib/constants"
 import Image from "next/image"
@@ -46,6 +47,11 @@ const navMain = [
     title: "Phòng",
     url: PATHS.hotelRooms,
     icon: RoomIcon,
+  },
+  {
+    title: "Tiện nghi",
+    url: PATHS.hotelFacilities,
+    icon: HousePlugIcon,
   },
   {
     title: "Lượt đặt phòng",
@@ -84,7 +90,9 @@ export default function DashboardSidebar({ ...props }: ComponentProps<typeof Sid
         <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser />
+        <Suspense fallback={<NavUserSkeleton />}>
+          <NavUser />
+        </Suspense>
       </SidebarFooter>
     </Sidebar>
   );

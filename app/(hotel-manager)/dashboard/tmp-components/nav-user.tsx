@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import SignOutButton from "@/components/button-signout"
 import { user_getInfoById } from "@/lib/actions/user-account"
+import Link from "next/link"
+import { PATHS } from "@/lib/constants"
 
 export async function NavUser() {
   const session = await auth();
@@ -93,10 +95,12 @@ export async function NavUser() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <UserCircleIcon />
-                  Tài khoản
-                </DropdownMenuItem>
+                <Link href={PATHS.hotelAccount}>
+                  <DropdownMenuItem>
+                    <UserCircleIcon />
+                    Tài khoản
+                  </DropdownMenuItem>
+                </Link>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <AlertDialogTrigger asChild>
@@ -126,5 +130,25 @@ export async function NavUser() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+export function NavUserSkeleton() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          size="lg"
+          className="pointer-events-none animate-pulse"
+        >
+          <div className="h-8 w-8 rounded-lg bg-muted" />
+          <div className="grid flex-1 gap-1 px-2">
+            <div className="h-3 w-24 rounded-full bg-muted" />
+            <div className="h-2 w-32 rounded-full bg-muted" />
+          </div>
+          <div className="ml-auto h-4 w-4 rounded-full bg-muted" />
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   )
 }
