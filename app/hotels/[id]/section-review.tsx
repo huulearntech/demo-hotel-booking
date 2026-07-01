@@ -13,7 +13,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 
 
-export default function ReviewSection({
+export default function ReviewSectionClient({
   hotelId,
   hotelName,
   rating,

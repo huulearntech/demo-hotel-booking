@@ -8,28 +8,54 @@ import {
 } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 import { type UserGetAvailableRoomTypeOfHotelResult } from "@/lib/actions/hotel";
-import { type SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
+import { codec_SearchSpecWithoutLocation_Params, type SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { PATHS } from "@/lib/constants";
 import { auth } from "@/auth";
+import prisma from "@/lib/prisma";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function AvailableRoomsSection({
-  hotelName,
-  roomTypes,
+  hotelId,
   searchSpecWithoutLocation
 }: {
-  hotelName: string;
-  roomTypes: Awaited<ReturnType<typeof user_getAvailableRoomTypeOfHotel>>;
+  hotelId: string;
   searchSpecWithoutLocation: SearchSpecWithoutLocation_Params;
 }) {
   const searchParams = new URLSearchParams(searchSpecWithoutLocation).toString();
   const session = await auth();
 
+
+  const safeDecodedParams = codec_SearchSpecWithoutLocation_Params.safeParse(searchSpecWithoutLocation);
+  if (!safeDecodedParams.success) return null;
+
+  const {
+    inOutDates: { from: checkInDate, to: checkOutDate },
+    guestsAndRooms: { numAdults, numChildren, numRooms }
+  } = safeDecodedParams.data;
+
+  const hotel = await prisma.hotel.findUnique({
+    where: { id: hotelId },
+    select: { name: true }
+  })
+
+  if (!hotel) return null;
+
+  const roomTypes = await user_getAvailableRoomTypeOfHotel(
+    hotelId,
+    checkInDate,
+    checkOutDate,
+    numAdults,
+    numChildren,
+    numRooms
+  );
+
+
   return (
     <section id="available_rooms" className="w-full flex flex-col">
       <div className="rounded-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
-        <h2 className="font-bold text-[1.25rem]">Những phòng còn trống tại {hotelName}</h2>
+        <h2 className="font-bold text-[1.25rem]">Những phòng còn trống tại {hotel.name}</h2>
         {roomTypes.length === 0 && (
           <div className="w-full h-48 flex items-center justify-center bg-muted rounded-lg">
             <span className="text-muted-foreground">Không có phòng nào còn trống thoả yêu cầu của bạn trong khoảng thời gian này</span>
@@ -184,5 +210,56 @@ function AvailableRoomTypeCard({
         </footer>
       </div>
     </div>
+  );
+}
+
+export function AvailableRoomsSectionSkeleton() {
+  return (
+    <section id="available_rooms" className="w-full flex flex-col" aria-hidden="true">
+      <div className="rounded-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
+        <Skeleton className="h-8 w-72" />
+
+        <div className="space-y-4">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div
+              key={index}
+              className="w-full h-fit flex flex-col md:flex-row gap-y-4 md:gap-y-0 md:gap-x-6 bg-white rounded-xl p-4 shadow-md overflow-hidden"
+            >
+              <Skeleton className="w-full md:w-2/5 lg:w-1/3 h-48 md:h-56 rounded-lg shrink-0" />
+
+              <div className="w-full md:w-3/5 lg:w-2/3 flex flex-col justify-between gap-y-4">
+                <header className="space-y-2">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/3" />
+                </header>
+
+                <section className="space-y-2">
+                  <Skeleton className="h-5 w-28" />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: 4 }).map((_, itemIndex) => (
+                      <Skeleton key={itemIndex} className="h-4 w-full" />
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <Skeleton className="h-5 w-20" />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: 8 }).map((_, itemIndex) => (
+                      <Skeleton key={itemIndex} className="h-4 w-full" />
+                    ))}
+                  </div>
+                </section>
+
+                <footer className="flex flex-col sm:flex-row sm:items-center justify-end gap-x-4 gap-y-2">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-10 w-28 rounded-md" />
+                </footer>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

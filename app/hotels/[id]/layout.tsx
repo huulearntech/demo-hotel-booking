@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id: hotelId } = await params;
   const hotel = await prisma.hotel.findUnique({
     where: { id: hotelId },
+    select: { name: true, description: true }
   });
 
   if (!hotel) return { title: "Hotel not found" };
@@ -29,15 +30,5 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: hotel.name,
     description: hotel.description ?? undefined,
-    openGraph: {
-      title: hotel.name,
-      description: hotel.description ?? undefined,
-      images: [
-        {
-          url: hotel.imageUrls[0],
-          alt: hotel.name,
-        },
-      ],
-    },
   };
 }

@@ -5,21 +5,45 @@ import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 import { MapPin, MapPinnedIcon, Info } from "lucide-react";
 import { SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 import { PATHS } from "@/lib/constants";
+import prisma from "@/lib/prisma";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default async function LocationSection({
-  hotel,
-  poiCategoriesWithPlaces,
+  hotelId,
   searchParams
 }: {
-  hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>>;
-  poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>;
+  hotelId: string,
   searchParams: SearchSpecWithoutLocation_Params;
 }) {
+  const hotel = await prisma.hotel.findUnique({
+    where: { id: hotelId },
+    select: {
+      name: true,
+      longitude: true,
+      latitude: true,
+      ward: {
+        select: {
+          id: true,
+          name: true,
+          province: {
+            select: { name: true }
+          }
+        }
+      }
+    }
+
+  })
+
+
   if (!hotel) {
     return null;
   }
-  const mapPageUrl = `${PATHS.searchMap}?locationId=${hotel.wardId}&locationType=ward&${
+
+
+  const poiCategoriesWithPlaces = await fetchPoiCategoriesWithPlaces(hotel.longitude, hotel.latitude);
+
+  const mapPageUrl = `${PATHS.searchMap}?locationId=${hotel.ward.id}&locationType=ward&${
     new URLSearchParams(searchParams).toString()
   }`;
 
@@ -79,3 +103,49 @@ export default async function LocationSection({
     </section>
   )
 };
+
+export async function LocationSectionSkeleton() {
+  return (
+    <section id="location" className="w-full flex flex-col">
+      <div className="rounded-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
+        <Skeleton className="h-8 w-75"/>
+        <div className="flex gap-x-2 text-sm items-center">
+          <Skeleton className="size-4" />
+          <Skeleton className="h-5 w-50" />
+        </div>
+
+        <div className="relative rounded-[2rem] w-full h-60 bg-gray-200 overflow-hidden">
+          <Skeleton
+            className="absolute inset-0 object-cover w-full h-full z-0"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="flex flex-col space-y-2">
+              <div className="flex gap-x-2 items-center">
+                <Skeleton className="size-6" />
+                <Skeleton className="h-6 w-30" />
+              </div>
+              <ul className="flex flex-col space-y-2 pl-8">
+                {Array.from({ length: 3}).map((_, index) => (
+                  <li key={index}>
+                    <div className="flex justify-between">
+                      <Skeleton className="h-5 w-20"/>
+                      <Skeleton className="h-5 w-10"/>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-x-2 text-sm items-center">
+          <Skeleton className="size-5" />
+          <Skeleton className="h-5 w-full" />
+        </div>
+      </div>
+    </section>
+  )
+}

@@ -8,6 +8,8 @@ import {
 
 import type { FacilityType } from "@/lib/generated/prisma/client";
 import { fetchHotel } from "@/lib/actions/hotel";
+import prisma from "@/lib/prisma";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryToNameAndIcon: Record<FacilityType, { name: string; icon: LucideIcon }> = {
   HOTEL_SERVICES: { name: "Dịch vụ khách sạn", icon: Bed },
@@ -18,8 +20,24 @@ const categoryToNameAndIcon: Record<FacilityType, { name: string; icon: LucideIc
   OTHER: { name: "Tiện nghi khác", icon: Building2 },
 };
 
-export default function FacilitiesSection({ hotel }: { hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>> }) {
-  const { facilities = [] } = hotel;
+export default async function FacilitiesSection({ hotelId }: { hotelId: string }) {
+  const hotel = await prisma.hotel.findUnique({
+    where: { id: hotelId },
+    select: {
+      name: true,
+      facilities: {
+        select: {
+          name: true,
+          type: true,
+          iconUrl: true
+        }
+      }
+    }
+  })
+
+  if (!hotel) return null;
+
+  const { facilities } = hotel;
 
   const facilitiesByType = facilities.reduce<Record<FacilityType, string[]>>((acc, f) => {
     const t = f.type;
@@ -63,8 +81,33 @@ export default function FacilitiesSection({ hotel }: { hotel: NonNullable<Awaite
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Không có tiện ích nào được liệt kê.</p>
+          <p className="text-sm text-muted-foreground">Không có tiện nghi nào được liệt kê.</p>
         )}
+      </div>
+    </section>
+  )
+}
+
+export function FacilitiesSectionSkeleton() {
+  return (
+    <section id="facilities" className="w-full flex flex-col">
+      <div className="rounded-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
+        <Skeleton className="h-8 w-72" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="flex flex-col gap-y-3">
+              <div className="flex items-center gap-x-2">
+                <Skeleton className="size-4" />
+                <Skeleton className="h-8 w-30" />
+              </div>
+              <ul className="list-disc list-inside flex flex-col gap-y-1">
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <Skeleton key={idx} className="h-5 w-20" />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

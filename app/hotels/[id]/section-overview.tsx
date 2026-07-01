@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { fetchHotel, get5ReviewsAboutHotelForOverview } from "@/lib/actions/hotel";
+import { get5ReviewsAboutHotelForOverview } from "@/lib/actions/hotel";
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ChevronRight, MapPin } from 'lucide-react';
@@ -11,37 +11,57 @@ import { fetchPoiCategoriesWithPlaces } from "@/lib/actions/hotel-poi";
 import { SearchSpecWithoutLocation_Params } from "@/lib/zod_schemas/search-bar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import prisma from "@/lib/prisma";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default async function OverviewSection({
   searchParams,
-  hotel,
-  poiCategoriesWithPlaces,
-  reviews,
+  hotelId,
 }: {
   searchParams: SearchSpecWithoutLocation_Params,
-  hotel: NonNullable<Awaited<ReturnType<typeof fetchHotel>>>
-  poiCategoriesWithPlaces: Awaited<ReturnType<typeof fetchPoiCategoriesWithPlaces>>
-  reviews: Awaited<ReturnType<typeof get5ReviewsAboutHotelForOverview>>
+  hotelId: string,
 }) {
-  const {
-    roomTypes: [{ price: minPrice }],
-    imageUrls,
-    facilities,
-    ward: {
-      id: wardId,
-      name: wardName,
-      province: {
-        id: provinceId,
-        name: provinceName
+  const hotel = await prisma.hotel.findUnique({
+    where: { id: hotelId },
+    select: {
+      name: true,
+      type: true,
+      longitude: true,
+      latitude: true,
+      imageUrls: true,
+      description: true,
+      facilities: true,
+      rating: true,
+      numberOfReviews: true,
+      ward: {
+        select: {
+          id: true,
+          name: true,
+          province: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
       }
-    },
-  } = hotel;
+    }
+  });
+
+  const reviews = await get5ReviewsAboutHotelForOverview(hotelId) ?? [];
+  const minPrice = await prisma.roomType.aggregate({
+    _min: { price: true },
+    where: { hotelId }
+  });
+
+  if (!hotel) return null;
 
   const stringifiedSearchParams = new URLSearchParams(searchParams).toString();
-  const provinceUrl = `${PATHS.search}?locationId=${provinceId}&locationType=province&${stringifiedSearchParams}`;
-  const wardUrl = `${PATHS.search}?locationId=${wardId}&locationType=ward&${stringifiedSearchParams}`;
+  const provinceUrl = `${PATHS.search}?locationId=${hotel.ward.province.id}&locationType=province&${stringifiedSearchParams}`;
+  const wardUrl = `${PATHS.search}?locationId=${hotel.ward.id}&locationType=ward&${stringifiedSearchParams}`;
 
+  const poiCategoriesWithPlaces = fetchPoiCategoriesWithPlaces(hotel.longitude, hotel.latitude);
   const places = Object.values(poiCategoriesWithPlaces).flatMap(category => category.places).slice(0, 5); // pick 5
 
   return (
@@ -51,7 +71,7 @@ export default async function OverviewSection({
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
               <Link href={provinceUrl}>
-                {provinceName}
+                {hotel.ward.province.name}
               </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -61,7 +81,7 @@ export default async function OverviewSection({
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
               <Link href={wardUrl}>
-                {wardName}
+                {hotel.ward.name}
               </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -75,16 +95,16 @@ export default async function OverviewSection({
       </Breadcrumb>
 
       <figure className="rounded-t-4xl overflow-hidden grid gap-2 grid-cols-2 grid-rows-3 md:grid-cols-3 md:grid-rows-2 lg:grid-cols-5 lg:grid-rows-2 lg:h-83">
-        {imageUrls.length > 0 &&
+        {hotel.imageUrls.length > 0 &&
           <Image
-            src={imageUrls[0]}
+            src={hotel.imageUrls[0]}
             alt={`Ảnh 1 của ${hotel.name}`}
             width={400}
             height={300}
             className="object-cover w-full h-full row-span-1 col-span-1 lg:row-span-2 lg:col-span-2"
           />
         }
-        {imageUrls.slice(1, 6).map((src, index) => (
+        {hotel.imageUrls.slice(1, 6).map((src, index) => (
           <Image
             key={index}
             src={src}
@@ -94,9 +114,9 @@ export default async function OverviewSection({
             className="w-full h-full object-cover"
           />
         ))}
-        {imageUrls.length > 6 &&
+        {hotel.imageUrls.length > 6 &&
           <Image
-            src={imageUrls[6]}
+            src={hotel.imageUrls[6]}
             alt={`Ảnh 7 của ${hotel.name}`}
             width={400}
             height={300}
@@ -117,7 +137,7 @@ export default async function OverviewSection({
           <div className="flex flex-col md:flex-row gap-x-2 py-2">
             <div className="flex flex-col text-end">
               <span className="text-xs">Giá/phòng/đêm từ</span>
-              <span className="h-fit text-[1.25rem] font-bold text-primary">{formatVND(minPrice.toNumber())}</span>
+              <span className="h-fit text-[1.25rem] font-bold text-primary">{formatVND(minPrice._min.price?.toNumber() || 0)}</span>
             </div>
             <Button asChild className="h-fit font-semibold">
               <a href="#available_rooms"> Chọn phòng </a>
@@ -197,7 +217,7 @@ export default async function OverviewSection({
               </a>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {facilities.filter(facility => !!facility.iconUrl).slice(0,10).map((facility, index) => (
+              {hotel.facilities.filter(facility => !!facility.iconUrl).slice(0,10).map((facility, index) => (
                 <div key={index} className="flex items-center gap-x-2">
                   <Image
                     src={facility.iconUrl!}
@@ -218,12 +238,97 @@ export default async function OverviewSection({
         <div className="bg-white border border-gray-200 rounded-[0.625rem] p-3 flex-1 flex-col space-y-3">
           <h2 className="font-bold"> Tổng quan về khách sạn </h2>
           <p className="text-sm max-h-20 overflow-hidden overflow-ellipsis">{hotel.description}</p>
-          {/* <div className="flex gap-x-1 text-sm font-bold text-primary">
-            Xem thêm
-            <ChevronRight className="size-5" aria-hidden />
-          </div> */}
         </div>
       </div>
     </section>
   )
+}
+
+export function OverviewSectionSkeleton() {
+  return (
+    <section id="overview" className="w-full flex flex-col" aria-hidden="true">
+      <div className="py-1 mb-3">
+        <Skeleton className="h-4 w-56" />
+      </div>
+
+      <div className="rounded-t-4xl overflow-hidden grid gap-2 grid-cols-2 grid-rows-3 md:grid-cols-3 md:grid-rows-2 lg:grid-cols-5 lg:grid-rows-2 lg:h-83">
+        <Skeleton className="h-40 col-span-2 row-span-2 md:col-span-1 md:row-span-2 lg:col-span-2" />
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} className="h-24 md:h-32" />
+        ))}
+      </div>
+
+      <div className="rounded-b-4xl px-4 py-5 flex flex-col gap-y-5 shadow-xl">
+        <div className="flex gap-x-10">
+          <div className="flex-1 gap-y-2 space-y-2">
+            <Skeleton className="h-8 w-2/5" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-x-2 py-2 items-end md:items-start">
+            <div className="flex flex-col text-end gap-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <Skeleton className="h-10 w-28 rounded-md" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="bg-white border border-gray-200 rounded-[0.625rem] px-4 pt-2 pb-4 flex flex-col gap-y-3">
+            <div className="flex justify-between gap-x-4">
+              <div className="flex items-center p-1 gap-x-3">
+                <Skeleton className="size-6 rounded-full" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+              <Skeleton className="h-5 w-24" />
+            </div>
+            <Skeleton className="h-5 w-3/5" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-11/12" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-300 rounded-lg p-4 flex flex-col gap-y-3">
+            <div className="flex items-center justify-between mb-2 gap-x-4">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+            <div className="flex flex-col gap-y-2 text-sm">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="flex items-start gap-x-2">
+                  <Skeleton className="size-4 rounded-full mt-1 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-3 w-3/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-300 rounded-lg p-4 flex flex-col gap-y-3">
+            <div className="flex items-center justify-between mb-2 gap-x-4">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <Skeleton key={index} className="h-4 w-full" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-[0.625rem] p-3 flex flex-col gap-y-3">
+          <Skeleton className="h-5 w-52" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-11/12" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+    </section>
+  );
 }
